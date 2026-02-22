@@ -110,8 +110,12 @@
             <div class="modal-body" id="modal-body">
                 <!-- Orders go here -->
             </div>
-            <div class="modal-footer">
-                <button class="btn-serve btn-full" id="btn-serve-all" onclick="serveAllOrders()">เสิร์ฟ ✓</button>
+            <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <button id="btn-cancel-orders" onclick="cancelSelectedModalOrders()"
+                    style="flex:0.4; padding:8px; font-size:0.85rem; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);"
+                    disabled>ยกเลิกออเดอร์</button>
+                <button class="btn-serve btn-full" id="btn-serve-all" onclick="serveAllOrders()" style="flex:1;">เสิร์ฟ
+                    ✓</button>
             </div>
         </div>
     </div>

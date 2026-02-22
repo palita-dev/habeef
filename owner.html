@@ -58,9 +58,15 @@
                 <div class="form-group" style="margin-bottom: 28px;">
                     <label id="si-unit-label"
                         style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">จำนวน</label>
-                    <input type="number" id="si-qty" class="form-input"
-                        style="width: 100%; padding: 12px; border: 1px solid #777; border-radius: 8px; font-size: 1rem; box-sizing: border-box;"
-                        min="1">
+                    <div style="display:flex; align-items:center;">
+                        <button type="button" onclick="adjustQty('si-qty', -1)"
+                            style="flex:0 0 50px; height:46px; border:1px solid #777; border-right:none; border-radius:8px 0 0 8px; background:#f5f5f5; font-size:1.5rem; color:#555; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
+                        <input type="number" id="si-qty" class="form-input"
+                            style="flex:1; height:46px; border: 1px solid #777; border-radius: 0; font-size: 1.1rem; text-align:center; box-sizing: border-box; -moz-appearance:textfield;"
+                            min="1">
+                        <button type="button" onclick="adjustQty('si-qty', 1)"
+                            style="flex:0 0 50px; height:46px; border:1px solid #777; border-left:none; border-radius:0 8px 8px 0; background:#f5f5f5; font-size:1.5rem; color:#555; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+                    </div>
                     <input type="hidden" id="si-unit">
                 </div>
 
@@ -77,6 +83,38 @@
     </div>
     <!-- ===== /ADD STOCK IN POPUP ===== -->
 
+    <!-- ===== หน้าประวัติการบันทึกแบบเต็ม ===== -->
+    <div id="page-stockin-history" class="page">
+        <div class="top-bar"><span class="top-bar-title">ประวัติการบันทึก</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>ประวัติการบันทึกวัตถุดิบเข้า</p>
+        </div>
+        <div class="section-bar"
+            style="display:flex; justify-content:space-between; align-items:center; background:#FFE082;">
+            <span style="color:#333; font-weight:600;">ประวัติการบันทึก</span>
+            <button class="btn btn-red"
+                onclick="showTab('page-stockin', document.querySelector('.bottom-nav .nav-item:nth-child(1)'))"
+                style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor:pointer;">
+                &larr;
+            </button>
+        </div>
+
+        <!-- Tabs for History View -->
+        <div class="view-toggle-bar" style="margin-top: 0; background: #fff; border-bottom: 1px solid #eee;">
+            <button id="btn-history-today" class="view-toggle-btn active" onclick="setHistoryFilter('today')"
+                style="flex:1;">วันนี้</button>
+            <button id="btn-history-past" class="view-toggle-btn" onclick="setHistoryFilter('past')"
+                style="flex:1;">ย้อนหลัง</button>
+        </div>
+
+        <div class="page-body">
+            <div id="full-stockin-history-container">
+                <!-- เนื้อหาประวัติเต็มจะถูกสร้างที่นี่จาก JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- ===== หน้าวัตถุดิบคงเหลือ ===== -->
     <div id="page-remaining" class="page">
         <div class="top-bar"><span class="top-bar-title">หน้าวัตถุดิบคงเหลือ</span></div>
@@ -84,8 +122,13 @@
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
             <p>วัตถุดิบคงเหลือ</p>
         </div>
-        <div class="section-bar">
+        <div class="section-bar" style="display:flex; justify-content:space-between; align-items:center;">
             <span>วัตถุดิบคงเหลือ</span>
+            <button id="btn-sort-remaining" onclick="toggleRemainingSort()"
+                style="background:#fff; border:1px solid #ddd; border-radius:20px; padding:4px 12px; font-family:'Prompt', sans-serif; font-size:0.8rem; cursor:pointer; color:#555; display:flex; align-items:center; gap:4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <span id="sort-remaining-icon" style="font-size:0.75rem; color:#777;">&#9650;</span>
+                <span id="sort-remaining-text">น้อยไปมาก</span>
+            </button>
         </div>
         <div class="page-body">
             <div id="remaining-grid" class="ing-grid"></div>
@@ -160,6 +203,7 @@
             <input type="hidden" id="edit-si-item">
             <input type="hidden" id="edit-si-original-item">
             <input type="hidden" id="edit-si-unit">
+            <input type="hidden" id="edit-si-datekey">
 
             <div class="form-group" style="margin-bottom: 16px; position: relative;">
                 <label style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">วัตถุดิบ</label>
@@ -177,9 +221,15 @@
             <div class="form-group" style="margin-bottom: 24px;">
                 <label id="edit-si-unit-label"
                     style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">-</label>
-                <input type="number" id="edit-si-qty" class="form-input"
-                    style="width: 100%; padding: 12px; border: 1px solid #777; border-radius: 4px; font-size: 1rem; box-sizing: border-box;"
-                    min="1">
+                <div style="display:flex; align-items:center;">
+                    <button type="button" onclick="adjustQty('edit-si-qty', -1)"
+                        style="flex:0 0 50px; height:46px; border:1px solid #777; border-right:none; border-radius:8px 0 0 8px; background:#f5f5f5; font-size:1.5rem; color:#555; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
+                    <input type="number" id="edit-si-qty" class="form-input"
+                        style="flex:1; height:46px; border: 1px solid #777; border-radius: 0; font-size: 1.1rem; text-align:center; box-sizing: border-box; -moz-appearance:textfield;"
+                        min="1">
+                    <button type="button" onclick="adjustQty('edit-si-qty', 1)"
+                        style="flex:0 0 50px; height:46px; border:1px solid #777; border-left:none; border-radius:0 8px 8px 0; background:#f5f5f5; font-size:1.5rem; color:#555; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+                </div>
             </div>
 
 

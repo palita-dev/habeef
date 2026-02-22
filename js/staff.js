@@ -88,13 +88,13 @@ function renderOrderList() {
             html += '</div>';
             html += '<label class="ol-check">';
             html += '<input type="checkbox" class="list-check-' + order.orderId + '" onchange="validateListServeBtn(\'' + order.orderId + '\', this)">';
-            html += '<span>ทำแล้ว</span>';
             html += '</label>';
             html += '</div>';
         });
 
-        html += '<div class="ol-actions">';
-        html += '<button class="btn-serve" id="btn-serve-' + order.orderId + '" onclick="serveOrder(\'' + order.orderId + '\')" style="opacity:0.5; filter:grayscale(1);" disabled>เสิร์ฟ ✓</button>';
+        html += '<div class="ol-actions" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">';
+        html += '<button class="btn-cancel-list" id="btn-cancel-' + order.orderId + '" onclick="cancelOrderItems(\'' + order.orderId + '\')" style="flex:0.4; padding:8px; font-size:0.85rem; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);" disabled>ยกเลิกออเดอร์</button>';
+        html += '<button class="btn-serve" id="btn-serve-' + order.orderId + '" onclick="serveOrder(\'' + order.orderId + '\')" style="flex:1; opacity:0.5; filter:grayscale(1);" disabled>เสิร์ฟ ✓</button>';
         html += '</div>';
         html += '</div>';
     });
@@ -108,17 +108,26 @@ function validateListServeBtn(orderId, checkbox) {
     }
 
     var btn = document.getElementById('btn-serve-' + orderId);
+    var btnCancel = document.getElementById('btn-cancel-' + orderId);
     if (!btn) return;
 
     var checkboxes = document.querySelectorAll('.list-check-' + orderId);
     if (checkboxes.length === 0) return;
 
     var allChecked = true;
+    var hasChecked = false;
     for (var i = 0; i < checkboxes.length; i++) {
         if (!checkboxes[i].checked) {
             allChecked = false;
-            break;
+        } else {
+            hasChecked = true;
         }
+    }
+
+    if (btnCancel) {
+        btnCancel.disabled = !hasChecked;
+        btnCancel.style.opacity = hasChecked ? '1' : '0.5';
+        btnCancel.style.filter = hasChecked ? 'grayscale(0)' : 'grayscale(1)';
     }
 
     btn.disabled = !allChecked;
@@ -128,6 +137,30 @@ function validateListServeBtn(orderId, checkbox) {
     } else {
         btn.style.opacity = '0.5';
         btn.style.filter = 'grayscale(1)';
+    }
+}
+
+function cancelOrderItems(orderId) {
+    if (!confirm('ยืนยันยกเลิกรายการที่เลือก?')) return;
+    var checkboxes = document.querySelectorAll('.list-check-' + orderId);
+    var orders = getOrders();
+    var idx = orders.findIndex(function (o) { return o.orderId === orderId; });
+    if (idx !== -1) {
+        var order = orders[idx];
+        var remainingItems = [];
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (!checkboxes[i].checked) {
+                remainingItems.push(order.items[i]);
+            }
+        }
+        order.items = remainingItems;
+        if (order.items.length === 0) {
+            order.status = 'cancelled';
+        }
+        // recalculate price
+        order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
+        saveOrders(orders);
+        renderOrderList();
     }
 }
 
@@ -239,7 +272,7 @@ function openTableDetail(tableId) {
             html += '<div style="font-size:0.72rem;color:#aaa;padding:6px 0 4px;">ออเดอร์ ' + (orderIdx + 1) + ' · ' + dateStr + ' เวลา ' + timeStr + (isServed ? ' ✅' : '') + '</div>';
         }
 
-        order.items.forEach(function (item) {
+        order.items.forEach(function (item, itemIdx) {
             var emoji = MENU_EMOJIS[item.menuId] || '🍜';
             for (var q = 0; q < item.qty; q++) {
                 html += '<div class="ol-item" style="border-radius:12px;border:1px solid #eee;margin-bottom:8px;">';
@@ -250,8 +283,7 @@ function openTableDetail(tableId) {
                 html += '<div class="ol-detail">' + item.details.join('<br>') + '</div>';
                 html += '</div>';
                 html += '<label class="ol-check">';
-                html += '<input type="checkbox" class="modal-item-checkbox"' + (isServed ? ' checked disabled' : '') + ' onchange="validateServeBtn()">';
-                html += '<span>ทำแล้ว</span>';
+                html += '<input type="checkbox" class="modal-item-checkbox" data-orderid="' + order.orderId + '" data-itemidx="' + itemIdx + '"' + (isServed ? ' checked disabled' : '') + ' onchange="validateServeBtn()">';
                 html += '</label>';
                 html += '</div>';
                 itemCounter++;
@@ -266,20 +298,34 @@ function openTableDetail(tableId) {
 
 function validateServeBtn() {
     var btnServeAll = document.getElementById('btn-serve-all');
+    var btnCancelOrders = document.getElementById('btn-cancel-orders');
     if (!btnServeAll) return;
 
     var checkboxes = document.querySelectorAll('.modal-item-checkbox:not(:disabled)');
     if (checkboxes.length === 0) {
         btnServeAll.disabled = false; // All served or empty
+        if (btnCancelOrders) {
+            btnCancelOrders.disabled = true;
+            btnCancelOrders.style.opacity = '0.5';
+            btnCancelOrders.style.filter = 'grayscale(1)';
+        }
         return;
     }
 
     var allChecked = true;
+    var hasChecked = false;
     for (var i = 0; i < checkboxes.length; i++) {
         if (!checkboxes[i].checked) {
             allChecked = false;
-            break;
+        } else {
+            hasChecked = true;
         }
+    }
+
+    if (btnCancelOrders) {
+        btnCancelOrders.disabled = !hasChecked;
+        btnCancelOrders.style.opacity = hasChecked ? '1' : '0.5';
+        btnCancelOrders.style.filter = hasChecked ? 'grayscale(0)' : 'grayscale(1)';
     }
 
     btnServeAll.disabled = !allChecked;
@@ -290,6 +336,45 @@ function validateServeBtn() {
         btnServeAll.style.opacity = '0.5';
         btnServeAll.style.filter = 'grayscale(1)';
     }
+}
+
+function cancelSelectedModalOrders() {
+    if (!confirm('ยืนยันยกเลิกรายการที่เลือก?')) return;
+    var checkboxes = document.querySelectorAll('.modal-item-checkbox:not(:disabled)');
+    var orders = getOrders();
+    var toReduce = {}; // { orderId: { itemIdx: countToCancel } }
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+            var oId = checkboxes[i].getAttribute('data-orderid');
+            var iIdx = parseInt(checkboxes[i].getAttribute('data-itemidx'));
+            if (!toReduce[oId]) toReduce[oId] = {};
+            if (!toReduce[oId][iIdx]) toReduce[oId][iIdx] = 0;
+            toReduce[oId][iIdx]++;
+        }
+    }
+
+    Object.keys(toReduce).forEach(function (oId) {
+        var idx = orders.findIndex(function (o) { return o.orderId === oId; });
+        if (idx !== -1) {
+            var order = orders[idx];
+            Object.keys(toReduce[oId]).forEach(function (iIdxStr) {
+                var iIdx = parseInt(iIdxStr);
+                order.items[iIdx].qty -= toReduce[oId][iIdxStr];
+                if (order.items[iIdx].qty < 0) order.items[iIdx].qty = 0;
+            });
+            // filter out items with qty 0
+            order.items = order.items.filter(function (it) { return it.qty > 0; });
+            if (order.items.length === 0) {
+                order.status = 'cancelled';
+            }
+            order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
+        }
+    });
+
+    saveOrders(orders);
+    openTableDetail(currentDetailTable); // Re-render modal
+    renderOrderList(); // Update background list
 }
 
 function closeModal() {

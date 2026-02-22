@@ -15,8 +15,8 @@ var ING_EMOJIS = {
 
 var ING_UNITS = {
     'เส้นเล็ก': 'ถุง', 'เส้นใหญ่': 'ถุง', 'เส้นหมี่ขาว': 'ถุง', 'เส้นหมี่หยก': 'ถุง', 'เส้นหมี่เหลือง': 'ถุง',
-    'ผักบุ้ง': 'กก.', 'ถั่วงอก': 'กก.', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กก.', 'น่องไก่': 'กก.',
-    'ไข่': 'แผง', 'กุ้ง': 'กก.', 'หมึก': 'กก.'
+    'ผักบุ้ง': 'กิโลกรัม', 'ถั่วงอก': 'กิโลกรัม', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กิโลกรัม', 'น่องไก่': 'กิโลกรัม',
+    'ไข่': 'แผง', 'กุ้ง': 'กิโลกรัม', 'หมึก': 'กิโลกรัม'
 };
 
 // ===== INIT =====
@@ -24,6 +24,27 @@ document.addEventListener('DOMContentLoaded', function () {
     currentUser = requireAuth(['owner']);
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
+
+    // Migrate old units 'กก.' to 'กิโลกรัม'
+    var data = getStockIn();
+    var migrated = false;
+    for (var dateKey in data) {
+        for (var itemName in data[dateKey]) {
+            if (data[dateKey][itemName].unit === 'กก.') {
+                data[dateKey][itemName].unit = 'กิโลกรัม';
+                migrated = true;
+            }
+            if (data[dateKey][itemName].entries) {
+                data[dateKey][itemName].entries.forEach(function (entry) {
+                    if (entry.unit === 'กก.') {
+                        entry.unit = 'กิโลกรัม';
+                        migrated = true;
+                    }
+                });
+            }
+        }
+    }
+    if (migrated) saveStockIn(data);
 
     // Populate dropdown
     var sel = document.getElementById('si-item');
@@ -64,13 +85,8 @@ function handleItemChange() {
 
     if (item && ING_UNITS[item]) {
         var unit = ING_UNITS[item];
-        var displayUnit = unit;
-        if (unit === 'กก.') displayUnit = 'กิโลกรัม';
-        if (unit === 'ถุง') displayUnit = 'ถุง';
-        if (unit === 'แผง') displayUnit = 'แผง';
-
         unitInput.value = unit;
-        unitLabel.textContent = displayUnit;
+        unitLabel.textContent = unit;
     } else {
         unitInput.value = '';
         unitLabel.textContent = 'จำนวน';
@@ -176,56 +192,85 @@ function addStockIn() {
     renderStockInToday();
 }
 
-function renderStockInToday() {
-    var dateKey = getDateKey(new Date());
-    var data = getStockIn();
-    var today = data[dateKey] || {};
-    var container = document.getElementById('stockin-list-container');
+function adjustQty(inputId, delta) {
+    var el = document.getElementById(inputId);
+    var current = parseInt(el.value, 10);
+    if (isNaN(current)) current = 0;
+    var newVal = current + delta;
+    if (newVal < 1) newVal = 1; // Minimum quantity is 1
+    el.value = newVal;
+}
 
-    // สร้างลิสต์ของลอคทั้งหมดของวันนี้
+window.historyFilterMode = 'today'; // 'today' or 'past'
+
+function setHistoryFilter(mode) {
+    window.historyFilterMode = mode;
+    document.getElementById('btn-history-today').classList.toggle('active', mode === 'today');
+    document.getElementById('btn-history-past').classList.toggle('active', mode === 'past');
+    _renderStockInList('full-stockin-history-container', true);
+}
+
+function renderStockInToday() {
+    _renderStockInList('stockin-list-container', false);
+}
+
+function openStockInHistoryPage() {
+    setHistoryFilter('today'); // default to today when opening
+    // showTab will automatically hide other pages and un-highlight nav if btn is omitted
+    showTab('page-stockin-history');
+}
+
+function _renderStockInList(containerId, isFull) {
+    var data = getStockIn();
+    var container = document.getElementById(containerId);
+
+    // สร้างลิสต์ของลอคทั้งหมด
     var allEntries = [];
     var needsSave = false;
 
-    Object.keys(today).forEach(function (itemName) {
-        var itemData = today[itemName];
+    Object.keys(data).forEach(function (dKey) {
+        var dayData = data[dKey];
+        Object.keys(dayData).forEach(function (itemName) {
+            var itemData = dayData[itemName];
 
-        // Backward compatibility for old data that doesn't have 'entries' or is just a primitive
-        if (typeof itemData === 'number' || !itemData || !itemData.entries) {
-            // Use 8:00 AM of today as a fallback time for old data to put them at the bottom
-            var oldTime = new Date();
-            oldTime.setHours(8, 0, 0, 0);
+            // Backward compatibility
+            if (typeof itemData === 'number' || !itemData || !itemData.entries) {
+                var oldTime = new Date(dKey);
+                if (isNaN(oldTime.getTime())) oldTime = new Date();
+                oldTime.setHours(8, 0, 0, 0);
 
-            var qtyVal = 0;
-            var unitVal = ING_UNITS[itemName] || 'หน่วย';
+                var qtyVal = 0;
+                var unitVal = ING_UNITS[itemName] || 'หน่วย';
 
-            if (typeof itemData === 'number') {
-                qtyVal = itemData;
-            } else if (itemData && typeof itemData.qty === 'number') {
-                qtyVal = itemData.qty;
-                if (itemData.unit) unitVal = itemData.unit;
-            }
+                if (typeof itemData === 'number') {
+                    qtyVal = itemData;
+                } else if (itemData && typeof itemData.qty === 'number') {
+                    qtyVal = itemData.qty;
+                    if (itemData.unit) unitVal = itemData.unit;
+                }
 
-            // Create a brand new object to replace the old primitive/incomplete data
-            today[itemName] = {
-                qty: qtyVal,
-                unit: unitVal,
-                entries: [{
+                dayData[itemName] = {
                     qty: qtyVal,
                     unit: unitVal,
-                    time: oldTime.toISOString()
-                }]
-            };
-            itemData = today[itemName];
-            needsSave = true;
-        }
+                    entries: [{
+                        qty: qtyVal,
+                        unit: unitVal,
+                        time: oldTime.toISOString()
+                    }]
+                };
+                itemData = dayData[itemName];
+                needsSave = true;
+            }
 
-        itemData.entries.forEach(function (entry, index) {
-            allEntries.push({
-                name: itemName,
-                qty: entry.qty,
-                unit: entry.unit,
-                time: entry.time,
-                index: index // keep original index within item's array
+            itemData.entries.forEach(function (entry, index) {
+                allEntries.push({
+                    dateKey: dKey,
+                    name: itemName,
+                    qty: entry.qty,
+                    unit: entry.unit,
+                    time: entry.time,
+                    index: index // keep original index within item's array
+                });
             });
         });
     });
@@ -235,7 +280,7 @@ function renderStockInToday() {
     }
 
     if (allEntries.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:0.82rem;">ยังไม่มีรายการบันทึกวันนี้</div>';
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;font-size:0.9rem;">ยังไม่มีรายการบันทึก</div>';
         return;
     }
 
@@ -245,48 +290,105 @@ function renderStockInToday() {
     });
 
     var html = '';
+    var displayEntries = allEntries;
 
-    // 1. ส่วนล่าสุด (Latest) - อันดับแรกสุดในอาเรย์
-    var latest = allEntries[0];
-    var latestTimeStr = new Date(latest.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    var dateStrShow = new Date().toLocaleDateString('th-TH');
+    // Default to 'today' date string for comparisons
+    var todayDateStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
 
-    html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px;">';
-    html += '<span style="color:#D32F2F; font-weight:600; font-size:1rem;">ล่าสุด</span>';
-    html += '<span style="color:#888; font-size:0.9rem;">' + dateStrShow + '</span>';
-    html += '</div>';
+    if (isFull) {
+        // Apply filter for the full history page
+        displayEntries = allEntries.filter(function (entry, index) {
+            if (index === 0) return true; // Keep the latest for correct indexing, but we'll skip it in the loop anyway
+            var entryDateStr = new Date(entry.time).toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            if (window.historyFilterMode === 'today') {
+                return entryDateStr === todayDateStr;
+            } else {
+                return entryDateStr !== todayDateStr;
+            }
+        });
 
-    html += '<div class="user-card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 4px;">';
-    html += '<div class="user-info" style="display:flex; align-items:center; gap:12px;">';
-    html += '<div style="font-size: 2rem; background: #f5f5f5; border-radius: 8px; width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;">' + ING_EMOJIS[latest.name] + '</div>';
-    html += '<div style="flex:1;">';
-    html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">';
-    html += '<span style="font-weight:700; font-size:1.05rem;">' + latest.name + '</span>';
-    html += '<span style="font-size:0.8rem; color:#888;">เวลา ' + latestTimeStr + ' น.</span>';
-    html += '</div>';
-    html += '<div style="color:#555; font-size:0.95rem;">' + latest.qty + ' ' + latest.unit + '</div>';
-    html += '</div>';
+        // If the latest item (index 0 of allEntries) was kept but we are in 'past' mode, 
+        // we might not want to show anything if nothing else exists. The loop startIndex = 1 handles skipping the actual latest item.
+    }
 
-    // ปุ่มแก้ไข (เฉพาะอันล่าสุด)
-    html += '<button onclick="editStockIn(\'' + latest.name + '\', ' + latest.index + ')" style="background: #FFD54F; width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; margin-left:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">✏️</button>';
-    html += '</div>';
-    html += '</div>';
+    // If not full history, show "Latest" at the top
+    if (!isFull) {
+        var latest = allEntries[0];
+        var latestTime = new Date(latest.time);
+        var latestTimeStr = latestTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        var latestDateStr = latestTime.toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
 
-    html += '<div style="text-align:right; color:#D32F2F; font-size:0.75rem; margin-bottom: 24px;">*แก้ไขได้เฉพาะรายการล่าสุด*</div>';
+        html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px;">';
+        html += '<span style="color:#D32F2F; font-weight:600; font-size:1rem;">ล่าสุด</span>';
+        html += '<span style="color:#888; font-size:0.9rem;">' + latestDateStr + '</span>';
+        html += '</div>';
 
-    // 2. ส่วนประวัติ (History) - อันที่เหลือ
-    if (allEntries.length > 1) {
-        html += '<h3 style="font-size:0.95rem; margin-bottom:10px; color:#555; font-weight:500;">ประวัติการบันทึก</h3>';
-        html += '<div style="background:#ECECEC; border-radius: 12px; padding: 16px 12px;">';
-        html += '<div style="text-align:center; color:#777; font-size:0.9rem; margin-bottom: 12px;">' + dateStrShow + '</div>';
+        html += '<div class="user-card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 4px;">';
+        html += '<div class="user-info" style="display:flex; align-items:center; gap:12px;">';
+        html += '<div style="font-size: 2rem; background: #f5f5f5; border-radius: 8px; width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;">' + (ING_EMOJIS[latest.name] || '📦') + '</div>';
+        html += '<div style="flex:1;">';
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">';
+        html += '<span style="font-weight:700; font-size:1.05rem;">' + latest.name + '</span>';
+        html += '<span style="font-size:0.8rem; color:#888;">เวลา ' + latestTimeStr + ' น.</span>';
+        html += '</div>';
+        html += '<div style="color:#555; font-size:0.95rem;">' + latest.qty + ' ' + latest.unit + '</div>';
+        html += '</div>';
 
-        for (var i = 1; i < allEntries.length; i++) {
-            var entry = allEntries[i];
-            var timeStr = new Date(entry.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        // ปุ่มแก้ไข (เฉพาะอันล่าสุดในหน้าแรกหลัก)
+        html += '<button onclick="editStockIn(\'' + latest.name + '\', ' + latest.index + ', \'' + latest.dateKey + '\')" style="background: #FFD54F; width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; margin-left:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">✏️</button>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<div style="text-align:right; color:#D32F2F; font-size:0.75rem; margin-bottom: 24px;">*แก้ไขได้เฉพาะรายการล่าสุด*</div>';
+    }
+
+    // 2. ส่วนประวัติ (History)
+    var startIndex = 1; // Always exclude the 0th item (of allEntries, which corresponds to the very latest overall) from history list
+
+    // We loop over displayEntries but need to carefully skip the item that is functionally the 'latest' overall.
+    // If we're filtering, displayEntries[0] might be the latest, or it might be something else if 'past'. 
+    // Actually, it's safer to just skip the item if it === allEntries[0].
+
+    var historyItemsCount = 0;
+
+    if (displayEntries.length > 0) {
+        if (!isFull) {
+            if (allEntries.length > 1) {
+                html += '<h3 style="font-size:0.95rem; margin-bottom:10px; color:#555; font-weight:500;">ประวัติการบันทึก</h3>';
+                html += '<div style="background:#ECECEC; border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
+            }
+        } else {
+            html += '<div style="border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
+        }
+
+        var maxDisplay = isFull ? displayEntries.length : 4; // 1 latest + 3 older = 4 items used
+        var lastDateStr = '';
+
+        for (var i = 0; i < Math.min(displayEntries.length, maxDisplay); i++) {
+            var entry = displayEntries[i];
+
+            // Skip the absolute latest item globally (which is shown in the top box on main page)
+            if (entry === allEntries[0]) {
+                if (!isFull) {
+                    maxDisplay++; // compensate so we still show 3 older items
+                }
+                continue;
+            }
+
+            historyItemsCount++;
+
+            var entryTime = new Date(entry.time);
+            var timeStr = entryTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            var dateStr = entryTime.toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
+
+            if (dateStr !== lastDateStr) {
+                html += '<div style="text-align:center; color:#777; font-size:0.9rem; margin-bottom: 12px; margin-top: ' + (historyItemsCount === 1 ? '0' : '16px') + ';">' + dateStr + '</div>';
+                lastDateStr = dateStr;
+            }
 
             html += '<div class="user-card" style="box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: none; border-radius: 10px; padding: 10px; margin-bottom: 10px; background: #fff;">';
             html += '<div class="user-info" style="display:flex; align-items:center; gap:12px;">';
-            html += '<div style="font-size: 1.8rem; background: #f9f9f9; border-radius: 8px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center;">' + ING_EMOJIS[entry.name] + '</div>';
+            html += '<div style="font-size: 1.8rem; background: #f9f9f9; border-radius: 8px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center;">' + (ING_EMOJIS[entry.name] || '📦') + '</div>';
             html += '<div style="flex:1;">';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">';
             html += '<span style="font-weight:700; font-size:1rem;">' + entry.name + '</span>';
@@ -295,14 +397,26 @@ function renderStockInToday() {
             html += '<div style="color:#555; font-size:0.9rem;">' + entry.qty + ' ' + entry.unit + '</div>';
             html += '</div></div></div>';
         }
-        html += '</div>';
+
+        if (historyItemsCount === 0 && isFull) {
+            html += '<div style="text-align:center;padding:40px;color:#999;font-size:0.9rem;">ไม่มีรายการประวัติในหมวดหมู่นี้</div>';
+        }
+
+        // Add View More button
+        if (!isFull && allEntries.length > 4) {
+            html += '<button onclick="openStockInHistoryPage()" style="width:100%; padding:10px; border-radius:20px; border:none; background:#DFDFDF; color:#333; font-size:0.95rem; font-family:\'Prompt\', sans-serif; cursor:pointer; margin-top:8px;">ดูเพิ่มเติม</button>';
+        }
+
+        if (historyItemsCount > 0 || isFull) {
+            html += '</div>';
+        }
     }
 
-    container.innerHTML = html;
+    if (container) container.innerHTML = html;
 }
 
-function editStockIn(itemName, entryIndex) {
-    var dateKey = getDateKey(new Date());
+function editStockIn(itemName, entryIndex, dKey) {
+    var dateKey = dKey || getDateKey(new Date());
     var data = getStockIn();
     var dayData = data[dateKey];
     if (!dayData || !dayData[itemName]) {
@@ -312,13 +426,13 @@ function editStockIn(itemName, entryIndex) {
     var itemData = dayData[itemName];
     if (!itemData.entries || !itemData.entries[entryIndex]) {
         showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02');
-        showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e41\u0e00\u0e49\u0e44\u0e02');
         return;
     }
     var entry = itemData.entries[entryIndex];
 
     document.getElementById('edit-si-item').value = itemName;
     document.getElementById('edit-si-original-item').value = itemName;
+    document.getElementById('edit-si-datekey').value = dateKey;
     document.getElementById('edit-si-unit').value = entry.unit || ING_UNITS[itemName] || '\u0e2b\u0e19\u0e48\u0e27\u0e22';
     document.getElementById('edit-si-index').value = entryIndex.toString();
 
@@ -390,7 +504,7 @@ function saveEditStockIn() {
     if (!newItemName) { showToast('กรุณาเลือกวัตถุดิบ'); return; }
     if (!newQty || newQty <= 0) { showToast('จำนวนต้องมากกว่า 0'); return; }
 
-    var dateKey = getDateKey(new Date());
+    var dateKey = document.getElementById('edit-si-datekey').value || getDateKey(new Date());
     var data = getStockIn();
     if (!data[dateKey] || !data[dateKey][origItemName] || !data[dateKey][origItemName].entries) {
         showToast('ไม่พบรายการที่ต้องการแก้ไข'); return;
@@ -484,11 +598,48 @@ function getRemaining() {
     return result;
 }
 
+window.remainingSortMode = 'asc'; // 'asc' (น้อยไปมาก), 'desc' (มากไปน้อย)
+
+function toggleRemainingSort() {
+    if (window.remainingSortMode === 'asc') {
+        window.remainingSortMode = 'desc';
+    } else {
+        window.remainingSortMode = 'asc';
+    }
+    renderRemaining();
+}
+
 function renderRemaining() {
     var remaining = getRemaining();
-    var keys = ALL_INGREDIENTS;
+    var keys = ALL_INGREDIENTS.slice(); // copy to mutate
+
+    // Sorting logic
+    if (window.remainingSortMode === 'asc') {
+        keys.sort(function (a, b) {
+            return remaining[a].remaining - remaining[b].remaining;
+        });
+    } else if (window.remainingSortMode === 'desc') {
+        keys.sort(function (a, b) {
+            return remaining[b].remaining - remaining[a].remaining;
+        });
+    }
+
+    // Update button UI
+    var sortIcon = document.getElementById('sort-remaining-icon');
+    var sortText = document.getElementById('sort-remaining-text');
+    if (sortIcon && sortText) {
+        if (window.remainingSortMode === 'asc') {
+            sortIcon.innerText = '▼';
+            sortText.innerText = 'น้อยไปมาก';
+        } else {
+            sortIcon.innerText = '▲';
+            sortText.innerText = 'มากไปน้อย';
+        }
+    }
 
     var container = document.getElementById('remaining-grid');
+    if (!container) return;
+
     container.innerHTML = keys.map(function (name) {
         var d = remaining[name];
         var warning = d.remaining <= 1 ? '<div class="ing-warning">⚠️</div>' : '';
