@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ก๋วยเตี๋ยวฮาบีฟ - สั่งอาหาร</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- ===== หน้าเลือกโต๊ะ (Landing Page) ===== -->
+  <!-- ===== หน้าเลือกโต๊ะ (Landing Page) ===== -->
+  <div id="page-landing" class="page active landing-page-bg">
+    <div class="landing-container">
+
+      <!-- Brand Logo -->
+      <div class="landing-brand">
+        <h1 class="shop-title"
+          style="text-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 1.8rem; margin-bottom: 4px; color: #C62828;">
+          ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+        <p class="shop-subtitle" style="font-size: 1rem; opacity: 0.9; color: #888;">ยินดีต้อนรับ</p>
+      </div>
+
+      <!-- Table Selection Card -->
+      <div class="landing-card">
+        <div class="landing-header">
+          ระบุโต๊ะของท่าน <span style="font-size: 0.8rem; vertical-align: middle;">▲</span>
+        </div>
+        <div class="landing-body">
+          <div class="landing-grid">
+            <button class="landing-btn" onclick="selectLandingTable('1')">1</button>
+            <button class="landing-btn" onclick="selectLandingTable('2')">2</button>
+            <button class="landing-btn" onclick="selectLandingTable('3')">3</button>
+            <button class="landing-btn" onclick="selectLandingTable('4')">4</button>
+            <button class="landing-btn" onclick="selectLandingTable('5')">5</button>
+            <button class="landing-btn" onclick="selectLandingTable('6')">6</button>
+            <button class="landing-btn" onclick="selectLandingTable('7')">7</button>
+            <button class="landing-btn" onclick="selectLandingTable('8')">8</button>
+            <button class="landing-btn" onclick="selectLandingTable('9')">9</button>
+            <button class="landing-btn" onclick="selectLandingTable('10')">10</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Takeaway Button -->
+      <button class="btn-takeaway" onclick="selectLandingTable('กลับบ้าน')">
+        🛍️ สั่งกลับบ้าน
+      </button>
+
+      <div class="landing-footer">
+        เปิดบริการ 10:00 - 20:00 น.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== หน้าเมนูอาหาร (หน้าหลัก) ===== -->
+  <div id="page-menu" class="page">
+    <!-- แถบบนสุด -->
+    <div class="top-bar">
+      <span class="top-bar-text">หน้าสั่ง</span>
+    </div>
+    <!-- ส่วนหัว -->
+    <div class="hero-section">
+      <h1 class="shop-title">ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+      <p class="shop-subtitle">สั่งออเดอร์</p>
+    </div>
+
+    <!-- แถบเหลือง (Menu / Table / Receipt) -->
+    <div class="tab-bar">
+      <div class="tab-label">เลือกเมนู</div>
+
+      <!-- Table Selector (Red Pill) -->
+      <div class="table-selector-wrapper">
+        <select id="table-select" onchange="onTableChange()">
+          <option value="" disabled selected>ระบุโต๊ะของท่าน (1-10)</option>
+          <option value="1">โต๊ะ 1</option>
+          <option value="2">โต๊ะ 2</option>
+          <option value="3">โต๊ะ 3</option>
+          <option value="4">โต๊ะ 4</option>
+          <option value="5">โต๊ะ 5</option>
+          <option value="6">โต๊ะ 6</option>
+          <option value="7">โต๊ะ 7</option>
+          <option value="8">โต๊ะ 8</option>
+          <option value="9">โต๊ะ 9</option>
+          <option value="10">โต๊ะ 10</option>
+          <option value="กลับบ้าน">กลับบ้าน</option>
+        </select>
+        <div class="table-select-icon">▼</div>
+      </div>
+
+      <!-- Receipt Button (Red Circle) -->
+      <button class="btn-receipt-circle" onclick="checkActiveOrder()">
+        🧾
+      </button>
+    </div>
+
+    <!-- รายการเมนู -->
+    <div class="page-body" style="padding-bottom: 80px;">
+      <div id="menu-list" class="menu-list">
+        <!-- JS gen -->
+      </div>
+    </div>
+
+    <!-- ปุ่มตะกร้าด้านล่าง (Yellow Bar) -->
+    <div class="bottom-cart-bar" onclick="goToCart()">
+      <span class="bottom-cart-icon">🛒</span>
+      <span class="bottom-cart-text">ตะกร้ารายการอาหาร</span>
+      <span id="cart-count-badge" class="bottom-cart-badge" style="display:none;">0</span>
+    </div>
+
+    <!-- Red Footer Strip -->
+    <div class="red-footer-strip"></div>
+  </div>
+
+  <!-- ===== หน้าเลือกวัตถุดิบ ===== -->
+  <div id="page-customize" class="page">
+    <div class="top-bar">
+      <button class="btn-back" onclick="goToMenu()">←</button>
+      <span class="top-bar-text" id="customize-header-name">เลือกวัตถุดิบ</span>
+      <span class="top-bar-price" id="customize-header-price"></span>
+    </div>
+    <div class="page-body page-body-with-bottom">
+      <div id="customize-form" class="customize-form"></div>
+    </div>
+    <div class="bottom-actions">
+      <button class="btn btn-cancel" onclick="goToMenu()">ยกเลิก</button>
+      <button class="btn btn-add" onclick="addToCart()">เพิ่มลงตะกร้า</button>
+    </div>
+  </div>
+
+  <!-- ===== หน้าตะกร้า ===== -->
+  <!-- ===== หน้าตะกร้า ===== -->
+  <div id="page-cart" class="page">
+    <!-- Red Hero Header -->
+    <div class="hero-section">
+      <h1 class="shop-title">ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+    </div>
+
+    <!-- Yellow Sub-header -->
+    <div class="section-bar"
+      style="background:#FFE082; justify-content: space-between; padding: 10px 16px; display:flex; align-items:center;">
+      <span style="font-weight:700; color:#333; font-size:1.1rem;">รายการที่สั่งซื้อ</span>
+      <button class="btn-back-circle-red" onclick="goToMenu()">←</button>
+    </div>
+
+    <div class="page-body" style="padding-bottom: 200px; background:#F9F9F9;">
+      <!-- Info Section -->
+      <div class="cart-info-section" style="padding: 10px 4px; margin-bottom:10px;">
+        <div id="cart-table-info" style="font-size:1.1rem; font-weight:700;">โต๊ะ 1</div>
+        <div id="cart-date-info" style="color:#666;">วันที่ --/--/----</div>
+        <div id="cart-time-info" style="color:#666;">เวลา --:--:--</div>
+      </div>
+
+      <!-- Order List Header -->
+      <div style="margin-bottom:10px;">
+        <span class="receipt-label-box" style="font-size:1rem;">รายการสินค้า</span>
+      </div>
+
+      <!-- Cart Table -->
+      <div class="cart-table-wrapper">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th style="border-radius: 8px 0 0 8px; text-align:center;">รายการ</th>
+              <th style="text-align:right;">ราคา</th>
+              <th style="border-radius: 0 8px 8px 0; text-align:center;">จำนวน</th>
+            </tr>
+          </thead>
+          <tbody id="cart-items-body">
+            <!-- JS Rendered -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bottom Summary & Button -->
+    <div class="cart-summary-fixed">
+      <div class="summary-box-white">
+        <span>รวมทั้งหมด</span>
+        <span id="cart-total">0 บาท</span>
+      </div>
+      <button class="btn-green-full" onclick="placeOrder()">สั่งรายการ</button>
+    </div>
+
+    <!-- Red Footer -->
+    <div class="red-footer-strip"></div>
+  </div>
+
+  <!-- ===== หน้าใบเสร็จ ===== -->
+  <div id="page-receipt" class="page">
+    <!-- Header Fixed for Receipt -->
+    <div class="customer-header-fixed">
+      <div class="hero-section">
+        <h1 class="shop-title">ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+        <p class="shop-subtitle">ใบเสร็จรายการที่สั่งซื้อ</p>
+      </div>
+    </div>
+
+    <!-- Body Adjust -->
+    <div class="page-body menu-body-adjust">
+      <div class="receipt-card">
+        <div class="receipt-header-info">
+          <div id="receipt-table" style="font-size:1.1rem;font-weight:700;"></div>
+          <div id="receipt-date"></div>
+          <div id="receipt-guest" style="font-size:0.8rem;color:#888;"></div>
+        </div>
+
+        <div class="receipt-label-box">รายการสินค้า</div>
+
+        <div class="receipt-items-table" id="receipt-items"></div>
+
+        <div class="receipt-total-box">
+          <span>รวมทั้งหมด</span>
+          <span id="receipt-total-price">0 บาท</span>
+        </div>
+      </div>
+
+      <!-- Back Button Circle (Red) -->
+      <button class="btn-back-floating" onclick="goToMenu()">
+        ←
+      </button>
+    </div>
+  </div>
+
+  <div id="alert-modal" class="alert-modal">
+    <div class="alert-modal-content">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-title">กรุณาเลือกหมายเลขโต๊ะ</div>
+      <div class="alert-message">คุณยังไม่ได้เลือกหมายเลขโต๊ะ<br>กรุณาเลือกโต๊ะก่อนสั่งอาหาร</div>
+      <button class="alert-btn" onclick="closeAlert()">เข้าใจแล้ว</button>
+    </div>
+  </div>
+
+  <!-- Confirm Order Modal -->
+  <div id="confirm-order-modal" class="alert-modal">
+    <div class="alert-modal-content" style="padding:20px; text-align:center;">
+      <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:5px;">ออเดอร์</h3>
+      <div id="confirm-order-table" style="font-size:1rem; color:#666; margin-bottom:15px;">โต๊ะ 1</div>
+
+      <div id="confirm-order-details"
+        style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:15px; text-align:left; background:#fafafa; font-size:0.9rem;">
+        <!-- JS Rendered Details -->
+      </div>
+
+      <div style="font-size:0.95rem; font-weight:600; color:#333; margin-bottom:15px;">ยืนยันการสั่งออเดอร์หรือไม่?
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button onclick="closeConfirmOrder()" class="btn" style="flex:1; background:#888; color:#fff;">ยกเลิก</button>
+        <button onclick="executePlaceOrder()" class="btn"
+          style="flex:1; background:#4CAF50; color:#fff;">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Item Modal -->
+  <div id="confirm-delete-modal" class="alert-modal">
+    <div class="alert-modal-content" style="padding:24px 20px; text-align:center;">
+      <h3 style="font-size:1.1rem; font-weight:700; color:#333; margin-bottom:15px;">ยืนยันการลบรายการสินค้า</h3>
+      <div style="font-size:0.95rem; color:#666; margin-bottom:20px;">ยืนยันการลบรายการสินค้าหรือไม่?</div>
+
+      <div style="display:flex; gap:10px;">
+        <button onclick="closeConfirmDelete()" class="btn" style="flex:1; background:#888; color:#fff;">ยกเลิก</button>
+        <button onclick="executeDeleteItem()" class="btn"
+          style="flex:1; background:#4CAF50; color:#fff;">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+</body>
+
+</html>

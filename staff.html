@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>พนักงาน - ก๋วยเตี๋ยวฮาบีฟ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/backoffice.css">
+</head>
+
+<body>
+    <!-- ===== หน้าออเดอร์ ===== -->
+    <div id="page-orders" class="page active">
+        <div class="top-bar">
+            <span class="top-bar-title">หน้าออเดอร์</span>
+        </div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="view-toggle-bar">
+            <button id="btn-grid-mode" class="view-toggle-btn active" onclick="setViewMode('grid')">🪑 โต๊ะ</button>
+            <button id="btn-list-mode" class="view-toggle-btn" onclick="setViewMode('list')">📋 ออเดอร์</button>
+        </div>
+
+        <div class="page-body" style="padding: 0 0 150px 0;">
+            <!-- Table Grid -->
+            <div id="table-grid" class="table-grid" style="display:grid;"></div>
+
+            <!-- Order List (hidden by default) -->
+            <div id="order-list-view" style="display:none; padding: 12px 14px;"></div>
+        </div>
+
+        <!-- Command Bar Fixed Bottom -->
+        <div class="command-bar">
+            <input type="text" id="cmd-input" placeholder="โต๊ะ 0-10 หรือ /bill 1" onkeydown="handleCmd(event)">
+            <button class="btn btn-dark" onclick="execCmd()">ส่ง</button>
+        </div>
+    </div>
+
+    <!-- ===== หน้าชำระเงิน ===== -->
+    <div id="page-payment" class="page">
+        <div class="top-bar"><span class="top-bar-title">ชำระเงิน</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+        </div>
+        <div class="section-bar"><span>ชำระเงิน</span></div>
+        <div class="page-body" id="payment-container">
+            <div id="payment-empty" style="text-align:center;padding:40px;color:#999;">ไม่มีออเดอร์รอชำระ</div>
+        </div>
+    </div>
+
+    <!-- ===== หน้าประวัติ ===== -->
+    <div id="page-history" class="page">
+        <div class="top-bar"><span class="top-bar-title">ประวัติ</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+        </div>
+        <div class="section-bar"><span>ประวัติออเดอร์</span><span id="history-date-label"></span></div>
+        <div class="page-body">
+            <div id="calendar-container"></div>
+            <div id="history-container"></div>
+        </div>
+    </div>
+
+    <!-- ===== หน้าบัญชีผู้ใช้ ===== -->
+    <div id="page-account" class="page">
+        <div class="top-bar"><span class="top-bar-title">บัญชีผู้ใช้</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+        </div>
+        <div class="page-body">
+            <div class="account-card">
+                <div class="account-avatar">👨‍🍳</div>
+                <div class="account-name" id="acc-name">-</div>
+                <div class="account-role" id="acc-role">พนักงาน</div>
+                <button class="btn btn-red btn-full" onclick="logout()" style="margin-top:16px;">ออกจากระบบ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showTab('page-orders',this)">
+            <span class="nav-icon">📋</span><span class="nav-label">ออเดอร์</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-payment',this)">
+            <span class="nav-icon">💰</span><span class="nav-label">ชำระเงิน</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-history',this)">
+            <span class="nav-icon">🕐</span><span class="nav-label">ประวัติ</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-account',this)">
+            <span class="nav-icon">👤</span><span class="nav-label">บัญชีผู้ใช้</span>
+        </button>
+    </div>
+
+    <!-- Table Detail Modal -->
+    <div id="table-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">โต๊ะ 1</h3>
+                <button class="btn btn-sm btn-outline" style="border-color:#fff; color:#fff;"
+                    onclick="closeModal()">X</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Orders go here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-serve btn-full" id="btn-serve-all" onclick="serveAllOrders()">เสิร์ฟ ✓</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/staff.js"></script>
+</body>
+
+</html>

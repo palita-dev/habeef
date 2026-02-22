@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ผู้ดูแลระบบ - ก๋วยเตี๋ยวฮาบีฟ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/backoffice.css">
+</head>
+
+<body>
+    <!-- ===== หน้าจัดการสิทธิ์ผู้ใช้ ===== -->
+    <div id="page-users" class="page active">
+        <div class="top-bar"><span class="top-bar-title">จัดการสิทธิ์ผู้ใช้</span></div>
+        <div class="black-header">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>ดูแลและจัดการระบบ</p>
+        </div>
+        <div class="section-bar">
+            <span>รายชื่อผู้ใช้</span>
+            <button class="btn btn-sm btn-dark" onclick="showCreateUser()">+ สร้างบัญชี</button>
+        </div>
+        <div class="page-body" id="users-list-container"></div>
+    </div>
+
+    <!-- ===== หน้าสร้าง/แก้ไขบัญชี ===== -->
+    <div id="page-user-form" class="page">
+        <div class="top-bar"><span class="top-bar-title" id="form-title">สร้างบัญชี</span></div>
+        <div class="black-header">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>ดูแลและจัดการระบบ</p>
+        </div>
+        <div class="section-bar">
+            <span id="form-subtitle">สร้างบัญชีผู้ใช้ใหม่</span>
+            <button class="btn-back-circle" onclick="showTab('page-users')">←</button>
+        </div>
+        <div class="page-body">
+            <div class="form-card">
+                <div class="form-group">
+                    <select id="f-role" class="form-select">
+                        <option value="">เลือกสิทธิ์ผู้ใช้</option>
+                        <option value="staff">พนักงาน</option>
+                        <option value="owner">เจ้าของร้าน</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ชื่อผู้ใช้</label>
+                    <input type="text" id="f-username" class="form-input" placeholder="ชื่อผู้ใช้">
+                </div>
+                <div class="form-group">
+                    <label>รหัสผ่าน</label>
+                    <input type="text" id="f-password" class="form-input" placeholder="รหัสผ่าน">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-dark" onclick="showTab('page-users')">ยกเลิก</button>
+                    <button class="btn btn-yellow" id="form-submit-btn" onclick="submitUserForm()">สร้างบัญชี</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== หน้าคิวอาร์โค้ด ===== -->
+    <div id="page-qr" class="page">
+        <div class="top-bar"><span class="top-bar-title">คิวอาร์โค้ด</span></div>
+        <div class="black-header">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>ดูแลและจัดการระบบ</p>
+        </div>
+        <div class="page-body">
+            <div class="qr-section">
+                <h3>🍜 QR Code สำหรับลูกค้าสั่งอาหาร</h3>
+                <div style="margin-top:15px; margin-bottom:15px;">
+                    <select id="qr-table-select" onchange="generateTableQR()"
+                        style="width:100%; padding:10px; border-radius:6px; font-family:'Prompt',sans-serif; text-align:center; font-size:1rem; border:1px solid #ddd;">
+                        <option value="1">โต๊ะ 1</option>
+                        <option value="2">โต๊ะ 2</option>
+                        <option value="3">โต๊ะ 3</option>
+                        <option value="4">โต๊ะ 4</option>
+                        <option value="5">โต๊ะ 5</option>
+                        <option value="6">โต๊ะ 6</option>
+                        <option value="7">โต๊ะ 7</option>
+                        <option value="8">โต๊ะ 8</option>
+                        <option value="9">โต๊ะ 9</option>
+                        <option value="10">โต๊ะ 10</option>
+                        <option value="takeaway">กลับบ้าน</option>
+                    </select>
+                </div>
+                <div class="qr-box">
+                    <img id="qr-customer" alt="QR ลูกค้า"
+                        style="width:200px; height:200px; margin:0 auto; display:block;">
+                    <a class="qr-label" id="qr-customer-url" href="#" target="_blank"
+                        style="display:block; margin-top:10px; word-break:break-all; font-size:0.8rem;"></a>
+                    <button class="btn btn-red btn-full" onclick="printTableQR()" style="margin-top:15px;">พิมพ์ QR
+                        Code</button>
+                </div>
+            </div>
+            <div class="qr-section">
+                <h3>👨‍🍳 QR Code สำหรับพนักงานเข้าระบบ</h3>
+                <div class="qr-box">
+                    <img id="qr-staff" alt="QR พนักงาน">
+                    <div class="qr-label" id="qr-staff-url"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== หน้าบัญชีผู้ใช้ ===== -->
+    <div id="page-account" class="page">
+        <div class="top-bar"><span class="top-bar-title">บัญชีผู้ใช้</span></div>
+        <div class="black-header">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>ดูแลและจัดการระบบ</p>
+        </div>
+        <div class="page-body">
+            <div class="account-card">
+                <div class="account-avatar">🛡️</div>
+                <div class="account-name" id="acc-name">-</div>
+                <div class="account-role">ผู้ดูแลระบบ</div>
+                <button class="btn btn-red btn-full" onclick="logout()" style="margin-top:16px;">ออกจากระบบ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showTab('page-users',this)">
+            <span class="nav-icon">👥</span><span class="nav-label">จัดการสิทธิ์ผู้ใช้</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-qr',this)">
+            <span class="nav-icon">📱</span><span class="nav-label">คิวอาร์โค้ด</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-account',this)">
+            <span class="nav-icon">👤</span><span class="nav-label">บัญชีผู้ใช้</span>
+        </button>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เจ้าของร้าน - ก๋วยเตี๋ยวฮาบีฟ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/backoffice.css">
+</head>
+
+<body>
+    <!-- ===== หน้าบันทึกเข้า ===== -->
+    <div id="page-stockin" class="page active">
+        <div class="top-bar"><span class="top-bar-title">บันทึกวัตถุดิบเข้า</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>บันทึกวัตถุดิบเข้า</p>
+        </div>
+        <div class="section-bar" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>บันทึกวัตถุดิบเข้าวันนี้</span>
+            <button class="btn btn-red" onclick="showStockInForm()"
+                style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; padding: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">+</button>
+        </div>
+        <div class="page-body">
+            <div id="stockin-list-container">
+                <!-- เนื้อหาประวัติจะถูกสร้างที่นี่จาก JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ADD STOCK IN POPUP ===== -->
+    <div id="stockin-form-container"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+        <div
+            style="background: #fff; border-radius: 16px; width: 100%; max-width: 360px; padding: 28px 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); position: relative; box-sizing: border-box;">
+            <h2 style="text-align: center; margin-bottom: 24px; font-size: 1.25rem; font-weight: 500;">
+                บันทึกวัตถุดิบเข้า</h2>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">วัตถุดิบ</label>
+                <!-- Hidden real value for JS to read -->
+                <input type="hidden" id="si-item">
+                <!-- Custom dropdown trigger -->
+                <div id="si-item-display" onclick="toggleIngDropdown()"
+                    style="width:100%; padding:12px 40px 12px 14px; border:1px solid #777; border-radius:8px; font-size:1rem; background:#fff; cursor:pointer; position:relative; box-sizing:border-box; color:#999; user-select:none;">
+                    เลือกวัตถุดิบ
+                    <span
+                        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:0.85rem;color:#777;">&#9660;</span>
+                </div>
+                <!-- Scrollable list panel, shows 6 items at a time -->
+                <div id="si-item-list"
+                    style="display:none; border:1px solid #ccc; border-radius:8px; overflow-y:auto; max-height:276px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.12); margin-top:4px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 28px;">
+                    <label id="si-unit-label"
+                        style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">จำนวน</label>
+                    <input type="number" id="si-qty" class="form-input"
+                        style="width: 100%; padding: 12px; border: 1px solid #777; border-radius: 8px; font-size: 1rem; box-sizing: border-box;"
+                        min="1">
+                    <input type="hidden" id="si-unit">
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn"
+                        style="flex: 1; background: #7A7A7A; color: white; padding: 14px; border-radius: 20px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer;"
+                        onclick="hideStockInForm()">ยกเลิก</button>
+                    <button class="btn"
+                        style="flex: 1; background: #34C759; color: white; padding: 14px; border-radius: 20px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer;"
+                        onclick="addStockIn()">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== /ADD STOCK IN POPUP ===== -->
+
+    <!-- ===== หน้าวัตถุดิบคงเหลือ ===== -->
+    <div id="page-remaining" class="page">
+        <div class="top-bar"><span class="top-bar-title">หน้าวัตถุดิบคงเหลือ</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>วัตถุดิบคงเหลือ</p>
+        </div>
+        <div class="section-bar">
+            <span>วัตถุดิบคงเหลือ</span>
+        </div>
+        <div class="page-body">
+            <div id="remaining-grid" class="ing-grid"></div>
+        </div>
+    </div>
+
+    <!-- ===== หน้ารายงานสรุป ===== -->
+    <div id="page-report" class="page">
+        <div class="top-bar"><span class="top-bar-title">หน้ารายงานสรุปผล</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>รายงานสรุปผล</p>
+        </div>
+        <div class="section-bar">
+            <span>รายงานสรุปข้อมูลวัตถุดิบ</span>
+            <button class="btn btn-sm btn-yellow" onclick="renderReport()">รายงานสรุป</button>
+        </div>
+        <div class="page-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
+                <span id="report-date" style="font-size:0.78rem;color:#888;"></span>
+            </div>
+            <div id="report-table-container"></div>
+        </div>
+    </div>
+
+    <!-- ===== หน้าบัญชีผู้ใช้ ===== -->
+    <div id="page-account" class="page">
+        <div class="top-bar"><span class="top-bar-title">บัญชีผู้ใช้</span></div>
+        <div class="red-hero">
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>บัญชีผู้ใช้</p>
+        </div>
+        <div class="page-body">
+            <div class="account-card">
+                <div class="account-avatar">👑</div>
+                <div class="account-name" id="acc-name">-</div>
+                <div class="account-role">เจ้าของร้าน</div>
+                <button class="btn btn-red btn-full" onclick="logout()" style="margin-top:16px;">ออกจากระบบ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showTab('page-stockin',this)">
+            <span class="nav-icon">📥</span><span class="nav-label">บันทึกเข้า</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-remaining',this)">
+            <span class="nav-icon">📦</span><span class="nav-label">คงเหลือ</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-report',this)">
+            <span class="nav-icon">📊</span><span class="nav-label">รายงาน</span>
+        </button>
+        <button class="nav-item" onclick="showTab('page-account',this)">
+            <span class="nav-icon">👤</span><span class="nav-label">บัญชีผู้ใช้</span>
+        </button>
+    </div>
+
+    <!-- Edit StockIn Modal -->
+    <div id="edit-stockin-popup"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+        <div
+            style="background: #fff; border-radius: 12px; width: 100%; max-width: 320px; padding: 24px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative; box-sizing: border-box;">
+            <div style="text-align: center; margin-bottom: 20px; font-size: 1.15rem; font-weight: 500;">
+                บันทึกวัตถุดิบเข้า
+                <span
+                    style="position: absolute; right: 20px; top: 24px; color: #D32F2F; font-size: 0.85rem; font-weight: 600;">*แก้ไข</span>
+            </div>
+
+            <input type="hidden" id="edit-si-index">
+            <input type="hidden" id="edit-si-item">
+            <input type="hidden" id="edit-si-original-item">
+            <input type="hidden" id="edit-si-unit">
+
+            <div class="form-group" style="margin-bottom: 16px; position: relative;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">วัตถุดิบ</label>
+                <div id="edit-si-item-display" onclick="toggleEditIngDropdown()"
+                    style="width:100%; padding:12px 40px 12px 14px; border:1px solid #777; border-radius:8px; font-size:1rem; background:#fff; cursor:pointer; position:relative; box-sizing:border-box; color:#333; user-select:none;">
+                    -
+                    <span
+                        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:0.85rem;color:#777;">&#9660;</span>
+                </div>
+                <div id="edit-si-item-list"
+                    style="display:none; border:1px solid #ccc; border-radius:8px; overflow-y:auto; max-height:276px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.12); margin-top:4px;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label id="edit-si-unit-label"
+                    style="display: block; margin-bottom: 8px; color: #555; font-size: 0.95rem;">-</label>
+                <input type="number" id="edit-si-qty" class="form-input"
+                    style="width: 100%; padding: 12px; border: 1px solid #777; border-radius: 4px; font-size: 1rem; box-sizing: border-box;"
+                    min="1">
+            </div>
+
+
+            <div style="display: flex; gap: 12px;">
+                <button class="btn"
+                    style="flex: 1; background: #7A7A7A; color: white; padding: 12px; border-radius: 20px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer;"
+                    onclick="closeEditStockInModal()">ยกเลิก</button>
+                <button class="btn"
+                    style="flex: 1; background: #FFC107; color: #333; padding: 12px; border-radius: 20px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer;"
+                    onclick="saveEditStockIn()">บันทึกการแก้ไข</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/owner.js"></script>
+</body>
+
+</html>
