@@ -2,6 +2,7 @@
 
 var currentUser = null;
 var calendarYear, calendarMonth, selectedDate;
+var knownOrderIds = []; // To track notifications
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -13,14 +14,179 @@ document.addEventListener('DOMContentLoaded', function () {
     calendarYear = now.getFullYear();
     calendarMonth = now.getMonth();
     selectedDate = null;
+
+    // Initialize known orders on load so we don't alert old ones
+    var initialOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
+    knownOrderIds = initialOrders.map(function (o) { return o.orderId; });
+
     renderTableGrid();
-    // Auto refresh every 10s
+    updateNotificationPanel();
+
+    // Auto refresh UI every 10s
     setInterval(function () {
         var active = document.querySelector('.page.active');
         if (active && active.id === 'page-orders') renderTableGrid();
         if (active && active.id === 'page-payment') refreshPayment();
     }, 10000);
+
+    // Check for new orders every 3s (same as server sync interval)
+    setInterval(function () {
+        checkNewOrders();
+    }, 3000);
 });
+
+function checkNewOrders() {
+    var pendingOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
+    var newOrders = [];
+
+    pendingOrders.forEach(function (o) {
+        if (!knownOrderIds.includes(o.orderId)) {
+            newOrders.push(o);
+            knownOrderIds.push(o.orderId);
+        }
+    });
+
+    newOrders.forEach(function (o) {
+        var tableLabel = o.table === 'กลับบ้าน' ? 'สั่งกลับบ้าน' : 'โต๊ะ ' + o.table;
+        var totalQty = o.items.reduce(function (sum, it) { return sum + it.qty; }, 0);
+        showLineNotification('มีออเดอร์ใหม่เข้า', tableLabel + ' (' + totalQty + ' รายการ)');
+    });
+
+    // Update the notification bell and panel globally
+    updateNotificationPanel();
+}
+
+function updateNotificationPanel() {
+    var pendingOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
+    var badges = document.querySelectorAll('.noti-badge');
+    var list = document.getElementById('noti-list');
+
+    // Sort by latest first
+    pendingOrders.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+    badges.forEach(function (badge) {
+        if (pendingOrders.length > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = pendingOrders.length;
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+
+    if (list) {
+        if (pendingOrders.length > 0) {
+            var html = '';
+            pendingOrders.forEach(function (o) {
+                var tableLabel = o.table === 'กลับบ้าน' ? 'สั่งกลับบ้าน' : 'โต๊ะ ' + o.table;
+                var totalQty = o.items.reduce(function (sum, it) { return sum + it.qty; }, 0);
+                var d = new Date(o.createdAt);
+                var timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
+
+                html += '<div style="background:#fff3f3; border-left:4px solid #D32F2F; padding:6px 10px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.05); cursor:pointer; position:relative;" onclick="openTableDetail(\'' + o.table + '\'); toggleNotiPanel();">';
+                html += '<div style="font-size:0.75rem; color:#888; position:absolute; top:6px; right:8px;">' + timeStr + '</div>';
+                html += '<div style="font-weight:600; font-size:0.85rem; color:#D32F2F;">🛎️ ' + tableLabel + '</div>';
+                html += '<div style="font-size:0.8rem; color:#444;">' + totalQty + ' รายการ</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = '<div style="text-align:center; color:#999; padding:20px 0; font-size:0.9rem;">ไม่มีออเดอร์ใหม่</div>';
+        }
+    }
+}
+
+function toggleNotiPanel() {
+    var panel = document.getElementById('noti-panel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    }
+}
+
+// ===== NOTIFICATION BANNER =====
+function showLineNotification(title, message) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body: message, icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png' });
+    }
+
+    var banner = document.createElement('div');
+    banner.style.position = 'fixed';
+    banner.style.top = '-100px';
+    banner.style.left = '50%';
+    banner.style.transform = 'translateX(-50%)';
+    banner.style.width = '90%';
+    banner.style.maxWidth = '400px';
+    banner.style.background = '#fff';
+    banner.style.color = '#333';
+    banner.style.borderRadius = '16px';
+    banner.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+    banner.style.padding = '14px 16px';
+    banner.style.zIndex = '10000';
+    banner.style.display = 'flex';
+    banner.style.alignItems = 'center';
+    banner.style.gap = '14px';
+    banner.style.transition = 'top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    banner.style.cursor = 'pointer';
+
+    banner.onclick = function () {
+        banner.style.top = '-100px';
+    };
+
+    var icon = document.createElement('div');
+    icon.innerHTML = '🍜';
+    icon.style.fontSize = '1.5rem';
+    icon.style.background = '#00B900'; // LINE Green Custom Feel
+    icon.style.color = '#fff';
+    icon.style.borderRadius = '50%';
+    icon.style.width = '48px';
+    icon.style.height = '48px';
+    icon.style.display = 'flex';
+    icon.style.alignItems = 'center';
+    icon.style.justifyContent = 'center';
+    icon.style.flexShrink = '0';
+
+    var textCol = document.createElement('div');
+    textCol.style.flex = '1';
+
+    var titleEl = document.createElement('div');
+    titleEl.textContent = title;
+    titleEl.style.fontWeight = '700';
+    titleEl.style.fontSize = '1.05rem';
+    titleEl.style.marginBottom = '2px';
+
+    var msgEl = document.createElement('div');
+    msgEl.textContent = message;
+    msgEl.style.fontSize = '0.9rem';
+    msgEl.style.color = '#666';
+
+    textCol.appendChild(titleEl);
+    textCol.appendChild(msgEl);
+
+    banner.appendChild(icon);
+    banner.appendChild(textCol);
+
+    document.body.appendChild(banner);
+
+    // Audio hint (Plays nice subtle system notification if allowed)
+    try {
+        var audio = new Audio('data:audio/mp3;base64,//OExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
+        audio.play().catch(function () { });
+    } catch (e) { }
+
+    // Slide in
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            banner.style.top = '20px';
+        });
+    });
+
+    // Slide out after 5 seconds
+    setTimeout(function () {
+        banner.style.top = '-100px';
+        setTimeout(function () {
+            if (banner.parentNode) banner.parentNode.removeChild(banner);
+        }, 400);
+    }, 5000);
+}
 
 // ===== TAB NAVIGATION =====
 function showTab(pageId, btn) {
@@ -31,6 +197,10 @@ function showTab(pageId, btn) {
     if (pageId === 'page-orders') renderCurrentView();
     if (pageId === 'page-payment') refreshPayment();
     if (pageId === 'page-history') { renderCalendar(); renderHistoryOrders(); }
+
+    // Close notification panel when switching tabs
+    var notiPanel = document.getElementById('noti-panel');
+    if (notiPanel) notiPanel.style.display = 'none';
 }
 
 // ===== VIEW MODE TOGGLE =====
@@ -161,6 +331,7 @@ function cancelOrderItems(orderId) {
         order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
         saveOrders(orders);
         renderOrderList();
+        updateNotificationPanel();
     }
 }
 
@@ -173,6 +344,7 @@ function serveOrder(orderId) {
         showToast('เสิร์ฟออเดอร์แล้ว ✓');
         // Refresh whichever view is active
         renderOrderList();
+        updateNotificationPanel();
         // If modal is open, refresh its content too
         if (currentDetailTable) openTableDetail(currentDetailTable);
     }
@@ -375,6 +547,7 @@ function cancelSelectedModalOrders() {
     saveOrders(orders);
     openTableDetail(currentDetailTable); // Re-render modal
     renderOrderList(); // Update background list
+    updateNotificationPanel();
 }
 
 function closeModal() {
@@ -401,6 +574,7 @@ function serveAllOrders() {
 
         // Ensure UI refreshes to move orders to payment page
         renderCurrentView();
+        updateNotificationPanel();
 
         // Auto-close modal since items are cleared if all served
         closeModal();
@@ -438,42 +612,6 @@ function processPayment(tableId) {
     renderTableGrid();
 }
 
-function handleCmd(e) {
-    if (e.key === 'Enter') execCmd();
-}
-
-function execCmd() {
-    var input = document.getElementById('cmd-input');
-    var cmd = input.value.trim();
-    if (!cmd) return;
-
-    var parts = cmd.split(' ');
-    var action = parts[0].toLowerCase();
-    var arg = parts[1];
-
-    // Shorthand: plain number → open bill for that table
-    // 0 = กลับบ้าน, 1-10 = table number
-    if (/^\d+$/.test(cmd)) {
-        var num = parseInt(cmd);
-        var tableId = num === 0 ? 'กลับบ้าน' : String(num);
-        openTableDetail(tableId);
-        input.value = '';
-        return;
-    }
-
-    if (action === '/bill' && arg) {
-        var tId = arg === '0' ? 'กลับบ้าน' : arg;
-        openTableDetail(tId);
-        input.value = '';
-    } else if (action === '/pay' && arg) {
-        var pId = arg === '0' ? 'กลับบ้าน' : arg;
-        processPayment(pId);
-        input.value = '';
-    } else {
-        showToast('พิมพ์เลข 0-10 หรือ /bill 1 หรือ /pay 1');
-    }
-}
-
 // Auto refresh
 setInterval(function () {
     var active = document.querySelector('.page.active');
@@ -485,6 +623,9 @@ setInterval(function () {
 function refreshPayment() {
     var allOrders = getOrders().filter(function (o) { return o.status === 'served'; });
     var container = document.getElementById('payment-container');
+
+    // Also try to update notifications if something changed globally
+    updateNotificationPanel();
 
     if (allOrders.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">ไม่มีออเดอร์รอชำระ</div>';

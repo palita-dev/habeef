@@ -9,6 +9,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/backoffice.css">
+    <style>
+        /* Notification Bell - sits inside .red-hero */
+        .red-hero {
+            position: relative;
+        }
+
+        #noti-button {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+
+        #noti-panel {
+            position: fixed;
+            top: 112px;
+            right: 15px;
+            z-index: 1002;
+        }
+
+        @media (min-width: 481px) {
+            #noti-panel {
+                right: calc(50% - 210px + 15px);
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -19,6 +46,12 @@
         </div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <div class="noti-btn" onclick="toggleNotiPanel()"
+                style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:15px; transform:translateY(-50%); z-index:10;">
+                <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                <span class="noti-badge"
+                    style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+            </div>
         </div>
 
         <!-- Mode Toggle -->
@@ -27,18 +60,12 @@
             <button id="btn-list-mode" class="view-toggle-btn" onclick="setViewMode('list')">📋 ออเดอร์</button>
         </div>
 
-        <div class="page-body" style="padding: 0 0 150px 0;">
+        <div class="page-body">
             <!-- Table Grid -->
             <div id="table-grid" class="table-grid" style="display:grid;"></div>
 
             <!-- Order List (hidden by default) -->
             <div id="order-list-view" style="display:none; padding: 12px 14px;"></div>
-        </div>
-
-        <!-- Command Bar Fixed Bottom -->
-        <div class="command-bar">
-            <input type="text" id="cmd-input" placeholder="โต๊ะ 0-10 หรือ /bill 1" onkeydown="handleCmd(event)">
-            <button class="btn btn-dark" onclick="execCmd()">ส่ง</button>
         </div>
     </div>
 
@@ -47,6 +74,12 @@
         <div class="top-bar"><span class="top-bar-title">ชำระเงิน</span></div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <div class="noti-btn" onclick="toggleNotiPanel()"
+                style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:15px; transform:translateY(-50%); z-index:10;">
+                <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                <span class="noti-badge"
+                    style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+            </div>
         </div>
         <div class="section-bar"><span>ชำระเงิน</span></div>
         <div class="page-body" id="payment-container">
@@ -59,6 +92,12 @@
         <div class="top-bar"><span class="top-bar-title">ประวัติ</span></div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <div class="noti-btn" onclick="toggleNotiPanel()"
+                style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:15px; transform:translateY(-50%); z-index:10;">
+                <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                <span class="noti-badge"
+                    style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+            </div>
         </div>
         <div class="section-bar"><span>ประวัติออเดอร์</span><span id="history-date-label"></span></div>
         <div class="page-body">
@@ -117,6 +156,22 @@
                 <button class="btn-serve btn-full" id="btn-serve-all" onclick="serveAllOrders()" style="flex:1;">เสิร์ฟ
                     ✓</button>
             </div>
+        </div>
+    </div>
+
+
+    <!-- Notification Panel -->
+    <div id="noti-panel"
+        style="display:none; width:280px; background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.2); flex-direction:column; max-height:400px; overflow:hidden;">
+        <div
+            style="padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0; font-size:1rem; color:#333;">การแจ้งเตือน</h4>
+            <span style="font-size:0.8rem; color:#888; cursor:pointer; padding:4px;" onclick="toggleNotiPanel()">ปิด
+                X</span>
+        </div>
+        <div id="noti-list"
+            style="padding:12px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div style="text-align:center; color:#999; padding:20px 0; font-size:0.9rem;">ไม่มีออเดอร์ใหม่</div>
         </div>
     </div>
 
