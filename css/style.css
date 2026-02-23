@@ -389,11 +389,6 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  position: relative;
-  z-index: 1050;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-add {
@@ -621,11 +616,6 @@ body {
   box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
   cursor: pointer;
   transition: transform 0.1s;
-  position: relative;
-  z-index: 1050;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-green-full:active {
@@ -1013,4 +1003,20 @@ body {
   color: #aaa;
   font-size: 0.8rem;
   font-weight: 300;
+}
+
+/* ===== INGREDIENT ICONS ===== */
+.ing-icon {
+  width: 4em;
+  height: 4em;
+  vertical-align: middle;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.custom-select-option .ing-icon {
+  width: 75px;
+  /* Huge size to fill the block */
+  height: 75px;
+  margin-right: 18px;
 }

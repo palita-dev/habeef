@@ -1,5 +1,21 @@
 // ===== CART SYSTEM (Table Layout) =====
 
+const FORMULA = {
+    'เส้นเล็ก': 55 / 1000,
+    'เส้นใหญ่': 25 / 500,
+    'เส้นหมี่ขาว': 25 / 500,
+    'เส้นหมี่หยก': 1 / 4,
+    'เส้นหมี่เหลือง': 1 / 4,
+    'ผักบุ้ง': 15 / 1000,
+    'ถั่วงอก': 35 / 1000,
+    'ลูกชิ้น': 2 / 90,
+    'เนื้อวัว': 60 / 1000,
+    'น่องไก่': 80 / 1000,
+    'กุ้ง': 80 / 1000,
+    'หมึก': 45 / 1000,
+    'ไข่': 1 / 30
+};
+
 function addToCart() {
     if (!currentMenuItem) return;
 
@@ -8,6 +24,12 @@ function addToCart() {
     var details = [];
     var ingredients = {};
 
+    function addIng(name) {
+        if (FORMULA[name] !== undefined) {
+            ingredients[name] = (ingredients[name] || 0) + FORMULA[name];
+        }
+    }
+
     // === เส้น ===
     if (menu.hasNoodle) {
         var noodleSel = document.querySelector('input[name="noodle"]:checked');
@@ -15,7 +37,7 @@ function addToCart() {
             var noodle = NOODLE_OPTIONS.find(function (n) { return n.id === noodleSel.value; });
             if (noodle) {
                 details.push('เส้น: ' + noodle.name);
-                ingredients[noodle.ingredient] = (ingredients[noodle.ingredient] || 0) + 1;
+                addIng(noodle.ingredient);
             }
         }
 
@@ -25,7 +47,7 @@ function addToCart() {
             var mn = NOODLE_OPTIONS.find(function (n) { return n.id === mixNoodleSel.value; });
             if (mn) {
                 details.push('ผสมเส้น: ' + mn.name);
-                ingredients[mn.ingredient] = (ingredients[mn.ingredient] || 0) + 1;
+                addIng(mn.ingredient);
             }
         }
     }
@@ -37,22 +59,21 @@ function addToCart() {
             var meat = MEAT_OPTIONS.find(function (m) { return m.id === meatSel.value; });
             if (meat) {
                 details.push('เนื้อ: ' + meat.name);
-                ingredients[meat.ingredient] = (ingredients[meat.ingredient] || 0) + 1;
+                addIng(meat.ingredient);
             }
         }
     }
 
-    // === ต้มยำทะเล: กุ้ง + หมึก + ลูกชิ้น ===
+    // === ต้มยำทะเล: กุ้ง + หมึก ===
     if (menu.isSeafood) {
-        details.push('เนื้อ: กุ้ง+หมึก+ลูกชิ้น');
-        ingredients['กุ้ง'] = (ingredients['กุ้ง'] || 0) + 1;
-        ingredients['หมึก'] = (ingredients['หมึก'] || 0) + 1;
-        ingredients['ลูกชิ้น'] = (ingredients['ลูกชิ้น'] || 0) + 1;
+        details.push('เนื้อ: กุ้ง+หมึก');
+        addIng('กุ้ง');
+        addIng('หมึก');
     }
 
-    // === เมนูปกติ: ลูกชิ้น (มาพร้อมเมนู) ===
-    if (!menu.isSeafood) {
-        ingredients['ลูกชิ้น'] = (ingredients['ลูกชิ้น'] || 0) + 1;
+    // === เมนูปกติ: ลูกชิ้น (มีในน้ำข้น, แห้ง, เกาเหลา) ===
+    if (menu.id === 'nam-khon' || menu.id === 'haeng' || menu.id === 'kao-lao') {
+        addIng('ลูกชิ้น');
     }
 
     // === ผัก ===
@@ -62,8 +83,8 @@ function addToCart() {
         if (veg) {
             details.push('ผัก: ' + veg.name);
             if (veg.hasVeg) {
-                ingredients['ผักบุ้ง'] = (ingredients['ผักบุ้ง'] || 0) + 1;
-                ingredients['ถั่วงอก'] = (ingredients['ถั่วงอก'] || 0) + 1;
+                addIng('ผักบุ้ง');
+                addIng('ถั่วงอก');
             }
         }
     }
@@ -77,15 +98,13 @@ function addToCart() {
             totalPrice += extra.price;
             extraNames.push(extra.name + ' +' + extra.price + '฿');
             if (extra.ingredient) {
-                ingredients[extra.ingredient] = (ingredients[extra.ingredient] || 0) + 1;
+                addIng(extra.ingredient);
             }
         }
     });
     if (extraNames.length > 0) {
         details.push('เพิ่ม: ' + extraNames.join(', '));
     }
-
-    // (ผสมเส้นถูกย้ายไปต่อจากเส้นด้านบนแล้ว)
 
     // === เพิ่มลงตะกร้า ===
     var cartItem = {
@@ -124,11 +143,22 @@ function renderCart() {
     if (dateInfo) dateInfo.textContent = 'วันที่ ' + now.toLocaleDateString('th-TH');
     if (timeInfo) timeInfo.textContent = 'เวลา ' + now.toLocaleTimeString('th-TH');
 
+    var orderBtn = document.getElementById('btn-place-order');
+
     // Empty State Handling
     if (cart.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#999; font-weight:500;">ยังไม่มีรายการสินค้า</td></tr>';
+        if (orderBtn) {
+            orderBtn.textContent = 'เลือกรายการอาหาร';
+            orderBtn.onclick = goToMenu;
+        }
         updateCartTotal();
         return;
+    }
+
+    if (orderBtn) {
+        orderBtn.textContent = 'สั่งรายการ';
+        orderBtn.onclick = placeOrder;
     }
 
     // Render Rows

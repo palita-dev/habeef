@@ -633,6 +633,60 @@ input[type="number"] {
     padding-left: 10px;
 }
 
+/* ===== PDF EXPORT OVERRIDES ===== */
+.pdf-export {
+    background: transparent !important;
+}
+
+.pdf-export .red-hero {
+    background: none !important;
+    color: #000 !important;
+    border-bottom: 2px solid #000;
+    padding-bottom: 20px !important;
+}
+
+.pdf-export .red-hero h1,
+.pdf-export .red-hero p {
+    color: #000 !important;
+    font-weight: 800 !important;
+}
+
+.pdf-export .section-bar {
+    background: none !important;
+    border: none !important;
+    padding: 10px 0 !important;
+    margin-bottom: 20px;
+}
+
+.pdf-export .section-bar span {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #000 !important;
+}
+
+.pdf-export .ing-table {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+}
+
+.pdf-export .ing-table th {
+    background: none !important;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+    font-weight: 800 !important;
+    font-size: 0.85rem !important;
+    padding: 10px !important;
+}
+
+.pdf-export .ing-table td {
+    border: 1px solid #000 !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    padding: 10px !important;
+}
+
 .status-ok {
     color: #4CAF50;
 }
@@ -669,13 +723,20 @@ input[type="number"] {
 .ing-card-img {
     width: 70px;
     height: 70px;
-    border-radius: 10px;
+    border-radius: 4px;
     background: #F5F5F5;
     margin: 0 auto 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
+    overflow: hidden;
+}
+
+.ing-card-img .ing-icon {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
 }
 
 .ing-card-name {
@@ -1322,4 +1383,25 @@ input[type="number"] {
 
 .receipt-pay-btn:active {
     opacity: 0.85;
+}
+
+/* ===== INGREDIENT ICONS ===== */
+.ing-icon {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.ing-history-img {
+    border-radius: 4px !important;
+    overflow: hidden;
+    padding: 0;
+}
+
+.ing-history-img .ing-icon {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
 }

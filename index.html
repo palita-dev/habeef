@@ -157,21 +157,11 @@
         <div id="cart-time-info" style="color:#666;">เวลา --:--:--</div>
       </div>
 
-      <!-- Order List Header -->
-      <div style="margin-bottom:10px;">
-        <span class="receipt-label-box" style="font-size:1rem;">รายการสินค้า</span>
-      </div>
 
       <!-- Cart Table -->
       <div class="cart-table-wrapper">
         <table class="cart-table">
-          <thead>
-            <tr>
-              <th style="border-radius: 8px 0 0 8px; text-align:center;">รายการ</th>
-              <th style="text-align:right;">ราคา</th>
-              <th style="border-radius: 0 8px 8px 0; text-align:center;">จำนวน</th>
-            </tr>
-          </thead>
+
           <tbody id="cart-items-body">
             <!-- JS Rendered -->
           </tbody>
@@ -185,7 +175,7 @@
         <span>รวมทั้งหมด</span>
         <span id="cart-total">0 บาท</span>
       </div>
-      <button class="btn-green-full" onclick="placeOrder()">สั่งรายการ</button>
+      <button id="btn-place-order" class="btn-green-full" onclick="placeOrder()">สั่งรายการ</button>
     </div>
 
     <!-- Red Footer -->
@@ -211,7 +201,6 @@
           <div id="receipt-guest" style="font-size:0.8rem;color:#888;"></div>
         </div>
 
-        <div class="receipt-label-box">รายการสินค้า</div>
 
         <div class="receipt-items-table" id="receipt-items"></div>
 

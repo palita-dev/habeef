@@ -8,15 +8,25 @@ var ALL_INGREDIENTS = [
 ];
 
 var ING_EMOJIS = {
-    'เส้นเล็ก': '🍜', 'เส้นใหญ่': '🍝', 'เส้นหมี่ขาว': '🍚', 'เส้นหมี่หยก': '🥬', 'เส้นหมี่เหลือง': '🟡',
-    'ผักบุ้ง': '🥗', 'ถั่วงอก': '🌱', 'ลูกชิ้น': '🟤', 'เนื้อวัว': '🥩', 'น่องไก่': '🍗',
-    'ไข่': '🥚', 'กุ้ง': '🦐', 'หมึก': '🦑'
+    'เส้นเล็ก': '<img src="images/เส้นเล็กตรานำโชค.jpg.png" class="ing-icon">',
+    'เส้นใหญ่': '<img src="images/เส้นใหญ่ตราเสือ.jpg" class="ing-icon">',
+    'เส้นหมี่ขาว': '<img src="images/เส้นหมี่ขาวตราเสือ.jpg" class="ing-icon">',
+    'เส้นหมี่หยก': '<img src="images/หมี่หยก.jpg" class="ing-icon">',
+    'เส้นหมี่เหลือง': '<img src="images/หมี่เหลือง.jpg" class="ing-icon">',
+    'ผักบุ้ง': '<img src="images/ผักบุ้ง.jpg" class="ing-icon">',
+    'ถั่วงอก': '<img src="images/ถั่วงอกแต่งสี.jpg" class="ing-icon">',
+    'ลูกชิ้น': '<img src="images/ลูกชิ้น.jpg" class="ing-icon">',
+    'เนื้อวัว': '<img src="images/เนื้อวัว.png" class="ing-icon">',
+    'น่องไก่': '<img src="images/น่องไก่.png" class="ing-icon">',
+    'ไข่': '<img src="images/ไข่แผง.jpg" class="ing-icon">',
+    'กุ้ง': '<img src="images/กุ้ง.jpg" class="ing-icon">',
+    'หมึก': '<img src="images/หมึก.jpg" class="ing-icon">'
 };
 
 var ING_UNITS = {
     'เส้นเล็ก': 'ถุง', 'เส้นใหญ่': 'ถุง', 'เส้นหมี่ขาว': 'ถุง', 'เส้นหมี่หยก': 'ถุง', 'เส้นหมี่เหลือง': 'ถุง',
-    'ผักบุ้ง': 'กิโลกรัม', 'ถั่วงอก': 'กิโลกรัม', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กิโลกรัม', 'น่องไก่': 'กิโลกรัม',
-    'ไข่': 'แผง', 'กุ้ง': 'กิโลกรัม', 'หมึก': 'กิโลกรัม'
+    'ผักบุ้ง': 'กก.', 'ถั่วงอก': 'กก.', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กก.', 'น่องไก่': 'กก.',
+    'ไข่': 'แผง', 'กุ้ง': 'กก.', 'หมึก': 'กก.'
 };
 
 // ===== INIT =====
@@ -25,19 +35,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
 
-    // Migrate old units 'กก.' to 'กิโลกรัม'
+    // Migrate old units 'กิโลกรัม' to 'กก.'
     var data = getStockIn();
     var migrated = false;
     for (var dateKey in data) {
         for (var itemName in data[dateKey]) {
-            if (data[dateKey][itemName].unit === 'กก.') {
-                data[dateKey][itemName].unit = 'กิโลกรัม';
+            if (data[dateKey][itemName].unit === 'กิโลกรัม') {
+                data[dateKey][itemName].unit = 'กก.';
                 migrated = true;
             }
             if (data[dateKey][itemName].entries) {
                 data[dateKey][itemName].entries.forEach(function (entry) {
-                    if (entry.unit === 'กก.') {
-                        entry.unit = 'กิโลกรัม';
+                    if (entry.unit === 'กิโลกรัม') {
+                        entry.unit = 'กก.';
                         migrated = true;
                     }
                 });
@@ -134,7 +144,7 @@ function selectIngredient(name) {
     document.getElementById('si-item').value = name;
     var disp = document.getElementById('si-item-display');
     if (disp) {
-        disp.childNodes[0].textContent = (ING_EMOJIS[name] || '\ud83d\udce6') + ' ' + name;
+        disp.childNodes[0].innerHTML = (ING_EMOJIS[name] || '\ud83d\udce6') + ' ' + name;
         disp.style.color = '#333';
     }
     document.getElementById('si-item-list').style.display = 'none';
@@ -325,7 +335,7 @@ function _renderStockInList(containerId, isFull) {
 
         html += '<div class="user-card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 4px;">';
         html += '<div class="user-info" style="display:flex; align-items:center; gap:12px;">';
-        html += '<div style="font-size: 2rem; background: #f5f5f5; border-radius: 8px; width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;">' + (ING_EMOJIS[latest.name] || '📦') + '</div>';
+        html += '<div class="ing-history-img" style="font-size: 2rem; background: #f5f5f5; width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;">' + (ING_EMOJIS[latest.name] || '📦') + '</div>';
         html += '<div style="flex:1;">';
         html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">';
         html += '<span style="font-weight:700; font-size:1.05rem;">' + latest.name + '</span>';
@@ -388,7 +398,7 @@ function _renderStockInList(containerId, isFull) {
 
             html += '<div class="user-card" style="box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: none; border-radius: 10px; padding: 10px; margin-bottom: 10px; background: #fff;">';
             html += '<div class="user-info" style="display:flex; align-items:center; gap:12px;">';
-            html += '<div style="font-size: 1.8rem; background: #f9f9f9; border-radius: 8px; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center;">' + (ING_EMOJIS[entry.name] || '📦') + '</div>';
+            html += '<div class="ing-history-img" style="font-size: 1.8rem; background: #f9f9f9; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center;">' + (ING_EMOJIS[entry.name] || '📦') + '</div>';
             html += '<div style="flex:1;">';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">';
             html += '<span style="font-weight:700; font-size:1rem;">' + entry.name + '</span>';
@@ -609,6 +619,57 @@ function toggleRemainingSort() {
     renderRemaining();
 }
 
+function getSecondaryUnitHTML(name, qty) {
+    if (typeof qty !== 'number' || isNaN(qty) || qty <= 0) {
+        if (name === 'ไข่') return '<br><span style="font-size:0.85em; color:#666;">(0 ฟอง)</span>';
+        if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return '<br><span style="font-size:0.85em; color:#666;">(0 กรัม / 0 ก้อน)</span>';
+        if (name === 'ลูกชิ้น' || name === 'น่องไก่') return '<br><span style="font-size:0.85em; color:#666;">(0 กรัม / 0 ชิ้น)</span>';
+        return '<br><span style="font-size:0.85em; color:#666;">(0 กรัม)</span>';
+    }
+
+    var weightInKg = null;
+    var secondUnitText = null;
+
+    switch (name) {
+        case 'เส้นเล็ก': weightInKg = qty * 1.0; break;
+        case 'เส้นใหญ่': weightInKg = qty * 0.5; break;
+        case 'เส้นหมี่ขาว': weightInKg = qty * 0.5; break;
+        case 'เส้นหมี่หยก': weightInKg = qty * 0.248; secondUnitText = Math.ceil(qty * 4) + ' ก้อน'; break;
+        case 'เส้นหมี่เหลือง': weightInKg = qty * 0.248; secondUnitText = Math.ceil(qty * 4) + ' ก้อน'; break;
+        case 'ลูกชิ้น': weightInKg = qty * 1.0; secondUnitText = Math.ceil(qty * 90) + ' ชิ้น'; break;
+        case 'น่องไก่': weightInKg = qty * 1.0; secondUnitText = Math.floor(qty / 0.08) + ' ชิ้น'; break;
+        case 'ไข่': return '<br><span style="font-size:0.85em; color:#666;">(' + Math.ceil(qty * 30) + ' ฟอง)</span>';
+        case 'ผักบุ้ง':
+        case 'ถั่วงอก':
+        case 'เนื้อวัว':
+        case 'กุ้ง':
+        case 'หมึก':
+            weightInKg = qty * 1.0; break;
+    }
+
+    var parts = [];
+    if (weightInKg !== null) {
+        var kilos = Math.floor(weightInKg);
+        var grams = Math.round((weightInKg - kilos) * 1000);
+        if (grams >= 1000) { kilos += Math.floor(grams / 1000); grams = grams % 1000; }
+
+        var wParts = [];
+        if (kilos > 0) wParts.push(kilos + ' กก.');
+        if (grams > 0) wParts.push(grams + ' กรัม');
+        if (wParts.length === 0) wParts.push('0 กรัม');
+        parts.push(wParts.join(' '));
+    }
+
+    if (secondUnitText) {
+        parts.push(secondUnitText);
+    }
+
+    if (parts.length > 0) {
+        return '<br><span style="font-size:0.85em; color:#666;">(' + parts.join(' / ') + ')</span>';
+    }
+    return '';
+}
+
 function renderRemaining() {
     var remaining = getRemaining();
     var keys = ALL_INGREDIENTS.slice(); // copy to mutate
@@ -647,7 +708,10 @@ function renderRemaining() {
             warning +
             '<div class="ing-card-img">' + (ING_EMOJIS[name] || '📦') + '</div>' +
             '<div class="ing-card-name">' + name + '</div>' +
-            '<div class="ing-card-qty">' + d.remaining + ' ' + d.unit + '</div>' +
+            '<div class="ing-card-qty">' +
+            parseFloat(Number(d.remaining).toFixed(3)) + ' ' + d.unit +
+            getSecondaryUnitHTML(name, d.remaining) +
+            '</div>' +
             '</div>';
     }).join('');
 }
@@ -656,8 +720,11 @@ function renderRemaining() {
 
 // ===== REPORT =====
 // ===== REPORT =====
+// ===== REPORT =====
 function renderReport() {
-    var container = document.getElementById('report-table-container');
+    var container = document.getElementById('report-table-main-container');
+    if (!container) return;
+
     var html = '<table class="ing-table">';
     html += '<tr><th>รายการ</th><th>รับเข้า</th><th>ที่ใช้ไป</th><th>คงเหลือ</th><th>สถานะ</th></tr>';
 
@@ -674,21 +741,214 @@ function renderReport() {
         var statusIcon = '';
         if (remaining <= 0 && inQty > 0) {
             statusClass = 'status-out';
-            statusIcon = '<span class="status-icon">🔴</span> วัตถุดิบหมด';
+            statusIcon = '<span class="status-icon">🔴</span> หมด';
         } else if (remaining <= 1 && inQty > 0) {
             statusClass = 'status-low';
-            statusIcon = '<span class="status-icon">🟡</span> วัตถุดิบใกล้หมด';
+            statusIcon = '<span class="status-icon">🟡</span> ใกล้หมด';
         }
 
         html += '<tr>';
         html += '<td>' + name + '</td>';
-        html += '<td>' + inQty + ' ' + unit + '</td>';
-        html += '<td>' + usedQty + ' ' + unit + '</td>';
-        html += '<td>' + remaining + ' ' + unit + '</td>';
+        html += '<td>' + parseFloat(Number(inQty).toFixed(3)) + ' ' + unit + '</td>';
+        html += '<td>' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + unit + '</td>';
+        html += '<td>' + parseFloat(Number(remaining).toFixed(3)) + ' ' + unit + '</td>';
         html += '<td class="' + statusClass + '">' + statusIcon + '</td>';
         html += '</tr>';
     });
 
     html += '</table>';
     container.innerHTML = html;
+}
+
+// ===== REPORT HISTORY Modal to Page Transition =====
+function openReportHistoryModal() {
+    var container = document.getElementById('report-list-container');
+    if (!container) return;
+
+    // 1. Gather all unique dates from stock-in and orders
+    var stockIn = getStockIn();
+    var orders = getOrders();
+    var dateMap = {};
+
+    // Add today unconditionally so there's always at least one report available to print
+    var todayStr = new Date().toLocaleDateString('th-TH').replace(/\//g, '-');
+    dateMap[todayStr] = true;
+
+    // Add dates from stock-in history
+    for (var key in stockIn) {
+        if (stockIn[key].history) {
+            stockIn[key].history.forEach(function (entry) {
+                var dStr = new Date(entry.time).toLocaleDateString('th-TH').replace(/\//g, '-');
+                dateMap[dStr] = true;
+            });
+        }
+    }
+
+    // Add dates from orders
+    orders.forEach(function (o) {
+        if (o.completedAt) {
+            var dStr = new Date(o.completedAt).toLocaleDateString('th-TH').replace(/\//g, '-');
+            dateMap[dStr] = true;
+        } else if (o.timestamp) {
+            var dStr = new Date(o.timestamp).toLocaleDateString('th-TH').replace(/\//g, '-');
+            dateMap[dStr] = true;
+        }
+    });
+
+    var uniqueDates = Object.keys(dateMap);
+
+    // 2. Sort dates descending
+    uniqueDates.sort(function (a, b) {
+        var pa = a.split('-'); // [dd, mm, yyyy]
+        var pb = b.split('-');
+        var da = new Date(pa[2] - 543, pa[1] - 1, pa[0]); // generic JS date to compare
+        var db = new Date(pb[2] - 543, pb[1] - 1, pb[0]);
+        return db - da;
+    });
+
+    // 3. Render HTML list
+    var html = '';
+    uniqueDates.forEach(function (dateStr) {
+        var displayDate = dateStr.replace(/-/g, '/');
+
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:15px; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; background:#fafafa;">';
+        html += '<div>';
+        html += '<div style="font-size:0.95rem; font-weight:600; color:#333;">รายงานสรุปข้อมูลวัตถุดิบ</div>';
+        html += '<div style="font-size:0.85rem; color:#888;">' + displayDate + '</div>';
+        html += '</div>';
+        html += '<button onclick="downloadReportForDate(\'' + dateStr + '\')" style="background:#2196F3; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-size:0.9rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(33,150,243,0.3);">';
+        html += 'ดาวน์โหลด <span style="font-size:1.1rem">📥</span>';
+        html += '</button>';
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+
+    // Switch pages visually (leave bottom nav alone)
+    document.getElementById('page-report').style.display = 'none';
+    document.getElementById('page-report-history').style.display = 'block';
+}
+
+function hideReportHistory() {
+    document.getElementById('page-report-history').style.display = 'none';
+    document.getElementById('page-report').style.display = 'block';
+}
+
+// ===== ONDEMAND PDF REPORT =====
+function downloadReportForDate(dateStr) {
+    var printArea = document.getElementById('page-report-print');
+    if (!printArea) return;
+
+    var displayDate = dateStr.replace(/-/g, '/');
+    var dateElement = document.getElementById('report-date');
+    if (dateElement) dateElement.textContent = 'วันที่ ' + displayDate;
+
+    // --- Build Table Data ---
+    var stockIn = getStockIn();
+    var allOrders = getOrders();
+    var usedOnDate = {};
+
+    // Calculate usage on specific date
+    allOrders.forEach(function (o) {
+        var oDate = o.completedAt ? new Date(o.completedAt) : (o.timestamp ? new Date(o.timestamp) : null);
+        if (oDate) {
+            var oDateStr = oDate.toLocaleDateString('th-TH').replace(/\//g, '-');
+            if (oDateStr === dateStr && o.status !== 'cancelled') {
+                o.cart.forEach(function (item) {
+                    var def = getMenuItem(item.id);
+                    if (def && def.req) {
+                        for (var ing in def.req) {
+                            usedOnDate[ing] = (usedOnDate[ing] || 0) + (def.req[ing] * item.qty);
+                        }
+                    }
+                    if (item.extras) {
+                        item.extras.forEach(function (exName) {
+                            var exDef = getExtraItem(exName);
+                            if (exDef && exDef.req) {
+                                for (var exIng in exDef.req) {
+                                    usedOnDate[exIng] = (usedOnDate[exIng] || 0) + (exDef.req[exIng] * item.qty);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    });
+
+    // Reconstruct remaining data struct but inject date-specific used amounts
+    var currentRemaining = getRemaining();
+    var reportData = {};
+    ALL_INGREDIENTS.forEach(function (ing) {
+        var base = currentRemaining[ing];
+        reportData[ing] = {
+            stockIn: base.stockIn,  // Total historical stock in
+            used: usedOnDate[ing] || 0, // Used ON THIS DATE
+            remaining: base.remaining, // Current remaining
+            unit: base.unit
+        };
+    });
+
+    // --- Render Table ---
+    var container = document.getElementById('report-table-container');
+    var html = '<table class="ing-table" style="width:100%; border-collapse:collapse; margin-top:15px;">';
+    html += '<tr><th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">รายการ</th>';
+    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">รับเข้า(รวม)</th>';
+    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">ที่ใช้ไป(' + displayDate + ')</th>';
+    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">คงเหลือ(ปัจจุบัน)</th>';
+    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">สถานะ</th></tr>';
+
+    ALL_INGREDIENTS.forEach(function (name) {
+        var data = reportData[name];
+        var inQty = data.stockIn;
+        var usedQty = data.used;
+        var unit = data.unit;
+        var rem = data.remaining;
+
+        var statusOk = rem > 1 || inQty === 0;
+
+        html += '<tr>';
+        html += '<td style="padding:10px; border:1px solid #000; font-weight:600;">' + name + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">' + parseFloat(Number(inQty).toFixed(3)) + ' ' + unit + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + unit + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">' + parseFloat(Number(rem).toFixed(3)) + ' ' + unit + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">';
+        if (!statusOk && inQty > 0) {
+            html += '<span style="color:#C62828; font-weight:bold;">ใกล้หมด/หมด</span>';
+        }
+        html += '</td>';
+        html += '</tr>';
+    });
+    html += '</table>';
+    container.innerHTML = html;
+
+    // --- Generate PDF ---
+    showToast('กำลังเตรียมไฟล์ PDF ' + displayDate + '...');
+
+    // Apply PDF specific styling (black text, no backgrounds)
+    printArea.classList.add('pdf-export');
+
+    // Make wrapper temporarily block to render correctly
+    var wrapper = document.getElementById('pdf-template-wrapper');
+    wrapper.style.display = 'block';
+
+    var filename = 'รายงานสรุปผลวัตถุดิบ_' + dateStr + '.pdf';
+    var opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(printArea).save().then(function () {
+        wrapper.style.display = 'none';
+        printArea.classList.remove('pdf-export');
+        showToast('ดาวน์โหลด PDF สำเร็จแล้ว');
+    }).catch(function (err) {
+        console.error('PDF Generation Error:', err);
+        wrapper.style.display = 'none';
+        printArea.classList.remove('pdf-export');
+        showToast('เกิดข้อผิดพลาดในการสร้าง PDF');
+    });
 }
