@@ -25,8 +25,8 @@ var ING_EMOJIS = {
 
 var ING_UNITS = {
     'เส้นเล็ก': 'ถุง', 'เส้นใหญ่': 'ถุง', 'เส้นหมี่ขาว': 'ถุง', 'เส้นหมี่หยก': 'ถุง', 'เส้นหมี่เหลือง': 'ถุง',
-    'ผักบุ้ง': 'กก.', 'ถั่วงอก': 'กก.', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กก.', 'น่องไก่': 'กก.',
-    'ไข่': 'แผง', 'กุ้ง': 'กก.', 'หมึก': 'กก.'
+    'ผักบุ้ง': 'กิโลกรัม', 'ถั่วงอก': 'กิโลกรัม', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กิโลกรัม', 'น่องไก่': 'กิโลกรัม',
+    'ไข่': 'แผง', 'กุ้ง': 'กิโลกรัม', 'หมึก': 'กิโลกรัม'
 };
 
 // ===== INIT =====
@@ -35,19 +35,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
 
-    // Migrate old units 'กิโลกรัม' to 'กก.'
+    // Migrate old units 'กก.' to 'กิโลกรัม'
     var data = getStockIn();
     var migrated = false;
     for (var dateKey in data) {
         for (var itemName in data[dateKey]) {
-            if (data[dateKey][itemName].unit === 'กิโลกรัม') {
-                data[dateKey][itemName].unit = 'กก.';
+            if (data[dateKey][itemName].unit === 'กก.') {
+                data[dateKey][itemName].unit = 'กิโลกรัม';
                 migrated = true;
             }
             if (data[dateKey][itemName].entries) {
                 data[dateKey][itemName].entries.forEach(function (entry) {
-                    if (entry.unit === 'กิโลกรัม') {
-                        entry.unit = 'กก.';
+                    if (entry.unit === 'กก.') {
+                        entry.unit = 'กิโลกรัม';
                         migrated = true;
                     }
                 });
@@ -737,6 +737,9 @@ function renderReport() {
         var unit = data.unit;
         var remaining = data.remaining;
 
+        // Display unit specifically formatted for report
+        var displayUnit = unit === 'กิโลกรัม' ? 'กก.' : unit;
+
         var statusClass = 'status-ok';
         var statusIcon = '';
         if (remaining <= 0 && inQty > 0) {
@@ -749,15 +752,24 @@ function renderReport() {
 
         html += '<tr>';
         html += '<td>' + name + '</td>';
-        html += '<td>' + parseFloat(Number(inQty).toFixed(3)) + ' ' + unit + '</td>';
-        html += '<td>' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + unit + '</td>';
-        html += '<td>' + parseFloat(Number(remaining).toFixed(3)) + ' ' + unit + '</td>';
+        html += '<td>' + parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit + '</td>';
+        html += '<td>' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit + '</td>';
+        html += '<td>' + parseFloat(Number(remaining).toFixed(3)) + ' ' + displayUnit + '</td>';
         html += '<td class="' + statusClass + '">' + statusIcon + '</td>';
         html += '</tr>';
     });
 
     html += '</table>';
     container.innerHTML = html;
+}
+
+// Helper: Get logical "shift date" string (00:00 - 03:59 belongs to previous day)
+function getShiftDateStr(dateObj) {
+    var d = new Date(dateObj.getTime());
+    if (d.getHours() < 4) {
+        d.setDate(d.getDate() - 1);
+    }
+    return d.toLocaleDateString('th-TH').replace(/\//g, '-');
 }
 
 // ===== REPORT HISTORY Modal to Page Transition =====
@@ -771,14 +783,14 @@ function openReportHistoryModal() {
     var dateMap = {};
 
     // Add today unconditionally so there's always at least one report available to print
-    var todayStr = new Date().toLocaleDateString('th-TH').replace(/\//g, '-');
+    var todayStr = getShiftDateStr(new Date());
     dateMap[todayStr] = true;
 
     // Add dates from stock-in history
     for (var key in stockIn) {
         if (stockIn[key].history) {
             stockIn[key].history.forEach(function (entry) {
-                var dStr = new Date(entry.time).toLocaleDateString('th-TH').replace(/\//g, '-');
+                var dStr = getShiftDateStr(new Date(entry.time));
                 dateMap[dStr] = true;
             });
         }
@@ -787,10 +799,10 @@ function openReportHistoryModal() {
     // Add dates from orders
     orders.forEach(function (o) {
         if (o.completedAt) {
-            var dStr = new Date(o.completedAt).toLocaleDateString('th-TH').replace(/\//g, '-');
+            var dStr = getShiftDateStr(new Date(o.completedAt));
             dateMap[dStr] = true;
         } else if (o.timestamp) {
-            var dStr = new Date(o.timestamp).toLocaleDateString('th-TH').replace(/\//g, '-');
+            var dStr = getShiftDateStr(new Date(o.timestamp));
             dateMap[dStr] = true;
         }
     });
@@ -840,19 +852,32 @@ function downloadReportForDate(dateStr) {
     if (!printArea) return;
 
     var displayDate = dateStr.replace(/-/g, '/');
-    var dateElement = document.getElementById('report-date');
-    if (dateElement) dateElement.textContent = 'วันที่ ' + displayDate;
+    var dateElement = document.getElementById('report-date-print');
+    var printTimeElement = document.getElementById('report-print-time');
+
+    // Add print time
+    var now = new Date();
+    var printTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    var printDateStr = now.toLocaleDateString('th-TH');
+
+    // Make the header just show the display date to match the image
+    if (dateElement) {
+        dateElement.textContent = 'วันที่ ' + displayDate;
+    }
+    if (printTimeElement) {
+        printTimeElement.textContent = 'พิมพ์เมื่อ: ' + printDateStr + ' ' + printTime + ' น.';
+    }
 
     // --- Build Table Data ---
     var stockIn = getStockIn();
     var allOrders = getOrders();
     var usedOnDate = {};
 
-    // Calculate usage on specific date
+    // Calculate usage on specific date based on shift logic
     allOrders.forEach(function (o) {
         var oDate = o.completedAt ? new Date(o.completedAt) : (o.timestamp ? new Date(o.timestamp) : null);
         if (oDate) {
-            var oDateStr = oDate.toLocaleDateString('th-TH').replace(/\//g, '-');
+            var oDateStr = getShiftDateStr(oDate);
             if (oDateStr === dateStr && o.status !== 'cancelled') {
                 o.cart.forEach(function (item) {
                     var def = getMenuItem(item.id);
@@ -891,12 +916,12 @@ function downloadReportForDate(dateStr) {
 
     // --- Render Table ---
     var container = document.getElementById('report-table-container');
-    var html = '<table class="ing-table" style="width:100%; border-collapse:collapse; margin-top:15px;">';
-    html += '<tr><th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">รายการ</th>';
-    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">รับเข้า(รวม)</th>';
-    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">ที่ใช้ไป(' + displayDate + ')</th>';
-    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">คงเหลือ(ปัจจุบัน)</th>';
-    html += '<th style="padding:10px; border:1px solid #000; background:none; font-weight:bold;">สถานะ</th></tr>';
+    var html = '<table class="ing-table" style="width:100%; border-collapse:collapse; margin-top:15px; color:#000000;">';
+    html += '<tr><th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รายการ</th>';
+    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รับเข้า(รวม)</th>';
+    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">ที่ใช้ไป(' + displayDate + ')</th>';
+    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ(ปัจจุบัน)</th>';
+    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">สถานะ</th></tr>';
 
     ALL_INGREDIENTS.forEach(function (name) {
         var data = reportData[name];
@@ -905,16 +930,19 @@ function downloadReportForDate(dateStr) {
         var unit = data.unit;
         var rem = data.remaining;
 
+        // Display unit specifically formatted for report
+        var displayUnit = unit === 'กิโลกรัม' ? 'กก.' : unit;
+
         var statusOk = rem > 1 || inQty === 0;
 
         html += '<tr>';
-        html += '<td style="padding:10px; border:1px solid #000; font-weight:600;">' + name + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">' + parseFloat(Number(inQty).toFixed(3)) + ' ' + unit + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + unit + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">' + parseFloat(Number(rem).toFixed(3)) + ' ' + unit + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000; text-align:center;">';
+        html += '<td style="padding:10px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + parseFloat(Number(rem).toFixed(3)) + ' ' + displayUnit + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; color:#000000; font-weight:normal;">';
         if (!statusOk && inQty > 0) {
-            html += '<span style="color:#C62828; font-weight:bold;">ใกล้หมด/หมด</span>';
+            html += '<span style="color:#FF3333; font-weight:bold;">ใกล้หมด</span>';
         }
         html += '</td>';
         html += '</tr>';
@@ -927,6 +955,7 @@ function downloadReportForDate(dateStr) {
 
     // Apply PDF specific styling (black text, no backgrounds)
     printArea.classList.add('pdf-export');
+    printArea.style.color = '#000000';
 
     // Make wrapper temporarily block to render correctly
     var wrapper = document.getElementById('pdf-template-wrapper');
@@ -944,11 +973,13 @@ function downloadReportForDate(dateStr) {
     html2pdf().set(opt).from(printArea).save().then(function () {
         wrapper.style.display = 'none';
         printArea.classList.remove('pdf-export');
+        printArea.style.color = '';
         showToast('ดาวน์โหลด PDF สำเร็จแล้ว');
     }).catch(function (err) {
         console.error('PDF Generation Error:', err);
         wrapper.style.display = 'none';
         printArea.classList.remove('pdf-export');
+        printArea.style.color = '';
         showToast('เกิดข้อผิดพลาดในการสร้าง PDF');
     });
 }

@@ -57,6 +57,14 @@ function renderCustomizeForm(menu) {
   document.getElementById('customize-header-name').textContent = menu.name;
   document.getElementById('customize-header-price').textContent = menu.price + '฿';
 
+  var imgEl = document.getElementById('customize-header-img');
+  if (imgEl && menu.image) {
+    imgEl.src = menu.image;
+    imgEl.style.display = 'block';
+  } else if (imgEl) {
+    imgEl.style.display = 'none';
+  }
+
   var form = document.getElementById('customize-form');
   var html = '';
 
@@ -94,8 +102,8 @@ function renderCustomizeForm(menu) {
 
   // === เนื้อสัตว์ (ไม่แสดงสำหรับต้มยำทะเล) ===
   if (menu.hasMeat) {
-    html += '<div class="section-card">' +
-      '<div class="section-header"><h3>เนื้อสัตว์</h3></div>' +
+    html += '<div class="section-card" style="overflow: hidden;">' +
+      '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; margin: -15px -15px 15px -15px;">เนื้อสัตว์</div>' +
       '<div class="section-body">';
     MEAT_OPTIONS.forEach(function (opt, i) {
       html += '<label class="option-item">' +
@@ -106,8 +114,8 @@ function renderCustomizeForm(menu) {
   }
 
   // === ผัก ===
-  html += '<div class="section-card">' +
-    '<div class="section-header"><h3>ผัก</h3></div>' +
+  html += '<div class="section-card" style="overflow: hidden;">' +
+    '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; margin: -15px -15px 15px -15px;">ผัก</div>' +
     '<div class="section-body">';
   VEGGIE_OPTIONS.forEach(function (opt, i) {
     html += '<label class="option-item">' +
@@ -117,8 +125,8 @@ function renderCustomizeForm(menu) {
   html += '</div></div>';
 
   // === สั่งเพิ่ม ===
-  html += '<div class="section-card">' +
-    '<div class="section-header"><h3>สั่งเพิ่ม</h3></div>' +
+  html += '<div class="section-card" style="overflow: hidden;">' +
+    '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; border-radius: 10px 10px 0 0; margin: -15px -15px 15px -15px;">สั่งเพิ่ม</div>' +
     '<div class="section-body">';
   EXTRA_OPTIONS.forEach(function (opt) {
     html += '<label class="option-item">' +

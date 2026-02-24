@@ -120,12 +120,20 @@
 
   <!-- ===== หน้าเลือกวัตถุดิบ ===== -->
   <div id="page-customize" class="page">
-    <div class="top-bar">
-      <button class="btn-back" onclick="goToMenu()">←</button>
-      <span class="top-bar-text" id="customize-header-name">เลือกวัตถุดิบ</span>
-      <span class="top-bar-price" id="customize-header-price"></span>
-    </div>
-    <div class="page-body page-body-with-bottom">
+    <div class="customize-hero"></div>
+    <div class="page-body page-body-with-bottom" style="padding-top: 0;">
+      <!-- Floating Card Header -->
+      <div class="customize-header-card">
+        <button class="btn-back-floating-sm" onclick="goToMenu()">←</button>
+        <h2 id="customize-header-name" class="customize-title">Loading...</h2>
+        <div class="customize-floating-img-box">
+          <div class="customize-img-wrapper">
+            <img id="customize-header-img" src="" alt="Menu">
+          </div>
+          <div class="customize-price-badge" id="customize-header-price">--฿</div>
+        </div>
+      </div>
+
       <div id="customize-form" class="customize-form"></div>
     </div>
     <div class="bottom-actions">

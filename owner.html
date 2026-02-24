@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/backoffice.css">
 </head>
 
@@ -151,8 +153,8 @@
 
         <div class="page-body">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
-                <span id="report-date" style="font-size:0.78rem;color:#888;"></span>
+                <span class="report-header-title" style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
+                <span id="report-date" style="font-size:0.78rem;"></span>
             </div>
             <div id="report-table-main-container"></div>
         </div>
@@ -161,17 +163,22 @@
         <div id="pdf-template-wrapper"
             style="display:none; position:absolute; top:0; left:0; width:800px; background:#fff; z-index:-9999;">
             <div id="page-report-print" class="page" style="display:block;">
-                <div class="red-hero">
+                <!-- Print Timestamp Container (Top Right) -->
+                <div style="display: flex; justify-content: flex-end; padding: 15px 20px 0 0;">
+                    <span id="report-print-time" style="font-size:0.75rem; color:#555;"></span>
+                </div>
+                <div class="red-hero" style="margin-top:-10px;">
                     <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-                    <p>บันทึกวัตถุดิบเข้า</p>
+                    <p>รายงานสรุปผล</p>
                 </div>
                 <div class="section-bar">
                     <span>รายงานสรุปข้อมูลวัตถุดิบ</span>
                 </div>
                 <div class="page-body">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                        <span style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
-                        <span id="report-date" style="font-size:0.78rem;color:#888;"></span>
+                        <span class="report-header-title"
+                            style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
+                        <span id="report-date-print" style="font-size:0.78rem;"></span>
                     </div>
                     <div id="report-table-container"></div>
                 </div>
@@ -216,12 +223,10 @@
         </div>
         <div class="page-body">
             <div class="account-card">
-                <div
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFE082; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 12px; border: 2px solid #C62828; color: #333;">
-                    👨‍🍳</div>
+                <div class="account-avatar">👑</div>
                 <div id="acc-name" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;">Loading...</div>
                 <div id="acc-role" style="font-size: 0.9rem; color: #999; margin-bottom: 20px;">เจ้าของร้าน</div>
-                <button class="btn btn-red btn-full" onclick="logout()">ออกจากระบบ</button>
+                <button class="btn btn-red btn-full" onclick="logout()" style="width:100%;">ออกจากระบบ</button>
             </div>
         </div>
     </div>

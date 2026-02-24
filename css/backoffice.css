@@ -488,7 +488,7 @@ input[type="number"] {
 .cal-day-header {
     font-size: 0.7rem;
     font-weight: 600;
-    color: #888;
+    color: #000000;
     padding: 4px;
 }
 
@@ -634,57 +634,59 @@ input[type="number"] {
 }
 
 /* ===== PDF EXPORT OVERRIDES ===== */
-.pdf-export {
-    background: transparent !important;
+#page-report-print.pdf-export {
+    background: transparent;
+    color: #000000;
+    opacity: 1 !important;
+    animation: none !important;
 }
 
-.pdf-export .red-hero {
-    background: none !important;
-    color: #000 !important;
-    border-bottom: 2px solid #000;
-    padding-bottom: 20px !important;
+#page-report-print.pdf-export * {
+    color: #000000;
 }
 
-.pdf-export .red-hero h1,
-.pdf-export .red-hero p {
-    color: #000 !important;
-    font-weight: 800 !important;
+#page-report-print.pdf-export .red-hero {
+    background: none;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 20px;
 }
 
-.pdf-export .section-bar {
-    background: none !important;
-    border: none !important;
-    padding: 10px 0 !important;
+#page-report-print.pdf-export .red-hero h1,
+#page-report-print.pdf-export .red-hero p {
+    font-weight: 800;
+}
+
+#page-report-print.pdf-export .section-bar {
+    background: none;
+    border: none;
+    padding: 10px 0;
     margin-bottom: 20px;
 }
 
-.pdf-export .section-bar span {
+#page-report-print.pdf-export .section-bar span {
     font-size: 1.4rem;
     font-weight: 800;
-    color: #000 !important;
 }
 
-.pdf-export .ing-table {
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    border: 1px solid #000 !important;
+#page-report-print.pdf-export .ing-table {
+    border-radius: 0;
+    box-shadow: none;
+    border: 1px solid #000000;
 }
 
-.pdf-export .ing-table th {
-    background: none !important;
-    color: #000 !important;
-    border: 1px solid #000 !important;
-    font-weight: 800 !important;
-    font-size: 0.85rem !important;
-    padding: 10px !important;
+#page-report-print.pdf-export .ing-table th {
+    background: none;
+    border: 1px solid #000000;
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 10px;
 }
 
-.pdf-export .ing-table td {
-    border: 1px solid #000 !important;
-    color: #000 !important;
-    font-weight: 600 !important;
-    font-size: 0.8rem !important;
-    padding: 10px !important;
+#page-report-print.pdf-export .ing-table td {
+    border: 1px solid #000000;
+    font-weight: normal;
+    font-size: 0.8rem;
+    padding: 10px;
 }
 
 .status-ok {

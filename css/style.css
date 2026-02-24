@@ -152,6 +152,113 @@ body {
   transform: scale(0.95);
 }
 
+/* ===== CUSTOMIZE PAGE HEADER (NEW DESIGN) ===== */
+.customize-hero {
+  position: relative;
+  height: 120px;
+  background: #C62828;
+  /* Red background acting as base */
+}
+
+.customize-hero-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+}
+
+.customize-header-card {
+  background: #EAE6DF;
+  border-radius: 30px 30px 0 0;
+  padding: 30px 20px 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 100px;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+  margin-top: -60px;
+  /* Pull it up over the red hero */
+  z-index: 10;
+}
+
+.customize-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #000;
+  margin: 0;
+  flex: 1;
+  padding-right: 120px;
+  /* Space for the floating image */
+}
+
+/* Back button specific for this header */
+.btn-back-floating-sm {
+  position: absolute;
+  top: -70px;
+  left: 15px;
+  /* Positioned inside the red hero */
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #fff;
+  /* White back button on red background */
+  cursor: pointer;
+  z-index: 20;
+}
+
+.customize-floating-img-box {
+  position: absolute;
+  right: 20px;
+  top: -50px;
+  /* Float up over the card edge */
+  width: 100px;
+  height: 100px;
+  z-index: 100;
+}
+
+.customize-img-wrapper {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  background: #fff;
+  padding: 4px;
+  /* Creates the border effect */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #FDDD5C;
+  /* Yellow border */
+  z-index: 100;
+}
+
+.customize-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  border-radius: 16px;
+  /* Inner radius matching the border */
+  display: block;
+  /* Ensure no image stretching bugs */
+}
+
+.customize-price-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #fff;
+  color: #000;
+  font-size: 1.1rem;
+  font-weight: 700;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: inherit;
+  z-index: 20;
+}
+
 /* ===== PAGE BODY ===== */
 .page-body {
   flex: 1;
@@ -216,7 +323,7 @@ body {
 .menu-food-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover !important;
   display: block;
 }
 
