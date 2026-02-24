@@ -80,7 +80,7 @@ function renderCustomizeForm(menu) {
     html += '<div class="section-body" style="padding-left: 10px;">';
     NOODLE_OPTIONS.forEach(function (opt, i) {
       html += '<label class="option-item" style="margin-bottom: 8px;">' +
-        '<input type="radio" name="noodle" value="' + opt.id + '"' + (i === 0 ? ' checked' : '') + ' onchange="updateMixedNoodleState()">' +
+        '<input type="radio" name="noodle" value="' + opt.id + '" onchange="updateMixedNoodleState()">' +
         '<span class="option-label" style="font-size: 1rem;">' + opt.name + '</span></label>';
     });
     html += '</div></div>'; // จบคอลัมน์ 1
@@ -102,36 +102,35 @@ function renderCustomizeForm(menu) {
 
   // === เนื้อสัตว์ (ไม่แสดงสำหรับต้มยำทะเล) ===
   if (menu.hasMeat) {
-    html += '<div class="section-card" style="overflow: hidden;">' +
-      '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; margin: -15px -15px 15px -15px;">เนื้อสัตว์</div>' +
-      '<div class="section-body">';
+    html += '<div class="section-card" style="margin-bottom: 12px;">' +
+      '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">เนื้อสัตว์</div>' +
+      '<div class="section-body" style="padding: 10px;">';
     MEAT_OPTIONS.forEach(function (opt, i) {
       html += '<label class="option-item">' +
-        '<input type="radio" name="meat" value="' + opt.id + '"' + (i === 0 ? ' checked' : '') + '>' +
+        '<input type="radio" name="meat" value="' + opt.id + '">' +
         '<span class="option-label">' + opt.name + '</span></label>';
     });
     html += '</div></div>';
   }
 
   // === ผัก ===
-  html += '<div class="section-card" style="overflow: hidden;">' +
-    '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; margin: -15px -15px 15px -15px;">ผัก</div>' +
-    '<div class="section-body">';
+  html += '<div class="section-card" style="margin-bottom: 12px;">' +
+    '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">ผัก</div>' +
+    '<div class="section-body" style="padding: 10px;">';
   VEGGIE_OPTIONS.forEach(function (opt, i) {
     html += '<label class="option-item">' +
-      '<input type="radio" name="veggie" value="' + opt.id + '"' + (i === 0 ? ' checked' : '') + '>' +
+      '<input type="radio" name="veggie" value="' + opt.id + '">' +
       '<span class="option-label">' + opt.name + '</span></label>';
   });
   html += '</div></div>';
 
   // === สั่งเพิ่ม ===
-  html += '<div class="section-card" style="overflow: hidden;">' +
-    '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; border-radius: 10px 10px 0 0; margin: -15px -15px 15px -15px;">สั่งเพิ่ม</div>' +
-    '<div class="section-body">';
+  html += '<div class="section-card" style="margin-bottom: 12px;">' +
+    '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">สั่งเพิ่ม <span style="font-size: 0.8rem; font-weight: normal; margin-left: auto;">(เลือกได้หลายอย่าง)</span></div>' +
+    '<div class="section-body" style="padding: 10px;">';
   EXTRA_OPTIONS.forEach(function (opt) {
     html += '<label class="option-item">' +
       '<input type="checkbox" name="extras" value="' + opt.id + '"' +
-      (opt.isNone ? ' checked' : '') +
       ' onchange="handleExtraChange(this,' + (opt.isNone ? 'true' : 'false') + ')">' +
       '<span class="option-label">' + opt.name + '</span>' +
       (opt.price > 0 ? '<span class="option-price">+' + opt.price + '฿</span>' : '') +
@@ -144,6 +143,61 @@ function renderCustomizeForm(menu) {
   // Initialize mixed noodle state
   if (menu.hasNoodle) {
     setTimeout(updateMixedNoodleState, 0); // delay slighty to ensure DOM is ready
+  }
+
+  // Attach validation listeners and run initial check
+  setTimeout(function () {
+    var inputs = form.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+    inputs.forEach(function (el) {
+      el.addEventListener('change', validateCustomizeForm);
+    });
+    validateCustomizeForm();
+  }, 50);
+}
+
+// ===== ตรวจสอบความถูกต้องของแบบฟอร์ม (Validation) =====
+function validateCustomizeForm() {
+  if (!currentMenuItem) return;
+
+  var isValid = true;
+
+  // ตรวจสอบหมวดเส้น (เลืออย่างน้อย 1 เส้นหลัก)
+  if (currentMenuItem.hasNoodle) {
+    var noodleSel = document.querySelector('input[name="noodle"]:checked');
+    if (!noodleSel) isValid = false;
+  }
+
+  // ตรวจสอบหมวดเนื้อสัตว์
+  if (currentMenuItem.hasMeat) {
+    var meatSel = document.querySelector('input[name="meat"]:checked');
+    if (!meatSel) isValid = false;
+  }
+
+  // ตรวจสอบหมวดผัก
+  var vegSel = document.querySelector('input[name="veggie"]:checked');
+  if (!vegSel) isValid = false;
+
+  if (btnAdd) {
+    if (isValid) {
+      btnAdd.classList.remove('disabled');
+    } else {
+      btnAdd.classList.add('disabled');
+    }
+  }
+
+  // UPDATE PRICE
+  var tot = currentMenuItem.price;
+  var extraChecks = document.querySelectorAll('input[name="extras"]:checked');
+  extraChecks.forEach(function (cb) {
+    var extra = EXTRA_OPTIONS.find(function (e) { return e.id === cb.value; });
+    if (extra && !extra.isNone) {
+      tot += extra.price;
+    }
+  });
+
+  var priceLabel = document.getElementById('customize-total-price');
+  if (priceLabel) {
+    priceLabel.textContent = tot + ' ฿';
   }
 }
 

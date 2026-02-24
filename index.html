@@ -120,25 +120,34 @@
 
   <!-- ===== หน้าเลือกวัตถุดิบ ===== -->
   <div id="page-customize" class="page">
-    <div class="customize-hero"></div>
-    <div class="page-body page-body-with-bottom" style="padding-top: 0;">
-      <!-- Floating Card Header -->
-      <div class="customize-header-card">
-        <button class="btn-back-floating-sm" onclick="goToMenu()">←</button>
-        <h2 id="customize-header-name" class="customize-title">Loading...</h2>
-        <div class="customize-floating-img-box">
-          <div class="customize-img-wrapper">
-            <img id="customize-header-img" src="" alt="Menu">
-          </div>
-          <div class="customize-price-badge" id="customize-header-price">--฿</div>
-        </div>
-      </div>
+    <div class="page-body page-body-with-bottom" style="padding: 0; padding-bottom: 90px;">
+      <div class="customize-hero" style="position: relative; z-index: 1;"></div>
 
-      <div id="customize-form" class="customize-form"></div>
+      <div style="padding: 0 14px; position: relative; z-index: 10;">
+        <!-- Floating Card Header -->
+        <div class="customize-header-card">
+          <h2 id="customize-header-name" class="customize-title">Loading...</h2>
+          <div class="customize-floating-img-box">
+            <div class="customize-img-wrapper">
+              <img id="customize-header-img" src="" alt="Menu">
+            </div>
+            <div class="customize-price-badge" id="customize-header-price">--฿</div>
+          </div>
+        </div>
+
+        <div id="customize-form" class="customize-form"></div>
+      </div>
     </div>
-    <div class="bottom-actions">
-      <button class="btn btn-cancel" onclick="goToMenu()">ยกเลิก</button>
-      <button class="btn btn-add" onclick="addToCart()">เพิ่มลงตะกร้า</button>
+    <div class="bottom-actions" style="flex-direction: column; gap: 8px;">
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px; font-weight: 700; font-size: 1.1rem; color: #333;">
+        <span>รวม</span>
+        <span id="customize-total-price">0 ฿</span>
+      </div>
+      <div style="display: flex; gap: 12px; width: 100%;">
+        <button class="btn btn-cancel" onclick="goToMenu()">ยกเลิก</button>
+        <button class="btn btn-add" onclick="addToCart()">เพิ่มลงตะกร้า</button>
+      </div>
     </div>
   </div>
 

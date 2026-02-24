@@ -19,6 +19,12 @@ const FORMULA = {
 function addToCart() {
     if (!currentMenuItem) return;
 
+    var btnAdd = document.querySelector('.btn-add');
+    if (btnAdd && btnAdd.classList.contains('disabled')) {
+        showToast('กรุณาเลือกวัตถุดิบให้ครบถ้วน');
+        return;
+    }
+
     var menu = currentMenuItem;
     var totalPrice = menu.price;
     var details = [];
@@ -170,11 +176,19 @@ function renderCart() {
 
         // Image Logic
         var imgEmoji = '🍜';
+        var imgHtml = '';
         var menuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
-        if (menuItem) imgEmoji = menuItem.emoji;
-
-        // Note: Using emoji as placeholder since we don't have real URL image assets in this env
-        var imgHtml = '<div class="item-img" style="background:#FFF3E0; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
+        if (menuItem) {
+            imgEmoji = menuItem.emoji;
+            if (menuItem.image) {
+                imgHtml = '<img src="' + menuItem.image + '" class="item-img" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                imgHtml += '<div class="item-img" style="background:#FFF3E0; display:none; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
+            } else {
+                imgHtml = '<div class="item-img" style="background:#FFF3E0; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
+            }
+        } else {
+            imgHtml = '<div class="item-img" style="background:#FFF3E0; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
+        }
 
         return `
         <tr class="cart-table-row">
@@ -266,11 +280,26 @@ function placeOrder() {
     document.getElementById('confirm-order-table').textContent = tableText;
 
     var detailsHtml = cart.map(function (item) {
-        var dStr = item.qty + ' x ' + item.name + ' (' + item.totalPrice + ' ฿)';
-        if (item.details.length > 0) {
-            dStr += '<br><span style="color:#888;font-size:0.8rem;">' + item.details.join(', ') + '</span>';
+        var menuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
+        var imgHtml = '';
+        if (menuItem) {
+            if (menuItem.image) {
+                imgHtml = '<img src="' + menuItem.image + '" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; margin-right: 12px; flex-shrink: 0;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                imgHtml += '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF3E0; display: none; align-items: center; justify-content: center; font-size: 1.4rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
+            } else {
+                imgHtml = '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF3E0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
+            }
         }
-        return '<div style="margin-bottom:8px;">' + dStr + '</div>';
+
+        var textHtml = '<div style="flex: 1; text-align: left;">';
+        textHtml += '<div style="font-weight: 600; font-size: 0.95rem; color: #222;">' + item.qty + ' x ' + item.name + ' <span style="font-weight: normal; color: #555;">(' + item.totalPrice + ' ฿)</span></div>';
+
+        if (item.details.length > 0) {
+            textHtml += '<div style="color: #888; font-size: 0.8rem; margin-top: 2px;">' + item.details.join(', ') + '</div>';
+        }
+        textHtml += '</div>';
+
+        return '<div style="display: flex; align-items: flex-start; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">' + imgHtml + textHtml + '</div>';
     }).join('');
 
     var total = cart.reduce(function (sum, item) { return sum + (item.totalPrice * item.qty); }, 0);
