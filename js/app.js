@@ -105,6 +105,19 @@ let cart = [];
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
   guestId = generateGuestId();
+
+  // Load Cart from LocalStorage
+  let savedCart = localStorage.getItem('habeef_cart');
+  if (savedCart) {
+    try {
+      cart = JSON.parse(savedCart);
+      updateCartBadge();
+    } catch (e) {
+      console.error("Failed to parse cart", e);
+      cart = [];
+    }
+  }
+
   renderMenu();
 });
 

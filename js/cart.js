@@ -125,6 +125,7 @@ function addToCart() {
     };
 
     cart.push(cartItem);
+    saveCart();
     updateCartBadge();
     showToast('เพิ่ม ' + menu.name + ' ลงตะกร้าแล้ว ✓');
     goToMenu();
@@ -227,6 +228,7 @@ function changeQty(index, delta) {
     if (cart[index].qty <= 0) {
         cart[index].qty = 1;
     }
+    saveCart();
     updateCartBadge();
     renderCart(); // Re-render table
 }
@@ -249,6 +251,7 @@ function executeDeleteItem() {
     if (itemToDeleteIndex === -1) return;
     var name = cart[itemToDeleteIndex].name;
     cart.splice(itemToDeleteIndex, 1);
+    saveCart();
     updateCartBadge();
     renderCart(); // Re-render table
     closeConfirmDelete();
@@ -312,4 +315,8 @@ function placeOrder() {
 
 function closeConfirmOrder() {
     document.getElementById('confirm-order-modal').classList.remove('show');
+}
+
+function saveCart() {
+    localStorage.setItem('habeef_cart', JSON.stringify(cart));
 }

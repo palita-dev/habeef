@@ -65,6 +65,7 @@ function executePlaceOrder() {
 
     renderReceipt(order);
     cart = [];
+    localStorage.removeItem('habeef_cart');
     updateCartBadge();
     showPage('page-receipt');
     startReceiptPolling();

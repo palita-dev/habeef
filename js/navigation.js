@@ -177,6 +177,7 @@ function validateCustomizeForm() {
   var vegSel = document.querySelector('input[name="veggie"]:checked');
   if (!vegSel) isValid = false;
 
+  var btnAdd = document.querySelector('.btn-add');
   if (btnAdd) {
     if (isValid) {
       btnAdd.classList.remove('disabled');
