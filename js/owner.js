@@ -169,7 +169,35 @@ function hideStockInForm() {
 }
 
 function getStockIn() {
-    return JSON.parse(localStorage.getItem('habeef_stock_in') || '{}');
+    var loadedStr = localStorage.getItem('habeef_stock_in') || '{}';
+    if (loadedStr.trim() === '[]') loadedStr = '{}';
+    var data = null;
+    try {
+        data = JSON.parse(loadedStr);
+    } catch (e) {
+        data = {};
+    }
+    if (Array.isArray(data)) data = {};
+
+    // check if it's the old flat structure (e.g. {"เส้นใหญ่": 5}) without date keys
+    var hasDateKeys = false;
+    var keys = Object.keys(data);
+    for (var i = 0; i < keys.length; i++) {
+        if (keys[i].includes('/')) {
+            hasDateKeys = true;
+            break;
+        }
+    }
+
+    if (!hasDateKeys && keys.length > 0) {
+        var today = getDateKey(new Date());
+        var migrated = {};
+        migrated[today] = data;
+        localStorage.setItem('habeef_stock_in', JSON.stringify(migrated));
+        return migrated;
+    }
+
+    return data;
 }
 function saveStockIn(data) {
     localStorage.setItem('habeef_stock_in', JSON.stringify(data));
@@ -363,10 +391,8 @@ function _renderStockInList(containerId, isFull) {
 
     if (displayEntries.length > 0) {
         if (!isFull) {
-            if (allEntries.length > 1) {
-                html += '<h3 style="font-size:0.95rem; margin-bottom:10px; color:#555; font-weight:500;">ประวัติการบันทึก</h3>';
-                html += '<div style="background:#ECECEC; border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
-            }
+            html += '<h3 style="font-size:0.95rem; margin-bottom:10px; color:#555; font-weight:500;">ประวัติการบันทึก</h3>';
+            html += '<div style="background:#ECECEC; border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
         } else {
             html += '<div style="border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
         }
@@ -378,10 +404,8 @@ function _renderStockInList(containerId, isFull) {
             var entry = displayEntries[i];
 
             // Skip the absolute latest item globally (which is shown in the top box on main page)
-            if (entry === allEntries[0]) {
-                if (!isFull) {
-                    maxDisplay++; // compensate so we still show 3 older items
-                }
+            if (!isFull && entry === allEntries[0]) {
+                maxDisplay++; // compensate so we still show 3 older items
                 continue;
             }
 
@@ -408,16 +432,18 @@ function _renderStockInList(containerId, isFull) {
             html += '</div></div></div>';
         }
 
-        if (historyItemsCount === 0 && isFull) {
+        if (historyItemsCount === 0 && !isFull && allEntries.length === 1) {
+            html += '<div style="text-align:center;padding:20px;color:#999;font-size:0.85rem;">ยังไม่มีประวัติก่อนหน้า</div>';
+        } else if (historyItemsCount === 0 && isFull) {
             html += '<div style="text-align:center;padding:40px;color:#999;font-size:0.9rem;">ไม่มีรายการประวัติในหมวดหมู่นี้</div>';
         }
 
         // Add View More button
-        if (!isFull && allEntries.length > 4) {
+        if (!isFull && allEntries.length > 1) {
             html += '<button onclick="openStockInHistoryPage()" style="width:100%; padding:10px; border-radius:20px; border:none; background:#DFDFDF; color:#333; font-size:0.95rem; font-family:\'Prompt\', sans-serif; cursor:pointer; margin-top:8px;">ดูเพิ่มเติม</button>';
         }
 
-        if (historyItemsCount > 0 || isFull) {
+        if (historyItemsCount > 0 || isFull || (!isFull && allEntries.length > 0)) {
             html += '</div>';
         }
     }
