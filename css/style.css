@@ -733,6 +733,11 @@ body {
   padding: 20px;
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   z-index: 1050;
+  pointer-events: none; /* Let clicks pass through empty spaces */
+}
+
+.cart-summary-fixed > * {
+  pointer-events: auto; /* Re-enable clicks for children */
 }
 
 .summary-box-white {

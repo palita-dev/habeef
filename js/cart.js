@@ -205,14 +205,18 @@ function renderCart() {
                     </div>
                 </div>
             </td>
-            <td class="td-price" style="text-align: right; vertical-align: bottom; position: relative; padding-right: 15px; padding-top: 36px; padding-bottom: 12px;">
-                <button onclick="removeFromCart(${index})" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 1.8rem; color: #C62828; cursor: pointer; line-height: 1; padding: 6px; font-weight: bold;">&times;</button>
-                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px;">
-                    <div class="price-val" style="font-size: 1.25rem; font-weight: 700; color: #333; white-space: nowrap;">${item.totalPrice} ฿</div>
-                    <div class="qty-control-pill" style="margin: 0; transform: scale(1.1); transform-origin: right center;">
-                        <button onclick="changeQty(${index}, -1)">−</button>
-                        <span>${item.qty}</span>
-                        <button onclick="changeQty(${index}, 1)">+</button>
+            <td class="td-price" style="text-align: right; vertical-align: top; padding: 10px 15px 10px 0;">
+                <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%; min-height: 80px;">
+                    <div style="text-align: right; margin-bottom: 10px;">
+                        <button onclick="removeFromCart(${index})" style="background: transparent; border: none; font-size: 1.8rem; color: #C62828; cursor: pointer; line-height: 1; padding: 0; font-weight: bold;">&times;</button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                        <div class="price-val" style="font-size: 1.25rem; font-weight: 700; color: #333; white-space: nowrap;">${item.totalPrice} ฿</div>
+                        <div class="qty-control-pill" style="margin: 0; transform: scale(1.1); transform-origin: right center;">
+                            <button onclick="changeQty(${index}, -1)">−</button>
+                            <span>${item.qty}</span>
+                            <button onclick="changeQty(${index}, 1)">+</button>
+                        </div>
                     </div>
                 </div>
             </td>
