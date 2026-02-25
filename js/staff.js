@@ -169,8 +169,8 @@ function showLineNotification(title, message) {
     // Audio hint (Plays nice subtle system notification if allowed)
     try {
         var audio = new Audio('data:audio/mp3;base64,//OExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
-        audio.play().catch(function () { });
-    } catch (e) { }
+        audio.play().catch(function () { /* ignore error */ });
+    } catch (e) { /* ignore error */ }
 
     // Slide in
     requestAnimationFrame(function () {

@@ -618,22 +618,27 @@ body {
 }
 
 .item-img {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .item-text {
   flex: 1;
+  min-width: 0;
 }
 
 .item-name {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: #222;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cart-row-details {
@@ -820,9 +825,11 @@ body {
 .receipt-col-img {
   width: 50px;
   height: 50px;
-  border-radius: 50%;
+  border-radius: 12px;
   margin-right: 10px;
-  object-fit: cover;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #fce4ec;
 }
 
 .receipt-col-info {

@@ -186,13 +186,19 @@ function renderReceipt(order) {
     document.getElementById('receipt-guest').textContent = 'Guest ID: ' + (order.guestId || '-');
 
     var itemsContainer = document.getElementById('receipt-items');
-    var menuEmojis = {
-        'nam-khon': '🍜', 'haeng': '🥢', 'tom-yam': '🌶️',
-        'tom-yam-seafood': '🦐', 'kao-lao': '🥣'
-    };
-
     itemsContainer.innerHTML = order.items.map(function (item, idx) {
-        var imgHtml = '<div class="receipt-col-img" style="background:#fce4ec;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">' + (menuEmojis[item.menuId] || '🍜') + '</div>';
+        var menuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
+        var imgHtml;
+        if (menuItem && menuItem.image) {
+            imgHtml = '<div class="receipt-col-img">' +
+                '<img src="' + menuItem.image + '" alt="' + item.name + '" ' +
+                'style="width:100%;height:100%;object-fit:cover;border-radius:8px;" ' +
+                'onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">' +
+                '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:1.5rem;">' + (menuItem.emoji || '🍜') + '</div>' +
+                '</div>';
+        } else {
+            imgHtml = '<div class="receipt-col-img" style="background:#fce4ec;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">' + (item.emoji || '🍜') + '</div>';
+        }
 
         return '<div class="receipt-row">' +
             '<div style="width:30px;font-weight:700;color:#888;">' + (idx + 1) + '</div>' +

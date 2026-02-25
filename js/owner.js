@@ -56,13 +56,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (migrated) saveStockIn(data);
 
-    // Populate dropdown
-    var sel = document.getElementById('si-item');
-    ALL_INGREDIENTS.forEach(function (ing) {
-        var opt = document.createElement('option');
-        opt.value = ing; opt.textContent = ing;
-        sel.appendChild(opt);
-    });
+    // Remove the old <select> population logic as `si-item` is now a hidden input,
+    // not a select element. Trying to appendChild to a hidden input causes an error 
+    // that halts script execution!
 
     var today = new Date();
     var dayStr = today.getDate() + '/' + (today.getMonth() + 1) + '/' + (today.getFullYear() + 543);
@@ -113,11 +109,10 @@ function clearStockInForm() {
     if (unitEl) unitEl.value = '';
     if (labelEl) labelEl.textContent = '\u0e08\u0e33\u0e19\u0e27\u0e19';
     // Reset custom dropdown display
+    var dispText = document.getElementById('si-item-text');
+    if (dispText) dispText.innerHTML = '\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e27\u0e31\u0e15\u0e16\u0e38\u0e14\u0e34\u0e1a';
     var disp = document.getElementById('si-item-display');
-    if (disp) {
-        disp.innerHTML = '\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e27\u0e31\u0e15\u0e16\u0e38\u0e14\u0e34\u0e1a<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:0.85rem;color:#777;">&#9660;</span>';
-        disp.style.color = '#999';
-    }
+    if (disp) disp.style.color = '#999';
     var list = document.getElementById('si-item-list');
     if (list) list.style.display = 'none';
 }
@@ -142,11 +137,10 @@ function toggleIngDropdown() {
 
 function selectIngredient(name) {
     document.getElementById('si-item').value = name;
+    var dispText = document.getElementById('si-item-text');
+    if (dispText) dispText.innerHTML = (ING_EMOJIS[name] || '\ud83d\udce6') + ' ' + name;
     var disp = document.getElementById('si-item-display');
-    if (disp) {
-        disp.childNodes[0].innerHTML = (ING_EMOJIS[name] || '\ud83d\udce6') + ' ' + name;
-        disp.style.color = '#333';
-    }
+    if (disp) disp.style.color = '#333';
     document.getElementById('si-item-list').style.display = 'none';
     // Update unit label
     var unit = ING_UNITS[name] || '\u0e2b\u0e19\u0e48\u0e27\u0e22';
@@ -183,9 +177,46 @@ function getStockIn() {
     var hasDateKeys = false;
     var keys = Object.keys(data);
     for (var i = 0; i < keys.length; i++) {
-        if (keys[i].includes('/')) {
+        if (keys[i].indexOf('-') > -1) {
             hasDateKeys = true;
             break;
+        }
+    }
+
+    // Recover if we accidentally double-nested it previously
+    var isDoubleNested = false;
+    if (hasDateKeys) {
+        var mergedData = {};
+        for (var k in data) {
+            // Check if data[k] contains ANOTHER date key
+            var hasInnerDate = false;
+            for (var innerK in data[k]) {
+                if (innerK.indexOf('-') > -1 && innerK.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    hasInnerDate = true;
+                    break;
+                }
+            }
+
+            if (hasInnerDate) {
+                isDoubleNested = true;
+                // Merge inner dates and non-dates
+                for (innerK in data[k]) {
+                    if (innerK.indexOf('-') > -1 && innerK.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        // This is a date key hidden inside another date key
+                        if (!mergedData[innerK]) mergedData[innerK] = {};
+                        Object.assign(mergedData[innerK], data[k][innerK]);
+                    } else {
+                        // This is a valid ingredient at the wrong level? No, it's at the correct level, but the parent `k` is the date key
+                        if (!mergedData[k]) mergedData[k] = {};
+                        mergedData[k][innerK] = data[k][innerK];
+                    }
+                }
+            } else {
+                mergedData[k] = data[k];
+            }
+        }
+        if (isDoubleNested) {
+            data = mergedData;
         }
     }
 
@@ -195,6 +226,9 @@ function getStockIn() {
         migrated[today] = data;
         localStorage.setItem('habeef_stock_in', JSON.stringify(migrated));
         return migrated;
+    } else if (isDoubleNested) {
+        localStorage.setItem('habeef_stock_in', JSON.stringify(data));
+        return data;
     }
 
     return data;
@@ -330,18 +364,18 @@ function _renderStockInList(containerId, isFull) {
     var html = '';
     var displayEntries = allEntries;
 
-    // Default to 'today' date string for comparisons
-    var todayDateStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    // Default to 'today' date key for comparisons
+    var todayKey = getDateKey(new Date());
 
     if (isFull) {
         // Apply filter for the full history page
         displayEntries = allEntries.filter(function (entry, index) {
             if (index === 0) return true; // Keep the latest for correct indexing, but we'll skip it in the loop anyway
-            var entryDateStr = new Date(entry.time).toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            var entryKey = getDateKey(new Date(entry.time));
             if (window.historyFilterMode === 'today') {
-                return entryDateStr === todayDateStr;
+                return entryKey === todayKey;
             } else {
-                return entryDateStr !== todayDateStr;
+                return entryKey !== todayKey;
             }
         });
 
@@ -354,7 +388,9 @@ function _renderStockInList(containerId, isFull) {
         var latest = allEntries[0];
         var latestTime = new Date(latest.time);
         var latestTimeStr = latestTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        var latestDateStr = latestTime.toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
+        var shiftLatest = new Date(latestTime.getTime());
+        shiftLatest.setHours(shiftLatest.getHours() - 4);
+        var latestDateStr = shiftLatest.toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
 
         html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px;">';
         html += '<span style="color:#D32F2F; font-weight:600; font-size:1rem;">ล่าสุด</span>';
@@ -413,7 +449,9 @@ function _renderStockInList(containerId, isFull) {
 
             var entryTime = new Date(entry.time);
             var timeStr = entryTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-            var dateStr = entryTime.toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            var shiftEntry = new Date(entryTime.getTime());
+            shiftEntry.setHours(shiftEntry.getHours() - 4);
+            var dateStr = shiftEntry.toLocaleDateString('th-TH', { year: 'numeric', month: 'numeric', day: 'numeric' });
 
             if (dateStr !== lastDateStr) {
                 html += '<div style="text-align:center; color:#777; font-size:0.9rem; margin-bottom: 12px; margin-top: ' + (historyItemsCount === 1 ? '0' : '16px') + ';">' + dateStr + '</div>';
@@ -473,12 +511,10 @@ function editStockIn(itemName, entryIndex, dKey) {
     document.getElementById('edit-si-index').value = entryIndex.toString();
 
     // UI fields matching - custom dropdown
+    var dispText = document.getElementById('edit-si-item-text');
+    if (dispText) dispText.innerHTML = (ING_EMOJIS[itemName] || '\ud83d\udce6') + ' ' + itemName;
     var disp = document.getElementById('edit-si-item-display');
-    if (disp) {
-        disp.innerHTML = (ING_EMOJIS[itemName] || '\ud83d\udce6') + ' ' + itemName +
-            '<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:0.85rem;color:#777;">&#9660;</span>';
-        disp.style.color = '#333';
-    }
+    if (disp) disp.style.color = '#333';
     document.getElementById('edit-si-unit-label').textContent = '\u0e08\u0e33\u0e19\u0e27\u0e19 (' + (entry.unit || ING_UNITS[itemName] || '\u0e2b\u0e19\u0e48\u0e27\u0e22') + ')';
     document.getElementById('edit-si-qty').value = entry.qty;
 
@@ -513,12 +549,10 @@ function selectEditIngredient(name) {
     document.getElementById('edit-si-unit').value = unit;
     document.getElementById('edit-si-unit-label').textContent = '\u0e08\u0e33\u0e19\u0e27\u0e19 (' + unit + ')';
 
+    var dispText = document.getElementById('edit-si-item-text');
+    if (dispText) dispText.innerHTML = (ING_EMOJIS[name] || '\ud83d\udce6') + ' ' + name;
     var disp = document.getElementById('edit-si-item-display');
-    if (disp) {
-        disp.innerHTML = (ING_EMOJIS[name] || '\ud83d\udce6') + ' ' + name +
-            '<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:0.85rem;color:#777;">&#9660;</span>';
-        disp.style.color = '#333';
-    }
+    if (disp) disp.style.color = '#333';
     document.getElementById('edit-si-item-list').style.display = 'none';
 
     document.getElementById('edit-si-qty').focus();
@@ -824,11 +858,12 @@ function openReportHistoryModal() {
 
     // Add dates from orders
     orders.forEach(function (o) {
+        var dStr;
         if (o.completedAt) {
-            var dStr = getShiftDateStr(new Date(o.completedAt));
+            dStr = getShiftDateStr(new Date(o.completedAt));
             dateMap[dStr] = true;
         } else if (o.timestamp) {
-            var dStr = getShiftDateStr(new Date(o.timestamp));
+            dStr = getShiftDateStr(new Date(o.timestamp));
             dateMap[dStr] = true;
         }
     });

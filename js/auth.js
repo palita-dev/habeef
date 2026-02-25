@@ -136,7 +136,13 @@ function formatDateThai(isoStr) {
 }
 
 function getDateKey(d) {
-    return d.toISOString().split('T')[0];
+    if (!d) return '';
+    var shift = new Date(d.getTime());
+    shift.setHours(shift.getHours() - 4);
+    var year = shift.getFullYear();
+    var month = (shift.getMonth() + 1).toString().padStart(2, '0');
+    var day = shift.getDate().toString().padStart(2, '0');
+    return year + '-' + month + '-' + day;
 }
 
 var THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',

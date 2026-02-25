@@ -193,26 +193,28 @@ function renderCart() {
 
         return `
         <tr class="cart-table-row">
-            <td class="td-item">
+            <td class="td-item" style="padding-top: 16px; padding-bottom: 16px;">
                 <div class="item-wrapper">
                     <span class="item-index">${index + 1}</span>
                     ${imgHtml}
                     <div class="item-text">
                         <div class="item-name">${item.name}</div>
-                        ${detailsHtml}
+                        <div class="cart-row-details">
+                            ${detailsHtml}
+                        </div>
                     </div>
                 </div>
             </td>
-            <td class="td-price">
-                <div class="price-val">${item.totalPrice} ฿</div>
-            </td>
-            <td class="td-qty">
-                 <div class="qty-control-pill">
-                    <button onclick="changeQty(${index}, -1)">−</button>
-                    <span>${item.qty}</span>
-                    <button onclick="changeQty(${index}, 1)">+</button>
-                 </div>
-                 <button class="btn-trash-red" onclick="removeFromCart(${index})">🗑️</button>
+            <td class="td-price" style="text-align: right; vertical-align: bottom; position: relative; padding-right: 15px; padding-top: 36px; padding-bottom: 12px;">
+                <button onclick="removeFromCart(${index})" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 1.8rem; color: #C62828; cursor: pointer; line-height: 1; padding: 6px; font-weight: bold;">&times;</button>
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px;">
+                    <div class="price-val" style="font-size: 1.25rem; font-weight: 700; color: #333; white-space: nowrap;">${item.totalPrice} ฿</div>
+                    <div class="qty-control-pill" style="margin: 0; transform: scale(1.1); transform-origin: right center;">
+                        <button onclick="changeQty(${index}, -1)">−</button>
+                        <span>${item.qty}</span>
+                        <button onclick="changeQty(${index}, 1)">+</button>
+                    </div>
+                </div>
             </td>
         </tr>
         `;
@@ -258,11 +260,22 @@ function executeDeleteItem() {
     showToast('ลบ ' + name + ' แล้ว');
 }
 
-// ===== อัพเดตยอดรวม =====
+// ===== อัพเดตยอดรวมและปุ่มสั่ง =====
 function updateCartTotal() {
     var total = cart.reduce(function (sum, item) { return sum + (item.totalPrice * item.qty); }, 0);
+    var totalQty = cart.reduce(function (sum, item) { return sum + item.qty; }, 0);
+
     var totalLabel = document.getElementById('cart-total');
     if (totalLabel) totalLabel.textContent = total + ' บาท';
+
+    var orderBtn = document.getElementById('btn-place-order');
+    if (orderBtn) {
+        if (totalQty > 0) {
+            orderBtn.textContent = 'สั่ง ' + totalQty + ' รายการ';
+        } else {
+            orderBtn.textContent = 'สั่งรายการ';
+        }
+    }
 }
 
 // ===== Confirm Order Modal Logic =====

@@ -55,7 +55,6 @@ function renderMenu() {
 // ===== แสดงฟอร์มเลือกวัตถุดิบ =====
 function renderCustomizeForm(menu) {
   document.getElementById('customize-header-name').textContent = menu.name;
-  document.getElementById('customize-header-price').textContent = menu.price + '฿';
 
   var imgEl = document.getElementById('customize-header-img');
   if (imgEl && menu.image) {

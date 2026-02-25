@@ -131,7 +131,6 @@
             <div class="customize-img-wrapper">
               <img id="customize-header-img" src="" alt="Menu">
             </div>
-            <div class="customize-price-badge" id="customize-header-price">--฿</div>
           </div>
         </div>
 
@@ -210,7 +209,7 @@
     </div>
 
     <!-- Body Adjust -->
-    <div class="page-body menu-body-adjust">
+    <div class="page-body menu-body-adjust" style="padding-bottom: 100px;">
       <div class="receipt-card">
         <div class="receipt-header-info">
           <div id="receipt-table" style="font-size:1.1rem;font-weight:700;"></div>
@@ -227,63 +226,74 @@
         </div>
       </div>
 
-      <!-- Back Button Circle (Red) -->
-      <button class="btn-back-floating" onclick="goToMenu()">
-        ←
-      </button>
-    </div>
-  </div>
-
-  <div id="alert-modal" class="alert-modal">
-    <div class="alert-modal-content">
-      <div class="alert-icon">⚠️</div>
-      <div class="alert-title">กรุณาเลือกหมายเลขโต๊ะ</div>
-      <div class="alert-message">คุณยังไม่ได้เลือกหมายเลขโต๊ะ<br>กรุณาเลือกโต๊ะก่อนสั่งอาหาร</div>
-      <button class="alert-btn" onclick="closeAlert()">เข้าใจแล้ว</button>
-    </div>
-  </div>
-
-  <!-- Confirm Order Modal -->
-  <div id="confirm-order-modal" class="alert-modal">
-    <div class="alert-modal-content" style="padding:20px; text-align:center;">
-      <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:5px;">ออเดอร์</h3>
-      <div id="confirm-order-table" style="font-size:1rem; color:#666; margin-bottom:15px;">โต๊ะ 1</div>
-
-      <div id="confirm-order-details"
-        style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:15px; text-align:left; background:#fafafa; font-size:0.9rem;">
-        <!-- JS Rendered Details -->
-      </div>
-
-      <div style="font-size:0.95rem; font-weight:600; color:#333; margin-bottom:15px;">ยืนยันการสั่งออเดอร์หรือไม่?
-      </div>
-
-      <div style="display:flex; gap:10px;">
-        <button onclick="closeConfirmOrder()" class="btn" style="flex:1; background:#888; color:#fff;">ยกเลิก</button>
-        <button onclick="executePlaceOrder()" class="btn"
-          style="flex:1; background:#4CAF50; color:#fff;">ยืนยัน</button>
+      <!-- Back Button Fixed Bottom -->
+      <div style="position:fixed; bottom:0; left:0; right:0; z-index:1000;">
+        <div style="max-width:420px; margin:0 auto; padding:16px 20px 24px;">
+          <button onclick="goToMenu()" style="
+            display:block; width:100%; padding:15px;
+            background:#FFC107; color:#333;
+            font-family:'Prompt',sans-serif; font-size:1.05rem; font-weight:700;
+            border:none; border-radius:50px; cursor:pointer;
+            box-shadow:0 4px 12px rgba(255,193,7,0.35); transition:transform 0.1s;
+          " onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'"
+            ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
+            ← กลับหน้าเมนู
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Confirm Delete Item Modal -->
-  <div id="confirm-delete-modal" class="alert-modal">
-    <div class="alert-modal-content" style="padding:24px 20px; text-align:center;">
-      <h3 style="font-size:1.1rem; font-weight:700; color:#333; margin-bottom:15px;">ยืนยันการลบรายการสินค้า</h3>
-      <div style="font-size:0.95rem; color:#666; margin-bottom:20px;">ยืนยันการลบรายการสินค้าหรือไม่?</div>
-
-      <div style="display:flex; gap:10px;">
-        <button onclick="closeConfirmDelete()" class="btn" style="flex:1; background:#888; color:#fff;">ยกเลิก</button>
-        <button onclick="executeDeleteItem()" class="btn"
-          style="flex:1; background:#4CAF50; color:#fff;">ยืนยัน</button>
+    <div id="alert-modal" class="alert-modal">
+      <div class="alert-modal-content">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-title">กรุณาเลือกหมายเลขโต๊ะ</div>
+        <div class="alert-message">คุณยังไม่ได้เลือกหมายเลขโต๊ะ<br>กรุณาเลือกโต๊ะก่อนสั่งอาหาร</div>
+        <button class="alert-btn" onclick="closeAlert()">เข้าใจแล้ว</button>
       </div>
     </div>
-  </div>
 
-  <script src="js/auth.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/navigation.js"></script>
-  <script src="js/cart.js"></script>
-  <script src="js/order.js"></script>
+    <!-- Confirm Order Modal -->
+    <div id="confirm-order-modal" class="alert-modal">
+      <div class="alert-modal-content" style="padding:20px; text-align:center;">
+        <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:5px;">ออเดอร์</h3>
+        <div id="confirm-order-table" style="font-size:1rem; color:#666; margin-bottom:15px;">โต๊ะ 1</div>
+
+        <div id="confirm-order-details"
+          style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:15px; text-align:left; background:#fafafa; font-size:0.9rem;">
+          <!-- JS Rendered Details -->
+        </div>
+
+        <div style="font-size:0.95rem; font-weight:600; color:#333; margin-bottom:15px;">ยืนยันการสั่งออเดอร์หรือไม่?
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button onclick="closeConfirmOrder()" class="btn" style="flex:1; background:#888; color:#fff;">ยกเลิก</button>
+          <button onclick="executePlaceOrder()" class="btn"
+            style="flex:1; background:#4CAF50; color:#fff;">ยืนยัน</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Item Modal -->
+    <div id="confirm-delete-modal" class="alert-modal">
+      <div class="alert-modal-content" style="padding:24px 20px; text-align:center;">
+        <h3 style="font-size:1.1rem; font-weight:700; color:#333; margin-bottom:15px;">ยืนยันการลบรายการสินค้า</h3>
+        <div style="font-size:0.95rem; color:#666; margin-bottom:20px;">ยืนยันการลบรายการสินค้าหรือไม่?</div>
+
+        <div style="display:flex; gap:10px;">
+          <button onclick="closeConfirmDelete()" class="btn"
+            style="flex:1; background:#888; color:#fff;">ยกเลิก</button>
+          <button onclick="executeDeleteItem()" class="btn"
+            style="flex:1; background:#4CAF50; color:#fff;">ยืนยัน</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/order.js"></script>
 </body>
 
 </html>
