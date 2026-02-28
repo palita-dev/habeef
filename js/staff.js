@@ -863,29 +863,60 @@ function renderHistoryOrders() {
 
     var html = '';
     orders.forEach(function (order) {
-        html += '<div class="order-group">';
-        html += '<div class="order-group-header">';
-        html += '<span class="table-badge">โต๊ะ ' + (order.table || '-') + '</span>';
-        html += '<div class="order-time">' + formatDateThai(order.createdAt) + '</div>';
+        // Table label logic
+        var tLabel = order.table || '-';
+        if (tLabel.startsWith('กลับบ้าน')) {
+            tLabel = 'กลับบ้านคิว ' + tLabel.replace('กลับบ้านคิว', '').trim();
+        }
+
+        html += '<div class="order-group" style="margin-bottom:15px; background:#fff; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.05); overflow:hidden;">';
+        html += '<div class="order-group-header" onclick="toggleOrderGroup(\'order-items-' + order.orderId + '\', this)" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:15px; background:#fff; position:relative;">';
+        html += '<div>';
+        html += '<span class="table-badge" style="background:#FFC107; color:#333; padding:5px 12px; border-radius:20px; font-weight:700; font-size:0.9rem; margin-right:10px;">โต๊ะ ' + tLabel + '</span>';
         html += '</div>';
+        html += '<div style="display:flex; align-items:center;">';
+        html += '<div class="order-time" style="color:#666; font-size:0.85rem; margin-right:8px;">' + formatDateThai(order.createdAt) + '</div>';
+        html += '<span class="toggle-icon" style="transition: transform 0.2s; color:#888; font-size:1.2rem;">▼</span>';
+        html += '</div>';
+        html += '</div>';
+
+        // Collapsible items container
+        html += '<div id="order-items-' + order.orderId + '" style="display: none; border-top: 1px dashed #eee; padding:0 15px 15px;">';
+
         order.items.forEach(function (item, idx) {
             var emoji = MENU_EMOJIS[item.menuId] || '🍜';
             for (var q = 0; q < item.qty; q++) {
-                html += '<div class="order-item">';
-                html += '<div class="order-num">' + String(idx + 1 + q).padStart(2, '0') + '</div>';
-                html += '<div class="order-emoji">' + emoji + '</div>';
-                html += '<div class="order-info">';
-                html += '<div class="order-name">' + item.name + '</div>';
-                html += '<div class="order-detail">' + item.details.join('<br>') + '</div>';
+                html += '<div class="order-item" style="display:flex; align-items:center; margin-top:12px; padding-bottom:12px; border-bottom:1px dashed #f5f5f5;">';
+                html += '<div class="order-num" style="background:#f5f5f5; border-radius:8px; padding:4px 8px; font-size:0.8rem; font-weight:700; color:#555; margin-right:12px;">' + String(idx + 1 + q).padStart(2, '0') + '</div>';
+
+                // Use emoji since real image requires MENU_ITEMS from app.js which is not loaded here
+                html += '<div class="order-emoji" style="width:48px; height:48px; background:#FFF3E0; border-radius:12px; display:flex; flex-shrink:0; align-items:center; justify-content:center; font-size:1.5rem; margin-right:12px;">' + emoji + '</div>';
+
+                html += '<div class="order-info" style="flex:1;">';
+                html += '<div class="order-name" style="font-weight:700; font-size:1rem; color:#222;">' + item.name + '</div>';
+                html += '<div class="order-detail" style="font-size:0.8rem; color:#888;">' + item.details.join('<br>') + '</div>';
                 html += '</div>';
-                html += '<div class="order-price">' + item.totalPrice + ' ฿</div>';
+                html += '<div class="order-price" style="font-weight:700; color:#C62828; font-size:1rem;">' + item.totalPrice + ' ฿</div>';
                 html += '</div>';
             }
         });
-        html += '<div class="order-actions" style="justify-content:space-between;border-top:1px dashed #ddd;padding-top:12px;">';
-        html += '<span style="font-weight:700;">รวมทั้งหมด ' + order.totalPrice + ' ฿</span>';
-        html += '</div></div>';
+        html += '<div class="order-actions" style="display:flex; justify-content:flex-start; margin-top:15px;">';
+        html += '<span style="font-weight:700; font-size:1.1rem; color:#222;">รวมทั้งหมด ' + order.totalPrice + ' ฿</span>';
+        html += '</div></div></div>'; // Close collapsible container, then wrapper
     });
     container.innerHTML = html;
 }
+
+// Global Toggle Function for Order History
+window.toggleOrderGroup = function (containerId, headerElem) {
+    var container = document.getElementById(containerId);
+    var icon = headerElem.querySelector('.toggle-icon');
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(180deg)';
+    } else {
+        container.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    }
+};
 // (Helpers: getOrders, saveOrders, THAI_MONTHS, MENU_EMOJIS, formatDateThai are provided by auth.js)

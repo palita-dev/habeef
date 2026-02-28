@@ -369,8 +369,7 @@ function _renderStockInList(containerId, isFull) {
 
     if (isFull) {
         // Apply filter for the full history page
-        displayEntries = allEntries.filter(function (entry, index) {
-            if (index === 0) return true; // Keep the latest for correct indexing, but we'll skip it in the loop anyway
+        displayEntries = allEntries.filter(function (entry) {
             var entryKey = getDateKey(new Date(entry.time));
             if (window.historyFilterMode === 'today') {
                 return entryKey === todayKey;
@@ -378,9 +377,6 @@ function _renderStockInList(containerId, isFull) {
                 return entryKey !== todayKey;
             }
         });
-
-        // If the latest item (index 0 of allEntries) was kept but we are in 'past' mode, 
-        // we might not want to show anything if nothing else exists. The loop startIndex = 1 handles skipping the actual latest item.
     }
 
     // If not full history, show "Latest" at the top
@@ -614,7 +610,19 @@ function saveEditStockIn() {
 function getRemaining() {
     var dateKey = getDateKey(new Date());
     var stockIn = getStockIn();
-    var usage = JSON.parse(localStorage.getItem('habeef_ingredient_usage') || '{}');
+    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+
+    // Convert array of logs to date key map
+    var usage = {};
+    usageLogs.forEach(function (log) {
+        var logTime = new Date(log.date);
+        var dKey = getDateKey(logTime);
+        if (!usage[dKey]) usage[dKey] = {};
+        for (var ingName in log.ingredients) {
+            usage[dKey][ingName] = (usage[dKey][ingName] || 0) + log.ingredients[ingName];
+        }
+    });
+
     var todayIn = stockIn[dateKey] || {};
     var todayUsed = usage[dateKey] || {};
 
@@ -649,7 +657,7 @@ function getRemaining() {
     var result = {};
     ALL_INGREDIENTS.forEach(function (ing) {
         var remaining = (totalIn[ing] || 0) - (totalUsed[ing] || 0);
-        if (remaining < 0 || isNaN(remaining)) remaining = 0;
+        if (remaining < 0) remaining = 0;
 
         var unit = ING_UNITS[ing];
         if (todayIn[ing]) {
@@ -679,12 +687,17 @@ function toggleRemainingSort() {
     renderRemaining();
 }
 
-function getSecondaryUnitHTML(name, qty) {
+function formatSecondaryUnit(name, qty, returnRawText) {
+    var defaultZero = returnRawText ? '' : '<br><span style="font-size:0.85em; color:#666;">';
+    var closeTag = returnRawText ? '' : '</span>';
+    var openParen = returnRawText ? '' : '(';
+    var closeParen = returnRawText ? '' : ')';
+
     if (typeof qty !== 'number' || isNaN(qty) || qty <= 0) {
-        if (name === 'ไข่') return '<br><span style="font-size:0.85em; color:#666;">(0 ฟอง)</span>';
-        if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return '<br><span style="font-size:0.85em; color:#666;">(0 กรัม / 0 ก้อน)</span>';
-        if (name === 'ลูกชิ้น' || name === 'น่องไก่') return '<br><span style="font-size:0.85em; color:#666;">(0 กรัม / 0 ชิ้น)</span>';
-        return '<br><span style="font-size:0.85em; color:#666;">(0 กรัม)</span>';
+        if (name === 'ไข่') return defaultZero + openParen + '0 ฟอง' + closeParen + closeTag;
+        if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return returnRawText ? '0 ก้อน' : defaultZero + openParen + '0 กรัม / 0 ก้อน' + closeParen + closeTag;
+        if (name === 'ลูกชิ้น' || name === 'น่องไก่') return returnRawText ? '0 ชิ้น' : defaultZero + openParen + '0 กรัม / 0 ชิ้น' + closeParen + closeTag;
+        return defaultZero + openParen + '0 กรัม' + closeParen + closeTag;
     }
 
     var weightInKg = null;
@@ -696,9 +709,18 @@ function getSecondaryUnitHTML(name, qty) {
         case 'เส้นหมี่ขาว': weightInKg = qty * 0.5; break;
         case 'เส้นหมี่หยก': weightInKg = qty * 0.248; secondUnitText = Math.ceil(qty * 4) + ' ก้อน'; break;
         case 'เส้นหมี่เหลือง': weightInKg = qty * 0.248; secondUnitText = Math.ceil(qty * 4) + ' ก้อน'; break;
-        case 'ลูกชิ้น': weightInKg = qty * 1.0; secondUnitText = Math.ceil(qty * 90) + ' ชิ้น'; break;
+        case 'ลูกชิ้น':
+            if (returnRawText) {
+                var bags = Math.floor(qty);
+                var remPieces = Math.round((qty - bags) * 90);
+                var lkParts = [];
+                if (bags > 0) lkParts.push(bags + ' ถุง');
+                if (remPieces > 0) lkParts.push(remPieces + ' ชิ้น');
+                return lkParts.length > 0 ? lkParts.join(' ') : '0 ชิ้น';
+            }
+            weightInKg = qty * 1.0; secondUnitText = Math.ceil(qty * 90) + ' ชิ้น'; break;
         case 'น่องไก่': weightInKg = qty * 1.0; secondUnitText = Math.floor(qty / 0.08) + ' ชิ้น'; break;
-        case 'ไข่': return '<br><span style="font-size:0.85em; color:#666;">(' + Math.ceil(qty * 30) + ' ฟอง)</span>';
+        case 'ไข่': return defaultZero + openParen + Math.ceil(qty * 30) + ' ฟอง' + closeParen + closeTag;
         case 'ผักบุ้ง':
         case 'ถั่วงอก':
         case 'เนื้อวัว':
@@ -725,7 +747,15 @@ function getSecondaryUnitHTML(name, qty) {
     }
 
     if (parts.length > 0) {
-        return '<br><span style="font-size:0.85em; color:#666;">(' + parts.join(' / ') + ')</span>';
+        if (returnRawText) {
+            // For raw text: if there's a piece/block count, show only that
+            if (secondUnitText) {
+                return secondUnitText;
+            }
+            return parts.join(' / ');
+        } else {
+            return '<br><span style="font-size:0.85em; color:#666;">(' + parts.join(' / ') + ')</span>';
+        }
     }
     return '';
 }
@@ -770,7 +800,7 @@ function renderRemaining() {
             '<div class="ing-card-name">' + name + '</div>' +
             '<div class="ing-card-qty">' +
             parseFloat(Number(d.remaining).toFixed(3)) + ' ' + d.unit +
-            getSecondaryUnitHTML(name, d.remaining) +
+            formatSecondaryUnit(name, d.remaining) +
             '</div>' +
             '</div>';
     }).join('');
@@ -786,7 +816,7 @@ function renderReport() {
     if (!container) return;
 
     var html = '<table class="ing-table">';
-    html += '<tr><th>รายการ</th><th>รับเข้า</th><th>ที่ใช้ไป</th><th>คงเหลือ</th><th>สถานะ</th></tr>';
+    html += '<tr><th>รายการ</th><th>รับเข้า</th><th>ที่ใช้ไป</th><th>คงเหลือ</th></tr>';
 
     var remainingData = getRemaining();
 
@@ -801,21 +831,32 @@ function renderReport() {
         var displayUnit = unit === 'กิโลกรัม' ? 'กก.' : unit;
 
         var statusClass = 'status-ok';
-        var statusIcon = '';
-        if (remaining <= 0 && inQty > 0) {
+        var statusIcon = '<span class="status-icon">🟢</span> ปกติ';
+
+        if (remaining <= 0) {
             statusClass = 'status-out';
             statusIcon = '<span class="status-icon">🔴</span> หมด';
-        } else if (remaining <= 1 && inQty > 0) {
+        } else if (remaining <= 1.5) { // Simple threshold for "low"
             statusClass = 'status-low';
             statusIcon = '<span class="status-icon">🟡</span> ใกล้หมด';
         }
 
+        var usedText = formatSecondaryUnit(name, usedQty, true);
+        if (!usedText) usedText = parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit;
+
+        var remText = formatSecondaryUnit(name, remaining, true);
+        if (!remText) remText = parseFloat(Number(remaining).toFixed(3)) + ' ' + displayUnit;
+
         html += '<tr>';
         html += '<td>' + name + '</td>';
-        html += '<td>' + parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit + '</td>';
-        html += '<td>' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit + '</td>';
-        html += '<td>' + parseFloat(Number(remaining).toFixed(3)) + ' ' + displayUnit + '</td>';
-        html += '<td class="' + statusClass + '">' + statusIcon + '</td>';
+        var inText = parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit;
+        if (displayUnit === 'ถุง') {
+            var inSecondary = formatSecondaryUnit(name, inQty, true);
+            if (inSecondary) inText += ' / ' + inSecondary;
+        }
+        html += '<td>' + inText + '</td>';
+        html += '<td>' + usedText + '</td>';
+        html += '<td class="' + statusClass + '">' + remText + '</td>';
         html += '</tr>';
     });
 
@@ -846,15 +887,27 @@ function openReportHistoryModal() {
     var todayStr = getShiftDateStr(new Date());
     dateMap[todayStr] = true;
 
-    // Add dates from stock-in history
+    // Add dates from stock-in history (convert CE date keys to getShiftDateStr format)
     for (var key in stockIn) {
-        if (stockIn[key].history) {
-            stockIn[key].history.forEach(function (entry) {
-                var dStr = getShiftDateStr(new Date(entry.time));
-                dateMap[dStr] = true;
-            });
+        if (typeof stockIn[key] === 'object') {
+            // key is in CE format like "2026-02-25", convert to Date then use getShiftDateStr
+            var parts = key.split('-');
+            if (parts.length === 3) {
+                var ceDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
+                var converted = getShiftDateStr(ceDate);
+                dateMap[converted] = true;
+            }
         }
     }
+
+    // Add dates from ingredient usage (habeef_ingredients)
+    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+    usageLogs.forEach(function (log) {
+        if (log.date) {
+            var dStr = getShiftDateStr(new Date(log.date));
+            dateMap[dStr] = true;
+        }
+    });
 
     // Add dates from orders
     orders.forEach(function (o) {
@@ -934,44 +987,64 @@ function downloadReportForDate(dateStr) {
     var allOrders = getOrders();
     var usedOnDate = {};
 
-    // Calculate usage on specific date based on shift logic
-    allOrders.forEach(function (o) {
-        var oDate = o.completedAt ? new Date(o.completedAt) : (o.timestamp ? new Date(o.timestamp) : null);
-        if (oDate) {
-            var oDateStr = getShiftDateStr(oDate);
-            if (oDateStr === dateStr && o.status !== 'cancelled') {
-                o.cart.forEach(function (item) {
-                    var def = getMenuItem(item.id);
-                    if (def && def.req) {
-                        for (var ing in def.req) {
-                            usedOnDate[ing] = (usedOnDate[ing] || 0) + (def.req[ing] * item.qty);
-                        }
+    // Helper: parse Thai BE date string (d-m-yyyy) to JS Date for comparison
+    function parseBEDate(beStr) {
+        var p = beStr.split('-');
+        return new Date(parseInt(p[2]) - 543, parseInt(p[1]) - 1, parseInt(p[0]));
+    }
+    var targetDate = parseBEDate(dateStr);
+
+    // Calculate usage on specific date and total historical usage up to that date
+    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+    var totalUsedUpToDate = {};
+    usageLogs.forEach(function (log) {
+        if (log.date) {
+            var logDateStr = getShiftDateStr(new Date(log.date));
+            var logDate = parseBEDate(logDateStr);
+            if (logDate <= targetDate) {
+                for (var ingName in log.ingredients) {
+                    totalUsedUpToDate[ingName] = (totalUsedUpToDate[ingName] || 0) + log.ingredients[ingName];
+                    if (logDateStr === dateStr) {
+                        usedOnDate[ingName] = (usedOnDate[ingName] || 0) + log.ingredients[ingName];
                     }
-                    if (item.extras) {
-                        item.extras.forEach(function (exName) {
-                            var exDef = getExtraItem(exName);
-                            if (exDef && exDef.req) {
-                                for (var exIng in exDef.req) {
-                                    usedOnDate[exIng] = (usedOnDate[exIng] || 0) + (exDef.req[exIng] * item.qty);
-                                }
-                            }
-                        });
-                    }
-                });
+                }
             }
         }
     });
 
-    // Reconstruct remaining data struct but inject date-specific used amounts
-    var currentRemaining = getRemaining();
+    // Calculate total historical stock in up to that date
+    var totalInUpToDate = {};
+    for (var d in stockIn) {
+        // Convert CE stockIn key (e.g. "2026-02-25") to Date for comparison
+        var dParts = d.split('-');
+        if (dParts.length === 3) {
+            var ceD = new Date(parseInt(dParts[0]), parseInt(dParts[1]) - 1, parseInt(dParts[2]));
+            if (ceD <= targetDate) {
+                for (var ing in stockIn[d]) {
+                    if (ing === 'history') continue;
+                    if (totalInUpToDate[ing] === undefined) totalInUpToDate[ing] = 0;
+                    var itemData = stockIn[d][ing];
+                    var q = 0;
+                    if (typeof itemData === 'number') q = itemData;
+                    else if (itemData && typeof itemData.qty === 'number') q = itemData.qty;
+                    totalInUpToDate[ing] += q;
+                }
+            }
+        }
+    }
+
     var reportData = {};
     ALL_INGREDIENTS.forEach(function (ing) {
-        var base = currentRemaining[ing];
+        var inQty = totalInUpToDate[ing] || 0;
+        var usedTotal = totalUsedUpToDate[ing] || 0;
+        var rem = inQty - usedTotal;
+        if (rem < 0) rem = 0; // clamp negative to 0 like current logic
+
         reportData[ing] = {
-            stockIn: base.stockIn,  // Total historical stock in
+            stockIn: inQty,
             used: usedOnDate[ing] || 0, // Used ON THIS DATE
-            remaining: base.remaining, // Current remaining
-            unit: base.unit
+            remaining: rem, // Historical remaining at the end of this date
+            unit: ING_UNITS[ing]
         };
     });
 
@@ -981,8 +1054,7 @@ function downloadReportForDate(dateStr) {
     html += '<tr><th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รายการ</th>';
     html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รับเข้า(รวม)</th>';
     html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">ที่ใช้ไป(' + displayDate + ')</th>';
-    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ(ปัจจุบัน)</th>';
-    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">สถานะ</th></tr>';
+    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ(ณ วันนั้น)</th></tr>';
 
     ALL_INGREDIENTS.forEach(function (name) {
         var data = reportData[name];
@@ -994,18 +1066,36 @@ function downloadReportForDate(dateStr) {
         // Display unit specifically formatted for report
         var displayUnit = unit === 'กิโลกรัม' ? 'กก.' : unit;
 
-        var statusOk = rem > 1 || inQty === 0;
+        var usedText = formatSecondaryUnit(name, usedQty, true);
+        if (!usedText) usedText = parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit;
+
+        var remText = formatSecondaryUnit(name, rem, true);
+        if (!remText) remText = parseFloat(Number(rem).toFixed(3)) + ' ' + displayUnit;
+
+        var bgColor = 'transparent';
+        var textColor = '#000000';
+        var fontWeight = 'normal';
+
+        if (rem <= 0) {
+            bgColor = '#FFEBEE'; // Red bg
+            textColor = '#C62828';
+            fontWeight = 'bold';
+        } else if (rem <= 1.5) {
+            bgColor = '#FFF3E0'; // Yellow bg
+            textColor = '#E65100';
+            fontWeight = 'bold';
+        }
 
         html += '<tr>';
         html += '<td style="padding:10px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + parseFloat(Number(rem).toFixed(3)) + ' ' + displayUnit + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; color:#000000; font-weight:normal;">';
-        if (!statusOk && inQty > 0) {
-            html += '<span style="color:#FF3333; font-weight:bold;">ใกล้หมด</span>';
+        var inText = parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit;
+        if (displayUnit === 'ถุง') {
+            var inSecondary = formatSecondaryUnit(name, inQty, true);
+            if (inSecondary) inText += ' / ' + inSecondary;
         }
-        html += '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + inText + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + usedText + '</td>';
+        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; background:' + bgColor + '; font-weight:' + fontWeight + '; color:' + textColor + ';">' + remText + '</td>';
         html += '</tr>';
     });
     html += '</table>';

@@ -1,8 +1,6 @@
 // ===== AUTH SYSTEM =====
-// Server base URL (auto-detects whether running from file:// or http://)
-var SERVER_BASE = (window.location.protocol === 'file:')
-    ? 'http://localhost:4000'
-    : window.location.origin;
+// Server base URL: Points to the root (where api/ folder is)
+var SERVER_BASE = window.location.origin;
 
 // Default admin account
 var DEFAULT_ADMIN = { username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบ' };
@@ -15,7 +13,7 @@ if (_usersCache.length === 0) _usersCache = [DEFAULT_ADMIN];
 
 // ===== SYNC FROM SERVER =====
 function syncFromServer() {
-    fetch(SERVER_BASE + '/api/orders')
+    fetch(SERVER_BASE + '/api/orders.php')
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (Array.isArray(data)) {
@@ -24,7 +22,7 @@ function syncFromServer() {
             }
         }).catch(function () { });
 
-    fetch(SERVER_BASE + '/api/users')
+    fetch(SERVER_BASE + '/api/users.php')
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (Array.isArray(data) && data.length > 0) {
@@ -46,7 +44,7 @@ function getUsers() {
 function saveUsers(users) {
     _usersCache = users;
     localStorage.setItem('habeef_users', JSON.stringify(users));
-    fetch(SERVER_BASE + '/api/users', {
+    fetch(SERVER_BASE + '/api/users.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(users)
@@ -161,7 +159,7 @@ function getOrders() {
 function saveOrders(orders) {
     _ordersCache = orders;
     localStorage.setItem('habeef_orders', JSON.stringify(orders));
-    fetch(SERVER_BASE + '/api/orders', {
+    fetch(SERVER_BASE + '/api/orders.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orders)
@@ -171,7 +169,7 @@ function saveOrders(orders) {
 function saveOrder(order) {
     _ordersCache.push(order);
     localStorage.setItem('habeef_orders', JSON.stringify(_ordersCache));
-    fetch(SERVER_BASE + '/api/orders/add', {
+    fetch(SERVER_BASE + '/api/orders_add.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(order)
@@ -187,7 +185,7 @@ function saveIngredientUsage(ingredients, date) {
     var log = getIngredientUsage();
     log.push({ date: date.toISOString(), ingredients: ingredients });
     localStorage.setItem('habeef_ingredients', JSON.stringify(log));
-    fetch(SERVER_BASE + '/api/ingredients', {
+    fetch(SERVER_BASE + '/api/ingredients.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(log)

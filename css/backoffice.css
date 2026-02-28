@@ -602,35 +602,39 @@ input[type="number"] {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    table-layout: fixed;
+    border: 1px solid #ddd;
 }
 
 .ing-table th {
     background: #FFC107;
     color: #333;
-    padding: 8px 6px;
-    font-size: 0.72rem;
+    padding: 6px 4px;
+    font-size: 0.68rem;
     font-weight: 700;
     text-align: center;
+    border: 1px solid #e0a800;
 }
 
 .ing-table td {
-    padding: 6px;
-    font-size: 0.72rem;
+    padding: 5px 4px;
+    font-size: 0.68rem;
     text-align: center;
-    border-bottom: 1px solid #F5F5F5;
+    border: 1px solid #e0e0e0;
+    word-break: break-word;
 }
 
 .ing-table tr:last-child td {
-    border-bottom: none;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .ing-table td:first-child {
     text-align: left;
     font-weight: 500;
-    padding-left: 10px;
+    padding-left: 6px;
 }
 
 /* ===== PDF EXPORT OVERRIDES ===== */
@@ -690,14 +694,17 @@ input[type="number"] {
 }
 
 .status-ok {
-    color: #4CAF50;
+    /* No special background, default text */
 }
 
 .status-low {
-    color: #FF9800;
+    background-color: #FFF3E0;
+    color: #E65100;
+    font-weight: 600;
 }
 
 .status-out {
+    background-color: #FFEBEE;
     color: #C62828;
     font-weight: 700;
 }
