@@ -687,77 +687,96 @@ function toggleRemainingSort() {
     renderRemaining();
 }
 
+// Placeholder for now, I need to check ING_UNITS first before writing the exact math
 function formatSecondaryUnit(name, qty, returnRawText) {
-    var defaultZero = returnRawText ? '' : '<br><span style="font-size:0.85em; color:#666;">';
-    var closeTag = returnRawText ? '' : '</span>';
-    var openParen = returnRawText ? '' : '(';
-    var closeParen = returnRawText ? '' : ')';
-
     if (typeof qty !== 'number' || isNaN(qty) || qty <= 0) {
-        if (name === 'ไข่') return defaultZero + openParen + '0 ฟอง' + closeParen + closeTag;
-        if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return returnRawText ? '0 ก้อน' : defaultZero + openParen + '0 กรัม / 0 ก้อน' + closeParen + closeTag;
-        if (name === 'ลูกชิ้น' || name === 'น่องไก่') return returnRawText ? '0 ชิ้น' : defaultZero + openParen + '0 กรัม / 0 ชิ้น' + closeParen + closeTag;
-        return defaultZero + openParen + '0 กรัม' + closeParen + closeTag;
-    }
-
-    var weightInKg = null;
-    var secondUnitText = null;
-
-    switch (name) {
-        case 'เส้นเล็ก': weightInKg = qty * 1.0; break;
-        case 'เส้นใหญ่': weightInKg = qty * 0.5; break;
-        case 'เส้นหมี่ขาว': weightInKg = qty * 0.5; break;
-        case 'เส้นหมี่หยก': weightInKg = qty * 0.248; secondUnitText = Math.ceil(qty * 4) + ' ก้อน'; break;
-        case 'เส้นหมี่เหลือง': weightInKg = qty * 0.248; secondUnitText = Math.ceil(qty * 4) + ' ก้อน'; break;
-        case 'ลูกชิ้น':
-            if (returnRawText) {
-                var bags = Math.floor(qty);
-                var remPieces = Math.round((qty - bags) * 90);
-                var lkParts = [];
-                if (bags > 0) lkParts.push(bags + ' ถุง');
-                if (remPieces > 0) lkParts.push(remPieces + ' ชิ้น');
-                return lkParts.length > 0 ? lkParts.join(' ') : '0 ชิ้น';
-            }
-            weightInKg = qty * 1.0; secondUnitText = Math.ceil(qty * 90) + ' ชิ้น'; break;
-        case 'น่องไก่': weightInKg = qty * 1.0; secondUnitText = Math.floor(qty / 0.08) + ' ชิ้น'; break;
-        case 'ไข่': return defaultZero + openParen + Math.ceil(qty * 30) + ' ฟอง' + closeParen + closeTag;
-        case 'ผักบุ้ง':
-        case 'ถั่วงอก':
-        case 'เนื้อวัว':
-        case 'กุ้ง':
-        case 'หมึก':
-            weightInKg = qty * 1.0; break;
+        if (name === 'ไข่') return '0 แผง 0 ฟอง';
+        if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return '0 ถุง 0 ก้อน';
+        if (name === 'ลูกชิ้น') return '0 ถุง 0 ชิ้น';
+        if (name === 'เส้นเล็ก' || name === 'เส้นใหญ่' || name === 'เส้นหมี่ขาว') return '0 ถุง 0 กรัม';
+        if (name === 'น่องไก่' || name === 'เนื้อวัว' || name === 'ผักบุ้ง' || name === 'ถั่วงอก' || name === 'กุ้ง' || name === 'หมึก') return '0 กิโลกรัม';
+        return '0 ' + (ING_UNITS[name] || 'หน่วย');
     }
 
     var parts = [];
-    if (weightInKg !== null) {
-        var kilos = Math.floor(weightInKg);
-        var grams = Math.round((weightInKg - kilos) * 1000);
-        if (grams >= 1000) { kilos += Math.floor(grams / 1000); grams = grams % 1000; }
 
-        var wParts = [];
-        if (kilos > 0) wParts.push(kilos + ' กก.');
-        if (grams > 0) wParts.push(grams + ' กรัม');
-        if (wParts.length === 0) wParts.push('0 กรัม');
-        parts.push(wParts.join(' '));
-    }
+    switch (name) {
+        case 'ไข่':
+            // 1 แผง = 30 ฟอง
+            var trays = Math.floor(qty);
+            var eggs = Math.round((qty - trays) * 30);
+            if (eggs >= 30) { trays += 1; eggs = 0; }
+            if (trays > 0) parts.push(trays + ' แผง');
+            if (eggs > 0) parts.push(eggs + ' ฟอง');
+            break;
 
-    if (secondUnitText) {
-        parts.push(secondUnitText);
-    }
+        case 'เส้นเล็ก':
+        case 'เส้นใหญ่':
+        case 'เส้นหมี่ขาว':
+            // 1 ถุง เส้นเล็ก = 1 กก (1000 กรัม)
+            // 1 ถุง เส้นใหญ่ = 500 กรัม
+            // 1 ถุง เส้นหมี่ขาว = 500 กรัม
+            var gramPerBag = (name === 'เส้นเล็ก') ? 1000 : 500;
+            var bags = Math.floor(qty);
+            var grams = Math.round((qty - bags) * gramPerBag);
+            if (grams >= gramPerBag) { bags += Math.floor(grams / gramPerBag); grams = grams % gramPerBag; }
+            if (bags > 0) parts.push(bags + ' ถุง');
+            if (grams > 0) parts.push(grams + ' กรัม');
+            break;
 
-    if (parts.length > 0) {
-        if (returnRawText) {
-            // For raw text: if there's a piece/block count, show only that
-            if (secondUnitText) {
-                return secondUnitText;
+        case 'เส้นหมี่หยก':
+        case 'เส้นหมี่เหลือง':
+            // 1 ถุง = 4 ก้อน
+            var bagsN = Math.floor(qty);
+            var blocks = Math.round((qty - bagsN) * 4);
+            if (blocks >= 4) { bagsN += Math.floor(blocks / 4); blocks = blocks % 4; }
+            if (bagsN > 0) parts.push(bagsN + ' ถุง');
+            if (blocks > 0) parts.push(blocks + ' ก้อน');
+            break;
+
+        case 'ลูกชิ้น':
+            // 1 ถุง (1 กก.) = 90 ชิ้น (ตามตารางที่ได้มาจากภาพเก่า)
+            var bagsM = Math.floor(qty);
+            var pieces = Math.round((qty - bagsM) * 90);
+            if (pieces >= 90) { bagsM += Math.floor(pieces / 90); pieces = pieces % 90; }
+            if (bagsM > 0) parts.push(bagsM + ' ถุง');
+            if (pieces > 0) parts.push(pieces + ' ชิ้น');
+            break;
+
+        case 'น่องไก่':
+        case 'เนื้อวัว':
+        case 'กุ้ง':
+        case 'หมึก':
+        case 'ผักบุ้ง':
+        case 'ถั่วงอก':
+            // กิโลกรัม -> กิโลกรัม กับ กรัม หรือ ตัว/ชิ้น
+            // น่องไก่: 1 กก = 12.46 ชิ้น (จากภาพ 13 กก. = 162 ชิ้น => 1 กก = ~12.46 ชิ้น)
+            // เนื้อวัว: 18 กก -> เราไม่รู้ชิ้น ใช้เป็น กก. + กรัม ดีกว่า
+            // กุ้ง: 3 กก -> ...
+            // Let's just use decimal formats for these, or kg + grams
+            if (name === 'กุ้ง') {
+                return parseFloat(Number(qty).toFixed(3)) + ' กิโลกรัม';
+            } else if (name === 'น่องไก่' || name === 'เนื้อวัว' || name === 'หมึก') {
+                var kg = Math.floor(qty);
+                var g = Math.round((qty - kg) * 1000);
+                if (kg > 0) parts.push(kg + ' กิโลกรัม');
+                if (g > 0) parts.push(g + ' กรัม');
+            } else {
+                return parseFloat(Number(qty).toFixed(3)) + ' กิโลกรัม';
             }
-            return parts.join(' / ');
-        } else {
-            return '<br><span style="font-size:0.85em; color:#666;">(' + parts.join(' / ') + ')</span>';
-        }
+            break;
+
+        default:
+            return parseFloat(Number(qty).toFixed(3)) + ' ' + (ING_UNITS[name] || 'หน่วย');
     }
-    return '';
+
+    if (parts.length === 0) {
+        if (name === 'ไข่') return '0 แผง';
+        if (name.includes('เส้น') || name === 'ลูกชิ้น') return '0 ถุง';
+        return '0 กิโลกรัม';
+    }
+
+    return parts.join(' ');
 }
 
 function renderRemaining() {
@@ -773,6 +792,33 @@ function renderRemaining() {
         keys.sort(function (a, b) {
             return remaining[b].remaining - remaining[a].remaining;
         });
+    }
+
+    function getDisabledIngredients() {
+        var saved = localStorage.getItem('habeef_disabled_ingredients');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    // Global scope toggle function to be accessible by HTML onchange handler
+    window.toggleIngredient = function (name) {
+        var disabled = getDisabledIngredients();
+        var idx = disabled.indexOf(name);
+
+        // If currently enabled (not in disabled list), show confirm before disabling
+        if (idx === -1) {
+            if (!confirm('คุณต้องการปิดการขาย "' + name + '" ใช่หรือไม่?')) {
+                renderRemaining(); // Re-render to revert checkbox state
+                return;
+            }
+        }
+
+        if (idx > -1) {
+            disabled.splice(idx, 1);
+        } else {
+            disabled.push(name);
+        }
+        localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabled));
+        renderRemaining();
     }
 
     // Update button UI
@@ -791,17 +837,32 @@ function renderRemaining() {
     var container = document.getElementById('remaining-grid');
     if (!container) return;
 
+    var disabledIngredients = getDisabledIngredients();
+
     container.innerHTML = keys.map(function (name) {
         var d = remaining[name];
+        var isEnabled = disabledIngredients.indexOf(name) === -1;
+        var checkedAttr = isEnabled ? 'checked' : '';
+        var opacityStyle = isEnabled ? '' : 'opacity: 0.5;';
+
         var warning = d.remaining <= 1 ? '<div class="ing-warning">⚠️</div>' : '';
-        return '<div class="ing-card">' +
+
+        var toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center;">' +
+            '<label class="toggle-switch">' +
+            '<input type="checkbox" onchange="toggleIngredient(\'' + name + '\')" ' + checkedAttr + '>' +
+            '<span class="toggle-slider"></span>' +
+            '</label></div>';
+
+        return '<div class="ing-card" style="' + opacityStyle + ' position:relative; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">' +
+            '<div>' +
             warning +
             '<div class="ing-card-img">' + (ING_EMOJIS[name] || '📦') + '</div>' +
             '<div class="ing-card-name">' + name + '</div>' +
             '<div class="ing-card-qty">' +
-            parseFloat(Number(d.remaining).toFixed(3)) + ' ' + d.unit +
-            formatSecondaryUnit(name, d.remaining) +
+            formatSecondaryUnit(name, d.remaining, false) +
             '</div>' +
+            '</div>' +
+            toggleHtml +
             '</div>';
     }).join('');
 }
@@ -842,18 +903,11 @@ function renderReport() {
         }
 
         var usedText = formatSecondaryUnit(name, usedQty, true);
-        if (!usedText) usedText = parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit;
-
         var remText = formatSecondaryUnit(name, remaining, true);
-        if (!remText) remText = parseFloat(Number(remaining).toFixed(3)) + ' ' + displayUnit;
+        var inText = formatSecondaryUnit(name, inQty, true);
 
         html += '<tr>';
         html += '<td>' + name + '</td>';
-        var inText = parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit;
-        if (displayUnit === 'ถุง') {
-            var inSecondary = formatSecondaryUnit(name, inQty, true);
-            if (inSecondary) inText += ' / ' + inSecondary;
-        }
         html += '<td>' + inText + '</td>';
         html += '<td>' + usedText + '</td>';
         html += '<td class="' + statusClass + '">' + remText + '</td>';

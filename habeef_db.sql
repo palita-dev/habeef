@@ -15,10 +15,8 @@ SET time_zone = "+07:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `habeef_db`
+-- Database structure to be imported directly into the existing database
 --
-CREATE DATABASE IF NOT EXISTS `habeef_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `habeef_db`;
 
 -- --------------------------------------------------------
 

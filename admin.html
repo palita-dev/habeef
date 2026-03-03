@@ -9,15 +9,53 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/backoffice.css">
+    <style>
+        .top-bar {
+            background: linear-gradient(135deg, #222, #111) !important;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -4px;
+            right: -6px;
+            background: #F44336;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            padding: 0 3px;
+        }
+    </style>
 </head>
 
 <body>
     <!-- ===== หน้าจัดการสิทธิ์ผู้ใช้ ===== -->
     <div id="page-users" class="page active">
-        <div class="top-bar"><span class="top-bar-title">จัดการสิทธิ์ผู้ใช้</span></div>
-        <div class="black-header">
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบแอดมิน</span></div>
+        <div class="black-header" style="position:relative;">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <p>ดูแลและจัดการระบบ</p>
+            <p style="display:flex; align-items:center; justify-content:center; gap:10px;">ดูแลและจัดการระบบ
+                <button onclick="toggleNotifPanel()"
+                    style="position:relative; background:none; border:none; font-size:1.2rem; cursor:pointer; padding:2px 4px; vertical-align:middle;">
+                    🔔<span id="notif-badge-main" class="notif-badge" style="display:none;"></span>
+                </button>
+            </p>
+            <!-- Notification Dropdown Panel -->
+            <div id="notif-dropdown"
+                style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); width:90%; max-width:380px; max-height:350px; overflow-y:auto; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:100; padding:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-weight:600; font-size:0.9rem; color:#333;">🔔 การแจ้งเตือน</span>
+                    <button onclick="toggleNotifPanel()"
+                        style="background:none; border:none; font-size:1.1rem; cursor:pointer; color:#888;">✕</button>
+                </div>
+                <div id="notif-list-container"></div>
+            </div>
         </div>
         <div class="section-bar">
             <span>รายชื่อผู้ใช้</span>
@@ -28,7 +66,7 @@
 
     <!-- ===== หน้าสร้าง/แก้ไขบัญชี ===== -->
     <div id="page-user-form" class="page">
-        <div class="top-bar"><span class="top-bar-title" id="form-title">สร้างบัญชี</span></div>
+        <div class="top-bar"><span class="top-bar-title" id="form-title">หน้าระบบแอดมิน</span></div>
         <div class="black-header">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
             <p>ดูแลและจัดการระบบ</p>
@@ -64,17 +102,17 @@
 
     <!-- ===== หน้าคิวอาร์โค้ด ===== -->
     <div id="page-qr" class="page">
-        <div class="top-bar"><span class="top-bar-title">คิวอาร์โค้ด</span></div>
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบแอดมิน</span></div>
         <div class="black-header">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
             <p>ดูแลและจัดการระบบ</p>
         </div>
         <div class="page-body">
             <div class="qr-section">
-                <h3>🍜 QR Code สำหรับลูกค้าสั่งอาหาร</h3>
-                <div style="margin-top:15px; margin-bottom:15px;">
+                <div class="qr-box" style="width:100%; box-sizing:border-box;">
                     <select id="qr-table-select" onchange="generateTableQR()"
-                        style="width:100%; padding:10px; border-radius:6px; font-family:'Prompt',sans-serif; text-align:center; font-size:1rem; border:1px solid #ddd;">
+                        style="width:100%; padding:10px; border-radius:6px; font-family:'Prompt',sans-serif; text-align:center; font-size:1rem; border:2px solid #999; margin-bottom:12px;">
+
                         <option value="1">โต๊ะ 1</option>
                         <option value="2">โต๊ะ 2</option>
                         <option value="3">โต๊ะ 3</option>
@@ -87,8 +125,7 @@
                         <option value="10">โต๊ะ 10</option>
                         <option value="takeaway">กลับบ้าน</option>
                     </select>
-                </div>
-                <div class="qr-box">
+                    <h3 style="margin:0 0 12px 0;">🍜 QR Code สำหรับลูกค้าสั่งอาหาร</h3>
                     <img id="qr-customer" alt="QR ลูกค้า"
                         style="width:200px; height:200px; margin:0 auto; display:block;">
                     <a class="qr-label" id="qr-customer-url" href="#" target="_blank"
@@ -98,10 +135,14 @@
                 </div>
             </div>
             <div class="qr-section">
-                <h3>👨‍🍳 QR Code สำหรับพนักงานเข้าระบบ</h3>
-                <div class="qr-box">
-                    <img id="qr-staff" alt="QR พนักงาน">
-                    <div class="qr-label" id="qr-staff-url"></div>
+                <div class="qr-box" style="width:100%; box-sizing:border-box;">
+                    <h3 style="margin:0 0 12px 0;">👨‍🍳 QR Code สำหรับพนักงานเข้าระบบ</h3>
+                    <img id="qr-staff" alt="QR พนักงาน"
+                        style="width:200px; height:200px; margin:0 auto; display:block;">
+                    <a class="qr-label" id="qr-staff-url" href="#" target="_blank"
+                        style="display:block; margin-top:10px; word-break:break-all; font-size:0.8rem;"></a>
+                    <button class="btn btn-red btn-full" onclick="printStaffQR()" style="margin-top:15px;">พิมพ์ QR
+                        Code</button>
                 </div>
             </div>
         </div>
@@ -109,7 +150,7 @@
 
     <!-- ===== หน้าบัญชีผู้ใช้ ===== -->
     <div id="page-account" class="page">
-        <div class="top-bar"><span class="top-bar-title">บัญชีผู้ใช้</span></div>
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบแอดมิน</span></div>
         <div class="black-header">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
             <p>ดูแลและจัดการระบบ</p>
@@ -121,6 +162,47 @@
                 <div class="account-role">ผู้ดูแลระบบ</div>
                 <button class="btn btn-red btn-full" onclick="logout()" style="margin-top:16px;">ออกจากระบบ</button>
             </div>
+
+            <!-- Gmail Settings -->
+            <div
+                style="background:#fff; border-radius:12px; padding:16px; margin-top:12px; box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:#333;">📧 ตั้งค่า Gmail สำหรับลืมรหัสผ่าน</h3>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:0.8rem; color:#666;">Gmail แอดมิน</label>
+                    <input type="email" id="admin-gmail" class="form-input" placeholder="example@gmail.com">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:0.8rem; color:#666;">ยืนยันรหัสผ่านแอดมิน</label>
+                    <input type="password" id="gmail-confirm-pw" class="form-input" placeholder="ป้อนรหัสผ่านแอดมิน">
+                </div>
+                <div id="gmail-error" style="color:#C62828; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
+                <div id="gmail-success" style="color:#4CAF50; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
+                <button class="btn btn-yellow btn-full" onclick="saveAdminGmail()" style="padding:10px;">บันทึก
+                    Gmail</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- ===== เปลี่ยนรหัสผ่าน Modal ===== -->
+    <div id="change-pw-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; font-family:'Prompt',sans-serif;">
+        <div
+            style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+            <div style="font-size:2.5rem; margin-bottom:8px;">🔐</div>
+            <h3 style="margin:0 0 4px 0; color:#333;">เปลี่ยนรหัสผ่าน</h3>
+            <p id="change-pw-user" style="color:#888; font-size:0.85rem; margin:0 0 16px 0;"></p>
+            <input type="text" id="new-password" class="form-input" placeholder="รหัสผ่านใหม่"
+                style="margin-bottom:10px;">
+            <input type="text" id="confirm-password" class="form-input" placeholder="ยืนยันรหัสผ่านใหม่"
+                style="margin-bottom:10px;">
+            <div id="change-pw-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+            <button class="btn btn-yellow btn-full" onclick="confirmChangePassword()"
+                style="padding:10px; margin-bottom:8px;">บันทึกรหัสผ่านใหม่</button>
+            <button class="btn btn-full"
+                style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;"
+                onclick="closeChangePwModal()">ยกเลิก</button>
         </div>
     </div>
 
@@ -129,6 +211,7 @@
         <button class="nav-item active" onclick="showTab('page-users',this)">
             <span class="nav-icon">👥</span><span class="nav-label">จัดการสิทธิ์ผู้ใช้</span>
         </button>
+
         <button class="nav-item" onclick="showTab('page-qr',this)">
             <span class="nav-icon">📱</span><span class="nav-label">คิวอาร์โค้ด</span>
         </button>

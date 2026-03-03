@@ -97,31 +97,49 @@ const ALL_INGREDIENTS = [
 ];
 
 // ===== STATE =====
-let currentTable = null;
-let guestId = null;
-let currentMenuItem = null;
-let cart = [];
+var currentTable = null;
+var guestId = null;
+var currentMenuItem = null;
+var cart = [];
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
   guestId = generateGuestId();
 
-  // Load Cart from LocalStorage
-  let savedCart = localStorage.getItem('habeef_cart');
-  if (savedCart) {
-    try {
-      cart = JSON.parse(savedCart);
-      updateCartBadge();
-    } catch (e) {
-      console.error("Failed to parse cart", e);
-      cart = [];
-    }
+  // Restore table from localStorage if not set from URL
+  var savedTable = localStorage.getItem('habeef_current_table');
+  if (savedTable && !currentTable) {
+    currentTable = savedTable;
+    // Update display
+    var disp = document.getElementById('table-display');
+    if (disp) disp.textContent = currentTable.startsWith('กลับบ้าน') ? currentTable : 'โต๊ะ ' + currentTable;
   }
 
+  loadCartForTable();
   renderMenu();
 });
 
 // ===== UTILITY =====
+function getCartKey() {
+  return currentTable ? 'habeef_cart_' + currentTable : 'habeef_cart';
+}
+
+function loadCartForTable() {
+  var key = getCartKey();
+  var saved = localStorage.getItem(key);
+  if (saved) {
+    try {
+      cart = JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse cart", e);
+      cart = [];
+    }
+  } else {
+    cart = [];
+  }
+  updateCartBadge();
+}
+
 function generateGuestId() {
   let storedGuest = localStorage.getItem('habeef_guest_id');
   if (storedGuest) {
@@ -158,6 +176,9 @@ function formatDate(date) {
 function onTableChange() {
   const sel = document.getElementById('table-select');
   currentTable = sel.value || null;
+  loadCartForTable();
+  var disp = document.getElementById('table-display');
+  if (disp && currentTable) disp.textContent = currentTable.startsWith('กลับบ้าน') ? currentTable : 'โต๊ะ ' + currentTable;
   if (currentTable) {
     showToast('เลือกโต๊ะ ' + currentTable + ' แล้ว');
   }
@@ -166,15 +187,22 @@ function onTableChange() {
 function selectLandingTable(tableId, lockTable = false) {
   currentTable = tableId;
 
-  // Update Dropdown in Menu Page
+  // Persist table to localStorage
+  localStorage.setItem('habeef_current_table', tableId);
+
+  // Load cart specific to this table
+  loadCartForTable();
+
+  // Update static display block
+  var disp = document.getElementById('table-display');
+  if (disp) {
+    disp.textContent = tableId.startsWith('กลับบ้าน') ? tableId : 'โต๊ะ ' + tableId;
+  }
+
+  // Sync hidden select for JS compatibility
   var sel = document.getElementById('table-select');
   if (sel) {
     sel.value = tableId;
-    if (lockTable) {
-      sel.disabled = true;
-      sel.style.opacity = '0.9';
-      sel.style.background = '#e0e0e0';
-    }
   }
 
   // Navigate to Menu
@@ -187,21 +215,51 @@ function selectLandingTable(tableId, lockTable = false) {
   }
 }
 
+// ===== UTILITY FOR ENCODING/DECODING TABLE ID =====
+const SECRET_SALT = 'habeef_secret_2024';
+
+function encodeTableId(tableId) {
+  try {
+    return btoa(encodeURIComponent(tableId + '|' + SECRET_SALT));
+  } catch (e) {
+    return null;
+  }
+}
+
+function decodeTableId(encodedStr) {
+  try {
+    const decoded = decodeURIComponent(atob(encodedStr));
+    const parts = decoded.split('|');
+    if (parts.length === 2 && parts[1] === SECRET_SALT) {
+      return parts[0];
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
 // ===== AUTO SELECT TABLE FROM URL =====
 window.addEventListener('DOMContentLoaded', function () {
   var urlParams = new URLSearchParams(window.location.search);
-  var t = urlParams.get('table');
-  if (t) {
-    // Determine the correct table ID string mapping if needed
-    var tableId = t;
-    // Map URL param text to dropdown value. e.g. "?table=1" -> "1"
-    if (t === 'takeaway' || t === 'กลับบ้าน') {
-      tableId = 'กลับบ้าน';
+  var q = urlParams.get('q');
+
+  if (q) {
+    var decodedTableId = decodeTableId(q);
+    if (decodedTableId) {
+      var tableId = decodedTableId;
+      // Map URL param text to dropdown value. e.g. "?q=ENCODED" -> "1"
+      if (decodedTableId === 'takeaway' || decodedTableId === 'กลับบ้าน') {
+        tableId = 'กลับบ้าน';
+      }
+      // Small delay to ensure DOM is fully ready
+      setTimeout(function () {
+        selectLandingTable(tableId, true);
+      }, 50);
+    } else {
+      console.error("Invalid QR Code");
+      showToast("QR Code ไม่ถูกต้อง หรือล้าสมัย");
     }
-    // Small delay to ensure DOM is fully ready
-    setTimeout(function () {
-      selectLandingTable(tableId, true);
-    }, 50);
   }
 });
 

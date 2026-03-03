@@ -42,7 +42,7 @@ function addToCart() {
         if (noodleSel) {
             var noodle = NOODLE_OPTIONS.find(function (n) { return n.id === noodleSel.value; });
             if (noodle) {
-                details.push('เส้น: ' + noodle.name);
+                details.push(noodle.ingredient);
                 addIng(noodle.ingredient);
             }
         }
@@ -52,27 +52,26 @@ function addToCart() {
         if (mixNoodleSel) {
             var mn = NOODLE_OPTIONS.find(function (n) { return n.id === mixNoodleSel.value; });
             if (mn) {
-                details.push('ผสมเส้น: ' + mn.name);
+                details.push('ผสม' + mn.ingredient);
                 addIng(mn.ingredient);
             }
         }
     }
 
-    // === เนื้อสัตว์ ===
+    // === เนื้อสัตว์ (ไม่แสดงสำหรับต้มยำทะเล) ===
     if (menu.hasMeat) {
         var meatSel = document.querySelector('input[name="meat"]:checked');
         if (meatSel) {
             var meat = MEAT_OPTIONS.find(function (m) { return m.id === meatSel.value; });
             if (meat) {
-                details.push('เนื้อ: ' + meat.name);
+                details.push(meat.name);
                 addIng(meat.ingredient);
             }
         }
     }
 
-    // === ต้มยำทะเล: กุ้ง + หมึก ===
+    // === ต้มยำทะเล: กุ้ง + หมึก (ไม่แสดงในรายละเอียด) ===
     if (menu.isSeafood) {
-        details.push('เนื้อ: กุ้ง+หมึก');
         addIng('กุ้ง');
         addIng('หมึก');
     }
@@ -82,20 +81,21 @@ function addToCart() {
         addIng('ลูกชิ้น');
     }
 
-    // === ผัก ===
+    // === ผัก (แสดงเฉพาะตอนไม่ใส่ผัก) ===
     var vegSel = document.querySelector('input[name="veggie"]:checked');
     if (vegSel) {
         var veg = VEGGIE_OPTIONS.find(function (v) { return v.id === vegSel.value; });
         if (veg) {
-            details.push('ผัก: ' + veg.name);
-            if (veg.hasVeg) {
+            if (!veg.hasVeg) {
+                details.push('ไม่ใส่ผัก');
+            } else {
                 addIng('ผักบุ้ง');
                 addIng('ถั่วงอก');
             }
         }
     }
 
-    // === สั่งเพิ่ม ===
+    // === สั่งเพิ่ม (ไม่มีคำว่า เพิ่ม:) ===
     var extraChecks = document.querySelectorAll('input[name="extras"]:checked');
     var extraNames = [];
     extraChecks.forEach(function (cb) {
@@ -108,9 +108,9 @@ function addToCart() {
             }
         }
     });
-    if (extraNames.length > 0) {
-        details.push('เพิ่ม: ' + extraNames.join(', '));
-    }
+    extraNames.forEach(function (eName) {
+        details.push(eName);
+    });
 
     // === เพิ่มลงตะกร้า ===
     var cartItem = {
@@ -142,8 +142,9 @@ function renderCart() {
     var timeInfo = document.getElementById('cart-time-info');
 
     if (tableInfo) {
-        var tableVal = document.getElementById('table-select') ? document.getElementById('table-select').value : null;
-        tableInfo.textContent = 'โต๊ะ ' + (tableVal || '-');
+        var tLabel = currentTable ? (currentTable.startsWith('กลับบ้าน') ? currentTable : 'โต๊ะ ' + currentTable) : 'โต๊ะ -';
+        tableInfo.textContent = tLabel;
+        tableInfo.style.cssText = 'display:inline-block; padding:6px 20px; font-size:1.1rem; font-weight:700; color:#fff; background:#C62828; border-radius:30px;';
     }
 
     var now = new Date();
@@ -289,41 +290,49 @@ function placeOrder() {
         return;
     }
 
-    var val = document.getElementById('table-select');
-    if (!val || !val.value) {
+    if (!currentTable) {
         document.getElementById('alert-modal').classList.add('show');
         return;
     }
 
     // Populate modal data
-    var tableText = val.value === 'กลับบ้าน' ? 'กลับบ้าน' : ('โต๊ะ ' + val.value);
+    var tableText = currentTable === 'กลับบ้าน' ? 'กลับบ้าน' : ('โต๊ะ ' + currentTable);
     document.getElementById('confirm-order-table').textContent = tableText;
 
-    var detailsHtml = cart.map(function (item) {
+    var detailsHtml = cart.map(function (item, index) {
         var menuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
         var imgHtml = '';
         if (menuItem) {
             if (menuItem.image) {
-                imgHtml = '<img src="' + menuItem.image + '" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; margin-right: 12px; flex-shrink: 0;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                imgHtml += '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF3E0; display: none; align-items: center; justify-content: center; font-size: 1.4rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
+                imgHtml = '<img src="' + menuItem.image + '" style="width: 64px; height: 64px; border-radius: 10px; object-fit: cover; margin-right: 12px; flex-shrink: 0;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                imgHtml += '<div style="width: 64px; height: 64px; border-radius: 10px; background: #FFF3E0; display: none; align-items: center; justify-content: center; font-size: 1.6rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
             } else {
-                imgHtml = '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF3E0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
+                imgHtml = '<div style="width: 64px; height: 64px; border-radius: 10px; background: #FFF3E0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
             }
         }
 
+        // Title line: qty x name (no price)
         var textHtml = '<div style="flex: 1; text-align: left;">';
-        textHtml += '<div style="font-weight: 600; font-size: 0.95rem; color: #222;">' + item.qty + ' x ' + item.name + ' <span style="font-weight: normal; color: #555;">(' + item.totalPrice + ' ฿)</span></div>';
+        textHtml += '<div style="font-weight: 600; font-size: 0.95rem; color: #222;">' + item.qty + ' x ' + item.name + '</div>';
 
+        // Details on separate lines
         if (item.details.length > 0) {
-            textHtml += '<div style="color: #888; font-size: 0.8rem; margin-top: 2px;">' + item.details.join(', ') + '</div>';
+            item.details.forEach(function (det) {
+                textHtml += '<div style="color: #888; font-size: 0.8rem; margin-top: 2px;">' + det + '</div>';
+            });
         }
         textHtml += '</div>';
 
-        return '<div style="display: flex; align-items: flex-start; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">' + imgHtml + textHtml + '</div>';
-    }).join('');
+        // Price right-aligned
+        var priceHtml = '<div style="font-weight: 700; font-size: 1rem; color: #222; white-space: nowrap; flex-shrink: 0; margin-left: 8px;">' + (item.totalPrice * item.qty) + ' ฿</div>';
 
-    var total = cart.reduce(function (sum, item) { return sum + (item.totalPrice * item.qty); }, 0);
-    detailsHtml += '<div style="margin-top:10px; font-weight:700; border-top:1px solid #ddd; padding-top:8px;">รวม: ' + total + ' บาท</div>';
+        var isLast = index === cart.length - 1;
+        var style = 'display: flex; align-items: flex-start;';
+        if (!isLast) {
+            style += ' padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #e0e0e0;';
+        }
+        return '<div style="' + style + '">' + imgHtml + textHtml + priceHtml + '</div>';
+    }).join('');
 
     document.getElementById('confirm-order-details').innerHTML = detailsHtml;
 
@@ -335,5 +344,5 @@ function closeConfirmOrder() {
 }
 
 function saveCart() {
-    localStorage.setItem('habeef_cart', JSON.stringify(cart));
+    localStorage.setItem(getCartKey(), JSON.stringify(cart));
 }

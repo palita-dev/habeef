@@ -11,7 +11,47 @@ document.addEventListener('DOMContentLoaded', function () {
     renderUserList();
     generateStaffQR();
     generateTableQR();
+    // Load saved Gmail
+    var savedGmail = localStorage.getItem('habeef_admin_email') || '';
+    var gmailInput = document.getElementById('admin-gmail');
+    if (gmailInput) gmailInput.value = savedGmail;
 });
+
+// ===== GMAIL SETTINGS =====
+function saveAdminGmail() {
+    var errEl = document.getElementById('gmail-error');
+    var sucEl = document.getElementById('gmail-success');
+    errEl.style.display = 'none';
+    sucEl.style.display = 'none';
+
+    var email = document.getElementById('admin-gmail').value.trim();
+    var pw = document.getElementById('gmail-confirm-pw').value.trim();
+
+    if (!email) {
+        errEl.textContent = 'กรุณากรอก Gmail';
+        errEl.style.display = 'block';
+        return;
+    }
+    if (!pw) {
+        errEl.textContent = 'กรุณาป้อนรหัสผ่านแอดมินเพื่อยืนยัน';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // Verify admin password
+    var users = getUsers();
+    var admin = users.find(function (u) { return u.role === 'admin'; });
+    if (!admin || admin.password !== pw) {
+        errEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    localStorage.setItem('habeef_admin_email', email);
+    document.getElementById('gmail-confirm-pw').value = '';
+    sucEl.textContent = '✅ บันทึก Gmail เรียบร้อยแล้ว';
+    sucEl.style.display = 'block';
+}
 
 // ===== TAB NAVIGATION =====
 function showTab(pageId, btn) {
@@ -115,11 +155,17 @@ function confirmDeleteUser(username) {
 function generateStaffQR() {
     var baseUrl = window.location.href.split('admin.html')[0];
     if (!baseUrl.endsWith('/')) baseUrl += '/';
-    var staffUrl = baseUrl + 'login.html';
-    var qrApiBase = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=';
+    var SECRET_SALT = 'habeef_secret_2024';
+    var encodedStaff = btoa(encodeURIComponent('staff_login|' + SECRET_SALT));
+    var staffUrl = baseUrl + 'login.html?s=' + encodeURIComponent(encodedStaff);
+    var qrApiBase = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=';
 
-    document.getElementById('qr-staff').src = qrApiBase + encodeURIComponent(staffUrl);
-    document.getElementById('qr-staff-url').textContent = staffUrl;
+    var qrImg = document.getElementById('qr-staff');
+    var qrLink = document.getElementById('qr-staff-url');
+
+    qrImg.src = qrApiBase + encodeURIComponent(staffUrl);
+    qrLink.textContent = staffUrl;
+    qrLink.href = staffUrl;
 }
 
 function generateTableQR() {
@@ -130,10 +176,13 @@ function generateTableQR() {
     // Construct local explicit URL linking to index.html with param
     var baseUrl = window.location.href.split('admin.html')[0];
     if (!baseUrl.endsWith('/')) baseUrl += '/';
-    var customerUrl = baseUrl + 'index.html?table=' + encodeURIComponent(tableId);
+    // Encode tableId for security
+    var SECRET_SALT = 'habeef_secret_2024';
+    var encodedTable = btoa(encodeURIComponent(tableId + '|' + SECRET_SALT));
+    var customerUrl = baseUrl + 'index.html?q=' + encodeURIComponent(encodedTable);
 
     // Use Chart API or QR API
-    var qrApiBase = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=';
+    var qrApiBase = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=';
 
     var qrImg = document.getElementById('qr-customer');
     var qrLink = document.getElementById('qr-customer-url');
@@ -177,4 +226,176 @@ function printTableQR() {
         </html>
     `);
     printWindow.document.close();
+}
+
+function printStaffQR() {
+    var qrSrc = document.getElementById('qr-staff').src;
+
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>พิมพ์ QR Code - พนักงาน</title>
+            <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;700&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Prompt', sans-serif; text-align: center; margin: 40px; }
+                .qr-container { border: 2px dashed #333; padding: 40px 20px; max-width: 400px; margin: 0 auto; border-radius: 16px; }
+                h1 { margin-bottom: 20px; font-size: 2.5rem; color: #C62828; }
+                h2 { margin-top: 20px; font-size: 2rem; color: #1976D2; }
+                img { width: 300px; height: 300px; margin: 0 auto; display: block; }
+                p { margin-top: 10px; font-size: 1.2rem; color: #555; }
+            </style>
+        </head>
+        <body>
+            <div class="qr-container">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <img src="${qrSrc}" alt="QR พนักงาน">
+                <h2>สำหรับพนักงานเข้าระบบ</h2>
+                <p>สแกนเพื่อเข้าใช้งานระบบหลังบ้าน</p>
+            </div>
+            <script>
+                setTimeout(() => { window.print(); window.close(); }, 500);
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+// ===== NOTIFICATIONS SYSTEM =====
+var _changePwUsername = '';
+
+function renderNotifications() {
+    var container = document.getElementById('notif-list-container');
+    if (!container) return;
+    var notifs = getNotifications();
+
+    if (notifs.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#aaa; padding:40px 20px;">✅ ไม่มีการแจ้งเตือน</p>';
+        return;
+    }
+
+    // Sort newest first
+    notifs.sort(function (a, b) { return b.id - a.id; });
+
+    var html = '';
+    notifs.forEach(function (n) {
+        var d = new Date(n.createdAt);
+        var timeStr = d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543) + ' ' +
+            d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
+
+        html += '<div style="background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 1px 5px rgba(0,0,0,0.05);">' +
+            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">' +
+            '<div style="font-size:1.8rem;">🔑</div>' +
+            '<div style="flex:1;">' +
+            '<div style="font-weight:600; font-size:0.9rem;">บัญชี: ' + n.username + '</div>' +
+            '<div style="font-size:0.75rem; color:#888;">' + n.message + '</div>' +
+            '<div style="font-size:0.7rem; color:#aaa;">' + timeStr + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="display:flex; gap:8px;">' +
+            '<button onclick="openChangePwModal(\'' + n.username + '\',' + n.id + ')" style="flex:1; padding:8px; background:#FFC107; color:#333; border:none; border-radius:8px; font-family:Prompt,sans-serif; font-weight:600; font-size:0.8rem; cursor:pointer;">เปลี่ยนรหัสผ่าน</button>' +
+            '<button onclick="deleteNotification(' + n.id + ')" style="padding:8px 14px; background:#f5f5f5; color:#888; border:none; border-radius:8px; font-family:Prompt,sans-serif; font-size:0.8rem; cursor:pointer;">ลบ</button>' +
+            '</div>' +
+            '</div>';
+    });
+
+    container.innerHTML = html;
+}
+
+function updateNotifBadge() {
+    var notifs = getNotifications();
+    var count = notifs.length;
+    var badges = document.querySelectorAll('.notif-badge');
+    badges.forEach(function (b) {
+        if (count > 0) {
+            b.style.display = 'flex';
+            b.textContent = count > 99 ? '99+' : count;
+        } else {
+            b.style.display = 'none';
+        }
+    });
+}
+
+function openChangePwModal(username, notifId) {
+    _changePwUsername = username;
+    _changePwNotifId = notifId;
+    document.getElementById('change-pw-user').textContent = 'บัญชี: ' + username;
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('change-pw-error').style.display = 'none';
+    document.getElementById('change-pw-modal').style.display = 'flex';
+}
+
+var _changePwNotifId = 0;
+
+function closeChangePwModal() {
+    document.getElementById('change-pw-modal').style.display = 'none';
+}
+
+function confirmChangePassword() {
+    var newPw = document.getElementById('new-password').value.trim();
+    var confirmPw = document.getElementById('confirm-password').value.trim();
+    var errEl = document.getElementById('change-pw-error');
+    errEl.style.display = 'none';
+
+    if (!newPw) {
+        errEl.textContent = 'กรุณากรอกรหัสผ่านใหม่';
+        errEl.style.display = 'block';
+        return;
+    }
+    if (newPw !== confirmPw) {
+        errEl.textContent = 'รหัสผ่านไม่ตรงกัน';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // Update user password
+    var success = updateUser(_changePwUsername, { password: newPw });
+    if (!success) {
+        errEl.textContent = 'ไม่พบบัญชีผู้ใช้นี้';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // Remove notification
+    deleteNotification(_changePwNotifId);
+    closeChangePwModal();
+    showToast('เปลี่ยนรหัสผ่านเรียบร้อย ✓');
+}
+
+function deleteNotification(id) {
+    if (!confirm('ต้องการลบการแจ้งเตือนนี้หรือไม่?')) return;
+    var notifs = getNotifications();
+    notifs = notifs.filter(function (n) { return n.id !== id; });
+    saveNotifications(notifs);
+    renderNotifications();
+    updateNotifBadge();
+}
+
+// Auto-update badge and render on page load
+updateNotifBadge();
+renderNotifications();
+setInterval(updateNotifBadge, 3000);
+
+// Toggle notification dropdown panel
+function toggleNotifPanel() {
+    var panel = document.getElementById('notif-dropdown');
+    if (panel.style.display === 'none' || !panel.style.display) {
+        renderNotifications();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Close dropdown when switching tabs
+var _origShowTab = window.showTab;
+if (typeof _origShowTab === 'function') {
+    window.showTab = function (id, btn) {
+        _origShowTab(id, btn);
+        var panel = document.getElementById('notif-dropdown');
+        if (panel) panel.style.display = 'none';
+        updateNotifBadge();
+    };
 }

@@ -75,23 +75,13 @@
     <div class="tab-bar">
       <div class="tab-label">เลือกเมนู</div>
 
-      <!-- Table Selector (Red Pill) -->
+      <!-- Table Display (Static, from QR Code) -->
       <div class="table-selector-wrapper">
-        <select id="table-select" onchange="onTableChange()">
-          <option value="" disabled selected>ระบุโต๊ะของท่าน (1-10)</option>
-          <option value="1">โต๊ะ 1</option>
-          <option value="2">โต๊ะ 2</option>
-          <option value="3">โต๊ะ 3</option>
-          <option value="4">โต๊ะ 4</option>
-          <option value="5">โต๊ะ 5</option>
-          <option value="6">โต๊ะ 6</option>
-          <option value="7">โต๊ะ 7</option>
-          <option value="8">โต๊ะ 8</option>
-          <option value="9">โต๊ะ 9</option>
-          <option value="10">โต๊ะ 10</option>
-          <option value="กลับบ้าน">กลับบ้าน</option>
-        </select>
-        <div class="table-select-icon">▼</div>
+        <div id="table-display"
+          style="padding: 6px 20px; font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: 0.03em; background: #C62828; border-radius: 30px; display: inline-block;">
+          โต๊ะ -
+        </div>
+        <select id="table-select" onchange="onTableChange()" style="display:none;"></select>
       </div>
 
       <!-- Receipt Button (Red Circle) -->
@@ -167,7 +157,8 @@
 
     <div class="page-body" style="padding-bottom: 250px; background:#F9F9F9;">
       <!-- Info Section -->
-      <div class="cart-info-section" style="padding: 10px 4px; margin-bottom:10px;">
+      <div class="cart-info-section"
+        style="padding: 10px 4px; margin-bottom:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <div id="cart-table-info" style="font-size:1.1rem; font-weight:700;">โต๊ะ 1</div>
         <div id="cart-date-info" style="color:#666;">วันที่ --/--/----</div>
         <div id="cart-time-info" style="color:#666;">เวลา --:--:--</div>
@@ -260,11 +251,11 @@
       <div id="confirm-order-table" style="font-size:1rem; color:#666; margin-bottom:15px;">โต๊ะ 1</div>
 
       <div id="confirm-order-details"
-        style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:15px; text-align:left; background:#fafafa; font-size:0.9rem; max-height: 40vh; overflow-y: auto;">
+        style="border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:20px; text-align:left; background:#fafafa; font-size:0.9rem; max-height: 50vh; overflow-y: auto;">
         <!-- JS Rendered Details -->
       </div>
 
-      <div style="font-size:0.95rem; font-weight:600; color:#333; margin-bottom:15px;">ยืนยันการสั่งออเดอร์หรือไม่?
+      <div style="font-size:0.95rem; font-weight:400; color:#333; margin-bottom:15px;">ยืนยันการสั่งออเดอร์หรือไม่?
       </div>
 
       <div style="display:flex; gap:10px;">

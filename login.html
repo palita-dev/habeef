@@ -28,11 +28,56 @@
             <div id="login-error" style="color:#C62828;font-size:0.82rem;margin-bottom:10px;display:none;">
                 ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
             <button class="btn btn-yellow btn-full" onclick="doLogin()" style="padding:12px;">เข้าสู่ระบบ</button>
+            <div style="text-align:center; margin-top:12px;">
+                <a href="#" onclick="openForgotModal(); return false;"
+                    style="color:#C62828; font-size:0.82rem; text-decoration:underline;">ลืมรหัสผ่าน?</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Forgot Password Modal ===== -->
+    <div id="forgot-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; font-family:'Prompt',sans-serif;">
+        <div
+            style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+            <div style="font-size:2.5rem; margin-bottom:8px;">🔑</div>
+            <h3 style="margin:0 0 4px 0; color:#333;">ลืมรหัสผ่าน</h3>
+            <p style="color:#888; font-size:0.82rem; margin:0 0 16px 0;">กรอกชื่อบัญชีของคุณเพื่อขอเปลี่ยนรหัสผ่าน</p>
+            <input type="text" id="forgot-username" class="form-input" placeholder="ชื่อบัญชี"
+                style="margin-bottom:10px;">
+            <div id="forgot-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+            <div id="forgot-success" style="color:#4CAF50; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+            <div id="forgot-cooldown" style="color:#FF9800; font-size:0.82rem; margin-bottom:10px; display:none;"></div>
+            <button id="forgot-submit-btn" class="btn btn-yellow btn-full" onclick="submitForgot()"
+                style="padding:10px; margin-bottom:8px;">ยืนยัน</button>
+            <button class="btn btn-full"
+                style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;"
+                onclick="closeForgotModal()">ปิด</button>
         </div>
     </div>
 
     <script src="js/auth.js"></script>
     <script>
+        // ===== VALIDATE QR ACCESS =====
+        (function () {
+            var SECRET_SALT = 'habeef_secret_2024';
+            var params = new URLSearchParams(window.location.search);
+            var sParam = params.get('s');
+            var valid = false;
+            if (sParam) {
+                try {
+                    var decoded = decodeURIComponent(atob(sParam));
+                    if (decoded === 'staff_login|' + SECRET_SALT) {
+                        valid = true;
+                    }
+                } catch (e) { }
+            }
+            if (!valid) {
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Prompt,sans-serif;text-align:center;padding:20px;"><div><div style="font-size:4rem;margin-bottom:16px;">🚫</div><h2 style="color:#C62828;">ไม่สามารถเข้าถึงหน้านี้ได้</h2><p style="color:#888;font-size:0.9rem;">กรุณาสแกน QR Code เพื่อเข้าสู่ระบบ</p></div></div>';
+                return;
+            }
+        })();
+
         initUsers();
         document.getElementById('login-password').addEventListener('keyup', function (e) {
             if (e.key === 'Enter') doLogin();
@@ -51,6 +96,116 @@
             if (user.role === 'admin') window.location.href = 'admin.html';
             else if (user.role === 'staff') window.location.href = 'staff.html';
             else if (user.role === 'owner') window.location.href = 'owner.html';
+        }
+
+        // ===== FORGOT PASSWORD =====
+        var ADMIN_EMAIL = localStorage.getItem('habeef_admin_email') || '';
+        var COOLDOWN_MS = 60000; // 1 นาที
+        var forgotCooldownTimer = null;
+
+        function openForgotModal() {
+            document.getElementById('forgot-modal').style.display = 'flex';
+            document.getElementById('forgot-username').value = '';
+            document.getElementById('forgot-error').style.display = 'none';
+            document.getElementById('forgot-success').style.display = 'none';
+            checkCooldown();
+        }
+
+        function closeForgotModal() {
+            document.getElementById('forgot-modal').style.display = 'none';
+            if (forgotCooldownTimer) { clearInterval(forgotCooldownTimer); forgotCooldownTimer = null; }
+        }
+
+        function checkCooldown() {
+            var lastTime = parseInt(localStorage.getItem('habeef_forgot_cooldown') || '0');
+            var now = Date.now();
+            var remaining = COOLDOWN_MS - (now - lastTime);
+            if (remaining > 0) {
+                disableForgotBtn(remaining);
+                return true;
+            }
+            enableForgotBtn();
+            return false;
+        }
+
+        function disableForgotBtn(remaining) {
+            var btn = document.getElementById('forgot-submit-btn');
+            var cdEl = document.getElementById('forgot-cooldown');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            cdEl.style.display = 'block';
+
+            function updateTimer() {
+                var left = parseInt(localStorage.getItem('habeef_forgot_cooldown') || '0');
+                var rem = COOLDOWN_MS - (Date.now() - left);
+                if (rem <= 0) {
+                    enableForgotBtn();
+                    if (forgotCooldownTimer) { clearInterval(forgotCooldownTimer); forgotCooldownTimer = null; }
+                    return;
+                }
+                var secs = Math.ceil(rem / 1000);
+                cdEl.textContent = '⏳ กรุณารอ ' + secs + ' วินาที ก่อนส่งคำขอใหม่';
+            }
+            updateTimer();
+            if (forgotCooldownTimer) clearInterval(forgotCooldownTimer);
+            forgotCooldownTimer = setInterval(updateTimer, 1000);
+        }
+
+        function enableForgotBtn() {
+            var btn = document.getElementById('forgot-submit-btn');
+            var cdEl = document.getElementById('forgot-cooldown');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            cdEl.style.display = 'none';
+        }
+
+        function submitForgot() {
+            var errEl = document.getElementById('forgot-error');
+            var sucEl = document.getElementById('forgot-success');
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+
+            if (checkCooldown()) return;
+
+            var username = document.getElementById('forgot-username').value.trim();
+            if (!username) {
+                errEl.textContent = 'กรุณากรอกชื่อบัญชี';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            var users = getUsers();
+            var user = users.find(function (u) { return u.username === username; });
+            if (!user) {
+                errEl.textContent = 'ไม่พบชื่อบัญชีนี้ในระบบ';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            // Check if admin
+            if (user.role === 'admin') {
+                if (!ADMIN_EMAIL) {
+                    errEl.textContent = 'ยังไม่ได้ตั้งค่า Gmail แอดมิน กรุณาติดต่อผู้ดูแลระบบ';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                var subject = encodeURIComponent('ขอเปลี่ยนรหัสผ่าน - บัญชี: ' + username);
+                var body = encodeURIComponent('สวัสดีครับ/ค่ะ\n\nต้องการขอเปลี่ยนรหัสผ่านสำหรับบัญชี: ' + username + '\n\nกรุณาดำเนินการเปลี่ยนรหัสผ่านให้ด้วยครับ/ค่ะ\n\nขอบคุณครับ/ค่ะ');
+                window.open('mailto:' + ADMIN_EMAIL + '?subject=' + subject + '&body=' + body, '_blank');
+                sucEl.textContent = '📧 เปิดอีเมลเพื่อส่งคำขอเรียบร้อยแล้ว';
+                sucEl.style.display = 'block';
+                return;
+            }
+
+            // Non-admin: send notification to admin
+            addNotification(username);
+            localStorage.setItem('habeef_forgot_cooldown', Date.now().toString());
+
+            sucEl.textContent = '✅ ส่งคำขอเปลี่ยนรหัสผ่านไปยังแอดมินเรียบร้อยแล้ว';
+            sucEl.style.display = 'block';
+            checkCooldown();
         }
     </script>
 </body>

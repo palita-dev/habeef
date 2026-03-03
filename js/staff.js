@@ -19,13 +19,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var initialOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
     knownOrderIds = initialOrders.map(function (o) { return o.orderId; });
 
-    renderTableGrid();
+    renderOrderList();
     updateNotificationPanel();
 
     // Auto refresh UI every 10s
     setInterval(function () {
         var active = document.querySelector('.page.active');
-        if (active && active.id === 'page-orders') renderTableGrid();
+        if (active && active.id === 'page-orders') {
+            if (document.getElementById('order-list-view').style.display !== 'none') renderOrderList();
+            else renderTableGrid();
+        }
         if (active && active.id === 'page-payment') refreshPayment();
     }, 10000);
 
@@ -248,10 +251,20 @@ function renderOrderList() {
 
         order.items.forEach(function (item, idx) {
             var emoji = MENU_EMOJIS[item.menuId] || '🍜';
+            var imgSource = MENU_IMAGES[item.menuId] || null;
+            var imgHtml = '';
+
+            if (imgSource) {
+                imgHtml = '<img src="' + imgSource + '" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                imgHtml += '<div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
+            } else {
+                imgHtml = '<div style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
+            }
+
             var itemId = order.orderId + '-' + idx;
             html += '<div class="ol-item" id="olitem-' + itemId + '">';
             html += '<div class="ol-num">' + String(idx + 1).padStart(2, '0') + '</div>';
-            html += '<div class="ol-img">' + emoji + '</div>';
+            html += '<div class="ol-img" style="padding:0; overflow:hidden;">' + imgHtml + '</div>';
             html += '<div class="ol-info">';
             html += '<div class="ol-name">' + item.name + '</div>';
             html += '<div class="ol-detail">' + item.details.join('<br>') + '</div>';
@@ -263,7 +276,7 @@ function renderOrderList() {
         });
 
         html += '<div class="ol-actions" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">';
-        html += '<button class="btn-cancel-list" id="btn-cancel-' + order.orderId + '" onclick="cancelOrderItems(\'' + order.orderId + '\')" style="flex:0.4; padding:8px; font-size:0.85rem; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);" disabled>ยกเลิกออเดอร์</button>';
+        html += '<button class="btn-cancel-list" id="btn-cancel-' + order.orderId + '" onclick="cancelOrderItems(\'' + order.orderId + '\')" style="flex:0.6; padding:8px 0; font-size:0.85rem; white-space:nowrap; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);" disabled>ยกเลิกออเดอร์</button>';
         html += '<button class="btn-serve" id="btn-serve-' + order.orderId + '" onclick="serveOrder(\'' + order.orderId + '\')" style="flex:1; opacity:0.5; filter:grayscale(1);" disabled>เสิร์ฟ ✓</button>';
         html += '</div>';
         html += '</div>';
@@ -310,29 +323,94 @@ function validateListServeBtn(orderId, checkbox) {
     }
 }
 
+var pendingCancelOrderId = null;
+
 function cancelOrderItems(orderId) {
-    if (!confirm('ยืนยันยกเลิกรายการที่เลือก?')) return;
-    var checkboxes = document.querySelectorAll('.list-check-' + orderId);
-    var orders = getOrders();
-    var idx = orders.findIndex(function (o) { return o.orderId === orderId; });
-    if (idx !== -1) {
-        var order = orders[idx];
-        var remainingItems = [];
+    pendingCancelOrderId = orderId;
+    document.getElementById('confirm-cancel-modal').classList.add('show');
+}
+
+function closeCancelConfirmModal() {
+    pendingCancelOrderId = null;
+    document.getElementById('confirm-cancel-modal').classList.remove('show');
+}
+
+function executeCancelOrders() {
+    document.getElementById('confirm-cancel-modal').classList.remove('show');
+
+    if (pendingCancelOrderId) {
+        // Cancel logic for a specific order in the main list
+        var orderId = pendingCancelOrderId;
+        var checkboxes = document.querySelectorAll('.list-check-' + orderId);
+        var orders = getOrders();
+        var idx = orders.findIndex(function (o) { return o.orderId === orderId; });
+        if (idx !== -1) {
+            var order = orders[idx];
+            var remainingItems = [];
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (!checkboxes[i].checked) {
+                    remainingItems.push(order.items[i]);
+                }
+            }
+            order.items = remainingItems;
+            if (order.items.length === 0) {
+                order.status = 'cancelled';
+            }
+            // recalculate price
+            order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
+            saveOrders(orders);
+            renderOrderList();
+            updateNotificationPanel();
+        }
+    } else {
+        // Cancel logic for table grouped items in the table modal
+        var checkboxes = document.querySelectorAll('.modal-item-checkbox:not(:disabled)');
+        var orders = getOrders();
+        var toReduce = {}; // { orderId: { itemIdx: countToCancel } }
+
         for (var i = 0; i < checkboxes.length; i++) {
-            if (!checkboxes[i].checked) {
-                remainingItems.push(order.items[i]);
+            if (checkboxes[i].checked) {
+                var oId = checkboxes[i].getAttribute('data-orderid');
+                var iIdx = parseInt(checkboxes[i].getAttribute('data-itemidx'));
+                if (!toReduce[oId]) toReduce[oId] = {};
+                if (!toReduce[oId][iIdx]) toReduce[oId][iIdx] = 0;
+                toReduce[oId][iIdx]++;
             }
         }
-        order.items = remainingItems;
-        if (order.items.length === 0) {
-            order.status = 'cancelled';
-        }
-        // recalculate price
-        order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
+
+        Object.keys(toReduce).forEach(function (oId) {
+            var idx = orders.findIndex(function (o) { return o.orderId === oId; });
+            if (idx !== -1) {
+                var order = orders[idx];
+                Object.keys(toReduce[oId]).forEach(function (iIdxStr) {
+                    var iIdx = parseInt(iIdxStr);
+                    order.items[iIdx].qty -= toReduce[oId][iIdxStr];
+                    if (order.items[iIdx].qty < 0) order.items[iIdx].qty = 0;
+                });
+
+                // Filter out items with 0 qty
+                order.items = order.items.filter(function (it) { return it.qty > 0; });
+                if (order.items.length === 0) {
+                    order.status = 'cancelled';
+                }
+
+                // Recalculate price
+                order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
+            }
+        });
+
         saveOrders(orders);
         renderOrderList();
         updateNotificationPanel();
+
+        // Re-render modal to reflect changes
+        if (currentTableModalOpen) {
+            openTableModal(currentTableModalOpen);
+        }
     }
+
+    pendingCancelOrderId = null;
+    showToast('ยกเลิกรายการเรียบร้อย ✓');
 }
 
 function serveOrder(orderId) {
@@ -350,7 +428,6 @@ function serveOrder(orderId) {
     }
 }
 
-// ===== TABLE GRID DASHBOARD =====
 function renderTableGrid() {
     // Only pending orders keep the table "busy" on the dashboard
     var orders = getOrders().filter(function (o) { return o.status === 'pending'; });
@@ -378,8 +455,27 @@ function renderTableGrid() {
         tables.push('กลับบ้าน');
     }
 
+    var tablesWithSortTime = tables.map(function (t) {
+        var tableOrders = orders.filter(function (o) { return o.table === t; });
+        var minTime = Infinity;
+        if (tableOrders.length > 0) {
+            minTime = Math.min.apply(null, tableOrders.map(function (o) { return new Date(o.createdAt).getTime(); }));
+        }
+        var numeric = parseInt(t.replace('กลับบ้าน', '')) || parseInt(t) || 999;
+        return { table: t, minTime: minTime, numeric: numeric };
+    });
+
+    tablesWithSortTime.sort(function (a, b) {
+        if (a.minTime !== b.minTime) {
+            return a.minTime - b.minTime; // Busy tables with older orders first
+        }
+        if (a.numeric !== b.numeric) return a.numeric - b.numeric;
+        return a.table.localeCompare(b.table);
+    });
+
     var html = '';
-    tables.forEach(function (t) {
+    tablesWithSortTime.forEach(function (obj) {
+        var t = obj.table;
         var tableOrders = orders.filter(function (o) { return o.table === t; });
         var total = tableOrders.reduce(function (sum, o) { return sum + o.totalPrice; }, 0);
         var isBusy = tableOrders.length > 0;
@@ -395,7 +491,6 @@ function renderTableGrid() {
         html += '<div class="tc-label">' + label + '</div>';
         if (isBusy) {
             html += '<div class="tc-status busy-badge">🔴 ' + tableOrders.length + ' ออเดอร์</div>';
-            html += '<div class="tc-total">' + total.toLocaleString() + ' ฿</div>';
         } else {
             html += '<div class="tc-status free-badge">🟢 ว่าง</div>';
         }
@@ -411,6 +506,7 @@ function openTableDetail(tableId) {
     currentDetailTable = tableId;
     var modal = document.getElementById('table-modal');
     var title = document.getElementById('modal-title');
+    var timeEl = document.getElementById('modal-time');
     var body = document.getElementById('modal-body');
     var btnServeAll = document.getElementById('btn-serve-all');
 
@@ -422,14 +518,30 @@ function openTableDetail(tableId) {
         return o.table === tableId && o.status === 'pending';
     });
 
+    if (timeEl) {
+        if (orders.length > 0) {
+            var minTime = Math.min.apply(null, orders.map(function (o) { return new Date(o.createdAt).getTime(); }));
+            var d = new Date(minTime);
+            var dateStr = d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
+            var timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
+            timeEl.innerHTML = 'วันที่ ' + dateStr + '&nbsp;&nbsp;&nbsp;เวลา ' + timeStr;
+        } else {
+            timeEl.innerHTML = '';
+        }
+    }
+
+    var btnCancelOrders = document.getElementById('btn-cancel-orders');
+
     if (orders.length === 0) {
         body.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">ไม่มีรายการที่ค้างอยู่</div>';
         btnServeAll.style.display = 'none';
+        if (btnCancelOrders) btnCancelOrders.style.display = 'none';
         return;
     }
 
     var hasPending = orders.some(function (o) { return o.status === 'pending'; });
     btnServeAll.style.display = hasPending ? 'block' : 'none';
+    if (btnCancelOrders) btnCancelOrders.style.display = hasPending ? 'block' : 'none';
     btnServeAll.onclick = function () { serveAllOrders(); };
 
     var html = '';
@@ -446,10 +558,20 @@ function openTableDetail(tableId) {
 
         order.items.forEach(function (item, itemIdx) {
             var emoji = MENU_EMOJIS[item.menuId] || '🍜';
+            var imgSource = MENU_IMAGES[item.menuId] || null;
+            var imgHtml = '';
+
+            if (imgSource) {
+                imgHtml = '<img src="' + imgSource + '" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                imgHtml += '<div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
+            } else {
+                imgHtml = '<div style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
+            }
+
             for (var q = 0; q < item.qty; q++) {
                 html += '<div class="ol-item" style="border-radius:12px;border:1px solid #eee;margin-bottom:8px;">';
                 html += '<div class="ol-num">' + String(itemCounter).padStart(2, '0') + '</div>';
-                html += '<div class="ol-img">' + emoji + '</div>';
+                html += '<div class="ol-img" style="padding:0; overflow:hidden;">' + imgHtml + '</div>';
                 html += '<div class="ol-info">';
                 html += '<div class="ol-name">' + item.name + '</div>';
                 html += '<div class="ol-detail">' + item.details.join('<br>') + '</div>';
@@ -511,43 +633,8 @@ function validateServeBtn() {
 }
 
 function cancelSelectedModalOrders() {
-    if (!confirm('ยืนยันยกเลิกรายการที่เลือก?')) return;
-    var checkboxes = document.querySelectorAll('.modal-item-checkbox:not(:disabled)');
-    var orders = getOrders();
-    var toReduce = {}; // { orderId: { itemIdx: countToCancel } }
-
-    for (var i = 0; i < checkboxes.length; i++) {
-        if (checkboxes[i].checked) {
-            var oId = checkboxes[i].getAttribute('data-orderid');
-            var iIdx = parseInt(checkboxes[i].getAttribute('data-itemidx'));
-            if (!toReduce[oId]) toReduce[oId] = {};
-            if (!toReduce[oId][iIdx]) toReduce[oId][iIdx] = 0;
-            toReduce[oId][iIdx]++;
-        }
-    }
-
-    Object.keys(toReduce).forEach(function (oId) {
-        var idx = orders.findIndex(function (o) { return o.orderId === oId; });
-        if (idx !== -1) {
-            var order = orders[idx];
-            Object.keys(toReduce[oId]).forEach(function (iIdxStr) {
-                var iIdx = parseInt(iIdxStr);
-                order.items[iIdx].qty -= toReduce[oId][iIdxStr];
-                if (order.items[iIdx].qty < 0) order.items[iIdx].qty = 0;
-            });
-            // filter out items with qty 0
-            order.items = order.items.filter(function (it) { return it.qty > 0; });
-            if (order.items.length === 0) {
-                order.status = 'cancelled';
-            }
-            order.totalPrice = order.items.reduce(function (sum, it) { return sum + (it.price * it.qty); }, 0);
-        }
-    });
-
-    saveOrders(orders);
-    openTableDetail(currentDetailTable); // Re-render modal
-    renderOrderList(); // Update background list
-    updateNotificationPanel();
+    pendingCancelOrderId = null; // null means we are cancelling from the table modal
+    document.getElementById('confirm-cancel-modal').classList.add('show');
 }
 
 function closeModal() {
@@ -672,26 +759,10 @@ function refreshPayment() {
 
         html += '<div class="receipt-card">';
 
-        // Section bar: yellow with back circle icon on right
+        // Yellow header bar with date/time and table badge
         html += '<div class="receipt-card-header">';
-        html += '<span class="receipt-header-title">ใบเสร็จรายการที่สั่งซื้อ</span>';
-        html += '<div class="receipt-back-circle">⊙</div>';
-        html += '</div>';
-
-        // Info row: date/time on left, table badge on right
-        html += '<div class="receipt-meta">';
-        html += '<div class="receipt-date-block">';
-        html += '<div>วันที่ ' + dateStr + '</div>';
-        html += '<div>เวลา ' + timeStr + '</div>';
-        html += '</div>';
+        html += '<div class="receipt-date-block" style="font-size:0.85rem; color:#333; font-weight:500;">วันที่ ' + dateStr + ' &nbsp;&nbsp; เวลา ' + timeStr + '</div>';
         html += '<span class="receipt-table-badge">' + tableLabel + '</span>';
-        html += '</div>';
-
-        // Column headers
-        html += '<div class="receipt-col-header">';
-        html += '<span class="rch-item">รายการ</span>';
-        html += '<span class="rch-price">ราคา</span>';
-        html += '<span class="rch-qty">จำนวน</span>';
         html += '</div>';
 
         // Item cards
@@ -699,20 +770,27 @@ function refreshPayment() {
         orders.forEach(function (order) {
             order.items.forEach(function (item) {
                 var emoji = MENU_EMOJIS[item.menuId] || '🍜';
+                var imgSource = MENU_IMAGES[item.menuId] || null;
+                var imgHtml = '';
+                if (imgSource) {
+                    imgHtml = '<img src="' + imgSource + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                    imgHtml += '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:1.5rem;">' + emoji + '</div>';
+                } else {
+                    imgHtml = '<div style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-size:1.5rem;">' + emoji + '</div>';
+                }
                 html += '<div class="rit-card">';
                 html += '<div class="rit-card-body">';
                 html += '<div class="rit-num">' + lineNum + '</div>';
-                html += '<div class="rit-img">' + emoji + '</div>';
+                html += '<div class="rit-img" style="padding:0; overflow:hidden;">' + imgHtml + '</div>';
                 html += '<div class="rit-info">';
                 html += '<div class="rit-name">' + item.name + '</div>';
                 item.details.forEach(function (det) {
                     html += '<div class="rit-detail">' + det + '</div>';
                 });
                 html += '</div>';
-                html += '<div class="rit-price">' + item.totalPrice + ' ฿</div>';
+                html += '<div class="rit-price">' + (item.totalPrice * item.qty) + ' ฿</div>';
                 html += '<div class="rit-qty">' + item.qty + '</div>';
                 html += '</div>'; // body
-                html += '<div class="rit-subtotal"><span>รวม</span><span>' + item.totalPrice + ' ฿</span></div>';
                 html += '</div>'; // card
                 lineNum++;
             });
@@ -721,8 +799,10 @@ function refreshPayment() {
         // Grand Total bar
         html += '<div class="receipt-grand-total"><span>รวมทั้งหมด</span><span>' + grandTotal.toLocaleString() + ' บาท</span></div>';
 
-        // Pay button
-        html += '<button class="receipt-pay-btn" onclick="payTable(\'' + groupKey + '\', \'' + displayTableName + '\')">รับชำระเงิน</button>';
+        // Pay button (blue rounded, like serve button) with white background wrapper
+        html += '<div style="background:#fff; padding:12px 16px; border-radius:0 0 16px 16px;">';
+        html += '<button class="receipt-pay-btn" style="background:#1976D2; color:#fff; border:none; border-radius:30px; padding:14px; font-size:1rem; font-weight:700; font-family:\'Prompt\',sans-serif; cursor:pointer; width:100%; box-shadow:0 3px 10px rgba(25,118,210,0.3); margin:0;" onclick="payTable(\'' + groupKey + '\', \'' + displayTableName + '\')">รับชำระเงิน ✓</button>';
+        html += '</div>';
         html += '</div>'; // receipt-card
     });
 
@@ -742,7 +822,40 @@ function payOrder(orderId) {
 }
 
 function payTable(tableId, displayTableName) {
-    if (!confirm('ยืนยันรับชำระเงิน ' + (displayTableName || tableId) + '?')) return;
+    showPayConfirm(tableId, displayTableName);
+}
+
+function showPayConfirm(tableId, displayTableName) {
+    // Remove existing modal if any
+    var existing = document.getElementById('pay-confirm-modal');
+    if (existing) existing.remove();
+
+    var label = displayTableName || tableId;
+    var modal = document.createElement('div');
+    modal.id = 'pay-confirm-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:9999;';
+
+    modal.innerHTML = '<div style="background:#fff; border-radius:16px; width:280px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.25); text-align:center; font-family:\'Prompt\',sans-serif;">'
+        + '<div style="padding:24px 20px 12px;">'
+        + '<div style="font-size:1.05rem; font-weight:700; color:#333; margin-bottom:8px;">ยืนยันการรับชำระเงิน</div>'
+        + '<div style="font-size:0.9rem; color:#666;">ยืนยันการรับชำระเงินหรือไม่?</div>'
+        + '</div>'
+        + '<div style="display:flex; border-top:1px solid #e0e0e0;">'
+        + '<button onclick="closePayConfirm()" style="flex:1; padding:14px; font-size:0.95rem; font-weight:600; color:#2196F3; background:none; border:none; border-right:1px solid #e0e0e0; cursor:pointer; font-family:\'Prompt\',sans-serif;">ยกเลิก</button>'
+        + '<button onclick="confirmPayTable(\'' + tableId + '\', \'' + (displayTableName || '') + '\')" style="flex:1; padding:14px; font-size:0.95rem; font-weight:700; color:#2196F3; background:none; border:none; cursor:pointer; font-family:\'Prompt\',sans-serif;">ยืนยัน</button>'
+        + '</div>'
+        + '</div>';
+
+    document.body.appendChild(modal);
+}
+
+function closePayConfirm() {
+    var modal = document.getElementById('pay-confirm-modal');
+    if (modal) modal.remove();
+}
+
+function confirmPayTable(tableId, displayTableName) {
+    closePayConfirm();
     var orders = getOrders();
     var now = new Date().toISOString();
     var count = 0;
@@ -869,8 +982,8 @@ function renderHistoryOrders() {
             tLabel = 'กลับบ้านคิว ' + tLabel.replace('กลับบ้านคิว', '').trim();
         }
 
-        html += '<div class="order-group" style="margin-bottom:15px; background:#fff; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.05); overflow:hidden;">';
-        html += '<div class="order-group-header" onclick="toggleOrderGroup(\'order-items-' + order.orderId + '\', this)" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:15px; background:#fff; position:relative;">';
+        html += '<div class="order-group" style="margin-bottom:10px; background:#fff; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.05); overflow:hidden;">';
+        html += '<div class="order-group-header" onclick="toggleOrderGroup(\'order-items-' + order.orderId + '\', this)" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:10px 15px; background:#fff; position:relative;">';
         html += '<div>';
         html += '<span class="table-badge" style="background:#FFC107; color:#333; padding:5px 12px; border-radius:20px; font-weight:700; font-size:0.9rem; margin-right:10px;">โต๊ะ ' + tLabel + '</span>';
         html += '</div>';
@@ -889,8 +1002,16 @@ function renderHistoryOrders() {
                 html += '<div class="order-item" style="display:flex; align-items:center; margin-top:12px; padding-bottom:12px; border-bottom:1px dashed #f5f5f5;">';
                 html += '<div class="order-num" style="background:#f5f5f5; border-radius:8px; padding:4px 8px; font-size:0.8rem; font-weight:700; color:#555; margin-right:12px;">' + String(idx + 1 + q).padStart(2, '0') + '</div>';
 
-                // Use emoji since real image requires MENU_ITEMS from app.js which is not loaded here
-                html += '<div class="order-emoji" style="width:48px; height:48px; background:#FFF3E0; border-radius:12px; display:flex; flex-shrink:0; align-items:center; justify-content:center; font-size:1.5rem; margin-right:12px;">' + emoji + '</div>';
+                var imgSource = MENU_IMAGES[item.menuId] || null;
+                var imgHtml = '';
+                if (imgSource) {
+                    imgHtml = '<img src="' + imgSource + '" style="width:48px; height:48px; object-fit:cover; border-radius:12px; margin-right:12px; flex-shrink:0;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
+                    imgHtml += '<div style="display:none; width:48px; height:48px; background:#FFF3E0; border-radius:12px; flex-shrink:0; align-items:center; justify-content:center; font-size:1.5rem; margin-right:12px;">' + emoji + '</div>';
+                } else {
+                    imgHtml = '<div class="order-emoji" style="width:48px; height:48px; background:#FFF3E0; border-radius:12px; display:flex; flex-shrink:0; align-items:center; justify-content:center; font-size:1.5rem; margin-right:12px;">' + emoji + '</div>';
+                }
+
+                html += imgHtml;
 
                 html += '<div class="order-info" style="flex:1;">';
                 html += '<div class="order-name" style="font-weight:700; font-size:1rem; color:#222;">' + item.name + '</div>';

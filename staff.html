@@ -42,7 +42,7 @@
     <!-- ===== หน้าออเดอร์ ===== -->
     <div id="page-orders" class="page active">
         <div class="top-bar">
-            <span class="top-bar-title">หน้าออเดอร์</span>
+            <span class="top-bar-title">หน้าระบบพนักงาน</span>
         </div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
@@ -54,24 +54,26 @@
             </div>
         </div>
 
+        <div class="section-bar"><span>จัดการออเดอร์</span></div>
+
         <!-- Mode Toggle -->
         <div class="view-toggle-bar">
-            <button id="btn-grid-mode" class="view-toggle-btn active" onclick="setViewMode('grid')">🪑 โต๊ะ</button>
-            <button id="btn-list-mode" class="view-toggle-btn" onclick="setViewMode('list')">📋 ออเดอร์</button>
+            <button id="btn-list-mode" class="view-toggle-btn active" onclick="setViewMode('list')">📋 ออเดอร์</button>
+            <button id="btn-grid-mode" class="view-toggle-btn" onclick="setViewMode('grid')">🪑 โต๊ะ</button>
         </div>
 
         <div class="page-body">
             <!-- Table Grid -->
-            <div id="table-grid" class="table-grid" style="display:grid;"></div>
+            <div id="table-grid" class="table-grid" style="display:none;"></div>
 
-            <!-- Order List (hidden by default) -->
-            <div id="order-list-view" style="display:none; padding: 12px 14px;"></div>
+            <!-- Order List (shown by default) -->
+            <div id="order-list-view" style="display:block; padding: 12px 14px;"></div>
         </div>
     </div>
 
     <!-- ===== หน้าชำระเงิน ===== -->
     <div id="page-payment" class="page">
-        <div class="top-bar"><span class="top-bar-title">ชำระเงิน</span></div>
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบพนักงาน</span></div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
             <div class="noti-btn" onclick="toggleNotiPanel()"
@@ -89,7 +91,7 @@
 
     <!-- ===== หน้าประวัติ ===== -->
     <div id="page-history" class="page">
-        <div class="top-bar"><span class="top-bar-title">ประวัติ</span></div>
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบพนักงาน</span></div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
             <div class="noti-btn" onclick="toggleNotiPanel()"
@@ -108,7 +110,7 @@
 
     <!-- ===== หน้าบัญชีผู้ใช้ ===== -->
     <div id="page-account" class="page">
-        <div class="top-bar"><span class="top-bar-title">บัญชีผู้ใช้</span></div>
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบพนักงาน</span></div>
         <div class="red-hero">
             <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
         </div>
@@ -141,17 +143,24 @@
     <!-- Table Detail Modal -->
     <div id="table-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">โต๊ะ 1</h3>
-                <button class="btn btn-sm btn-outline" style="border-color:#fff; color:#fff;"
-                    onclick="closeModal()">X</button>
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 id="modal-title"
+                    style="margin:0; background:rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3); font-size:1.15rem;">
+                    โต๊ะ 1</h3>
+                <div style="display:flex; align-items:center; gap: 15px;">
+                    <div id="modal-time" style="font-size:0.9rem; font-weight:normal; opacity:0.9; text-align:right;">
+                    </div>
+                    <button class="btn btn-sm btn-outline"
+                        style="border-color:#fff; color:#fff; width:36px; height:36px; display:flex; align-items:center; justify-content:center; padding:0; border-radius:50%; font-size:1.1rem; flex-shrink:0;"
+                        onclick="closeModal()">X</button>
+                </div>
             </div>
             <div class="modal-body" id="modal-body">
                 <!-- Orders go here -->
             </div>
             <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                 <button id="btn-cancel-orders" onclick="cancelSelectedModalOrders()"
-                    style="flex:0.4; padding:8px; font-size:0.85rem; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);"
+                    style="flex:0.6; padding:8px 0; font-size:0.85rem; white-space:nowrap; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);"
                     disabled>ยกเลิกออเดอร์</button>
                 <button class="btn-serve btn-full" id="btn-serve-all" onclick="serveAllOrders()" style="flex:1;">เสิร์ฟ
                     ✓</button>
@@ -172,6 +181,21 @@
         <div id="noti-list"
             style="padding:12px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px;">
             <div style="text-align:center; color:#999; padding:20px 0; font-size:0.9rem;">ไม่มีออเดอร์ใหม่</div>
+        </div>
+    </div>
+
+    <!-- Confirm Cancel Modal -->
+    <div id="confirm-cancel-modal" class="alert-modal">
+        <div class="alert-modal-content" style="padding:30px 20px;">
+            <div style="font-size:1.15rem; font-weight:600; color:#333; margin-bottom:10px;">ยืนยันการยกเลิกออเดอร์
+            </div>
+            <div style="font-size:0.95rem; color:#666; margin-bottom:25px;">ยืนยันยกเลิกรายการที่เลือก?</div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" onclick="closeCancelConfirmModal()"
+                    style="flex:1; background:#888; border-radius:12px; font-weight:600; font-size:1.1rem; padding:12px 0; color:#fff; border:none;">ยกเลิก</button>
+                <button class="btn" onclick="executeCancelOrders()"
+                    style="flex:1; background:#F44336; border-radius:12px; font-weight:600; font-size:1.1rem; padding:12px 0; color:#fff; border:none;">ตกลง</button>
+            </div>
         </div>
     </div>
 

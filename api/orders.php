@@ -37,15 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             $row['items'] = $items;
             
-            // Re-map fields back to what JS expects if needed.
-            // JS expects: { id: order_id, tableId: table_id, items: [...], totalPrice: total_price, status: status, timestamp: created_at }
             $mappedOrder = array(
-                "id" => $row['order_id'],
+                "orderId" => $row['order_id'],
                 "guestId" => $row['guest_id'],
-                "tableId" => $row['table_id'],
+                "table" => $row['table_id'],
                 "totalPrice" => $row['total_price'],
                 "status" => $row['status'],
-                "timestamp" => $row['created_at'],
+                "createdAt" => $row['created_at'],
+                "completedAt" => $row['completed_at'],
                 "items" => $items
             );
             $orders[] = $mappedOrder;
@@ -55,13 +54,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode($orders);
 
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Existing Node code: db.orders = req.body; writeDb(db);
-    // This replaces the whole orders array. DANGEROUS for SQL.
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
     
-    // We will just return success to not break the frontend format immediately
-    // In a real relational DB, you'd insert/update specific records.
+    // In original code, the frontend posts the *entire* orders array on every change. 
+    // This is problematic for SQL. We need to check if the input is a single order object or an array.
+    // If it's an array, we might need a sync mechanism, but for new orders, we can find what's missing.
+    // However, the best approach is to fix the client to POST a single new order, OR sync the array securely.
+    
+    // Let's implement a quick sync for complete array override (DANGEROUS but matches Node behavior for now)
+    // or better yet, assume $data is the full array and iterate over it to insert/update.
+    
+    if (is_array($data)) {
+        foreach($data as $order) {
+            $orderId = isset($order['orderId']) ? $conn->real_escape_string($order['orderId']) : (isset($order['id']) ? $conn->real_escape_string($order['id']) : '');
+            if (empty($orderId)) continue;
+            
+            $guestId = isset($order['guestId']) ? $conn->real_escape_string($order['guestId']) : '';
+            $tableId = isset($order['table']) ? $conn->real_escape_string($order['table']) : (isset($order['tableId']) ? $conn->real_escape_string($order['tableId']) : '');
+            
+            $totalPrice = isset($order['totalPrice']) ? floatval($order['totalPrice']) : 0;
+            $status = isset($order['status']) ? $conn->real_escape_string($order['status']) : 'pending';
+            
+            $createdAt = isset($order['createdAt']) ? $conn->real_escape_string(date('Y-m-d H:i:s', strtotime($order['createdAt']))) : (isset($order['timestamp']) ? $conn->real_escape_string($order['timestamp']) : date('Y-m-d H:i:s'));
+            
+            // Check if order exists
+            $checkSql = "SELECT order_id FROM orders WHERE order_id = '$orderId'";
+            $checkRes = $conn->query($checkSql);
+            
+            if ($checkRes && $checkRes->num_rows > 0) {
+                // Update status if exists
+                $updateSql = "UPDATE orders SET status = '$status' WHERE order_id = '$orderId'";
+                $conn->query($updateSql);
+            } else {
+                // Insert new
+                $insertSql = "INSERT INTO orders (order_id, guest_id, table_id, total_price, status, created_at) 
+                              VALUES ('$orderId', '$guestId', '$tableId', $totalPrice, '$status', '$createdAt')";
+                if ($conn->query($insertSql) === TRUE) {
+                    // Insert details
+                    if (isset($order['items']) && is_array($order['items'])) {
+                        foreach($order['items'] as $item) {
+                            $menuId = isset($item['menuId']) ? $conn->real_escape_string($item['menuId']) : (isset($item['id']) ? $conn->real_escape_string($item['id']) : '');
+                            $qty = isset($item['qty']) ? intval($item['qty']) : (isset($item['quantity']) ? intval($item['quantity']) : 1);
+                            
+                            $itemTotal = isset($item['totalPrice']) ? floatval($item['totalPrice']) : 0;
+                            $uPrice = isset($item['basePrice']) ? floatval($item['basePrice']) : ($qty > 0 ? $itemTotal / $qty : 0);
+                            
+                            $optionsJson = isset($item['ingredients']) ? $conn->real_escape_string(json_encode($item['ingredients'], JSON_UNESCAPED_UNICODE)) : '';
+                            
+                            $optionsText = isset($item['details']) && is_array($item['details']) ? $conn->real_escape_string(implode(', ', $item['details'])) : '';
+                            
+                            $detSql = "INSERT INTO order_details (order_id, menu_id, quantity, unit_price, total_price, options_json, options_text)
+                                       VALUES ('$orderId', '$menuId', $qty, $uPrice, $itemTotal, '$optionsJson', '$optionsText')";
+                            $conn->query($detSql);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     echo json_encode(["success" => true]);
 }
 
