@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(["success" => false, "error" => $conn->error]);
         exit;
     }
-    $stmt->bind_param("sssds", $orderId, $guestId, $tableId, $totalPrice, $status, $createdAt);
+    $stmt->bind_param("sssdss", $orderId, $guestId, $tableId, $totalPrice, $status, $createdAt);
     
     if ($stmt->execute()) {
         $stmt->close();

@@ -72,7 +72,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ===== TAB NAVIGATION =====
 function showTab(pageId, btn) {
-    document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
+    document.querySelectorAll('.page').forEach(function (p) {
+        p.classList.remove('active');
+        if (p.id !== 'page-report-print') p.style.display = '';
+    });
     document.getElementById(pageId).classList.add('active');
     if (btn) {
         document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
@@ -462,7 +465,9 @@ function _renderStockInList(containerId, isFull) {
             html += '<span style="font-weight:700; font-size:1rem;">' + entry.name + '</span>';
             html += '<span style="font-size:0.75rem; color:#888;">เวลา ' + timeStr + ' น.</span>';
             html += '</div>';
-            html += '<div style="color:#555; font-size:0.9rem;">' + entry.qty + ' ' + entry.unit + '</div>';
+            var quantityStr = String(entry.qty + ' ' + (entry.unit || ''));
+            quantityStr = quantityStr.split('<br>')[0].split(' หรือ ')[0];
+            html += '<div style="color:#555; font-size:0.9rem;">' + quantityStr + '</div>';
             html += '</div></div></div>';
         }
 
@@ -694,7 +699,10 @@ function formatSecondaryUnit(name, qty, returnRawText) {
         if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return '0 ถุง 0 ก้อน';
         if (name === 'ลูกชิ้น') return '0 ถุง 0 ชิ้น';
         if (name === 'เส้นเล็ก' || name === 'เส้นใหญ่' || name === 'เส้นหมี่ขาว') return '0 ถุง 0 กรัม';
-        if (name === 'น่องไก่' || name === 'เนื้อวัว' || name === 'ผักบุ้ง' || name === 'ถั่วงอก' || name === 'กุ้ง' || name === 'หมึก') return '0 กิโลกรัม';
+        var splitTextZero = '<br>หรือ ';
+        if (name === 'น่องไก่') return '0 กก.' + splitTextZero + '~0 ชิ้น';
+        if (name === 'กุ้ง') return '0 กก.' + splitTextZero + '~0 ตัว';
+        if (name === 'เนื้อวัว' || name === 'ผักบุ้ง' || name === 'ถั่วงอก' || name === 'หมึก') return '0 กก.';
         return '0 ' + (ING_UNITS[name] || 'หน่วย');
     }
 
@@ -740,7 +748,7 @@ function formatSecondaryUnit(name, qty, returnRawText) {
             var pieces = Math.round((qty - bagsM) * 90);
             if (pieces >= 90) { bagsM += Math.floor(pieces / 90); pieces = pieces % 90; }
             if (bagsM > 0) parts.push(bagsM + ' ถุง');
-            if (pieces > 0) parts.push(pieces + ' ชิ้น');
+            if (pieces > 0) parts.push('~' + pieces + ' ชิ้น');
             break;
 
         case 'น่องไก่':
@@ -750,30 +758,42 @@ function formatSecondaryUnit(name, qty, returnRawText) {
         case 'ผักบุ้ง':
         case 'ถั่วงอก':
             // กิโลกรัม -> กิโลกรัม กับ กรัม หรือ ตัว/ชิ้น
-            // น่องไก่: 1 กก = 12.46 ชิ้น (จากภาพ 13 กก. = 162 ชิ้น => 1 กก = ~12.46 ชิ้น)
-            // เนื้อวัว: 18 กก -> เราไม่รู้ชิ้น ใช้เป็น กก. + กรัม ดีกว่า
-            // กุ้ง: 3 กก -> ...
-            // Let's just use decimal formats for these, or kg + grams
             if (name === 'กุ้ง') {
-                return parseFloat(Number(qty).toFixed(3)) + ' กิโลกรัม';
-            } else if (name === 'น่องไก่' || name === 'เนื้อวัว' || name === 'หมึก') {
-                var kg = Math.floor(qty);
-                var g = Math.round((qty - kg) * 1000);
-                if (kg > 0) parts.push(kg + ' กิโลกรัม');
-                if (g > 0) parts.push(g + ' กรัม');
+                var pieces = Math.round(qty * 75 / 3);
+                var separator = '<br>หรือ ';
+                if (qty < 1) {
+                    var grams = Math.round(qty * 1000);
+                    return grams + ' กรัม' + separator + '~' + pieces + ' ตัว';
+                }
+                return parseFloat(Number(qty).toFixed(3)) + ' กก.' + separator + '~' + pieces + ' ตัว';
+            } else if (name === 'น่องไก่') {
+                var pieces = Math.round(qty * 162 / 13);
+                var separator = '<br>หรือ ';
+                if (qty < 1) {
+                    var grams = Math.round(qty * 1000);
+                    return grams + ' กรัม' + separator + '~' + pieces + ' ชิ้น';
+                }
+                return parseFloat(Number(qty).toFixed(3)) + ' กก.' + separator + '~' + pieces + ' ชิ้น';
             } else {
-                return parseFloat(Number(qty).toFixed(3)) + ' กิโลกรัม';
+                if (qty < 1) {
+                    var grams = Math.round(qty * 1000);
+                    return grams + ' กรัม';
+                }
+                return parseFloat(Number(qty).toFixed(3)) + ' กก.';
             }
             break;
 
         default:
+            if (ING_UNITS[name] === 'กิโลกรัม' && qty < 1 && qty > 0) {
+                return Math.round(qty * 1000) + ' กรัม';
+            }
             return parseFloat(Number(qty).toFixed(3)) + ' ' + (ING_UNITS[name] || 'หน่วย');
     }
 
     if (parts.length === 0) {
         if (name === 'ไข่') return '0 แผง';
         if (name.includes('เส้น') || name === 'ลูกชิ้น') return '0 ถุง';
-        return '0 กิโลกรัม';
+        return '0 กก.';
     }
 
     return parts.join(' ');
@@ -799,26 +819,62 @@ function renderRemaining() {
         return saved ? JSON.parse(saved) : [];
     }
 
+    // Helper: show custom confirm modal
+    window.showIngredientConfirm = function (name, message, confirmLabel, confirmColor, onConfirm) {
+        // Remove old modal if exists
+        var old = document.getElementById('ing-confirm-modal');
+        if (old) old.remove();
+
+        var modal = document.createElement('div');
+        modal.id = 'ing-confirm-modal';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.45); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;';
+        modal.innerHTML = '<div style="background:#fff; border-radius:16px; width:100%; max-width:300px; padding:24px; box-shadow:0 8px 32px rgba(0,0,0,0.2); text-align:center;">' +
+            '<div style="font-size:2rem; margin-bottom:10px;">⚠️</div>' +
+            '<div style="font-family:\'Prompt\',sans-serif; font-size:0.95rem; color:#555; margin-bottom:20px;">' + message + '</div>' +
+            '<div style="display:flex; gap:12px;">' +
+            '<button id="ing-confirm-cancel" style="flex:1; padding:12px; border-radius:12px; border:none; background:#e0e0e0; color:#333; font-family:\'Prompt\',sans-serif; font-size:1rem; font-weight:600; cursor:pointer;">ยกเลิก</button>' +
+            '<button id="ing-confirm-ok" style="flex:1; padding:12px; border-radius:12px; border:none; background:' + confirmColor + '; color:#fff; font-family:\'Prompt\',sans-serif; font-size:1rem; font-weight:600; cursor:pointer;">' + confirmLabel + '</button>' +
+            '</div>' +
+            '</div>';
+        document.body.appendChild(modal);
+
+        document.getElementById('ing-confirm-cancel').onclick = function () { modal.remove(); };
+        document.getElementById('ing-confirm-ok').onclick = function () { modal.remove(); onConfirm(); };
+        modal.onclick = function (e) { if (e.target === modal) modal.remove(); };
+    };
+
     // Global scope toggle function to be accessible by HTML onchange handler
     window.toggleIngredient = function (name) {
         var disabled = getDisabledIngredients();
         var idx = disabled.indexOf(name);
 
-        // If currently enabled (not in disabled list), show confirm before disabling
         if (idx === -1) {
-            if (!confirm('คุณต้องการปิดการขาย "' + name + '" ใช่หรือไม่?')) {
-                renderRemaining(); // Re-render to revert checkbox state
-                return;
-            }
-        }
-
-        if (idx > -1) {
-            disabled.splice(idx, 1);
+            // Currently available → confirm disabling
+            window.showIngredientConfirm(
+                name,
+                '\u0e04\u0e38\u0e13\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e2a\u0e16\u0e32\u0e19\u0e30 <b style="color:#D32F2F;">' + name + '</b> \u0e40\u0e1b\u0e47\u0e19 <b style="color:#D32F2F;">\u0e2b\u0e21\u0e14</b> \u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+                '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e1b\u0e34\u0e14',
+                '#D32F2F',
+                function () {
+                    disabled.push(name);
+                    localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabled));
+                    renderRemaining();
+                }
+            );
         } else {
-            disabled.push(name);
+            // Currently disabled → confirm re-enabling
+            window.showIngredientConfirm(
+                name,
+                '\u0e04\u0e38\u0e13\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e1b\u0e34\u0e14\u0e01\u0e32\u0e23\u0e02\u0e32\u0e22 <b style="color:#1976D2;">' + name + '</b> \u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+                '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e1b\u0e34\u0e14',
+                '#1976D2',
+                function () {
+                    disabled.splice(idx, 1);
+                    localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabled));
+                    renderRemaining();
+                }
+            );
         }
-        localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabled));
-        renderRemaining();
     }
 
     // Update button UI
@@ -842,16 +898,41 @@ function renderRemaining() {
     container.innerHTML = keys.map(function (name) {
         var d = remaining[name];
         var isEnabled = disabledIngredients.indexOf(name) === -1;
-        var checkedAttr = isEnabled ? 'checked' : '';
         var opacityStyle = isEnabled ? '' : 'opacity: 0.5;';
 
         var warning = d.remaining <= 1 ? '<div class="ing-warning">⚠️</div>' : '';
 
-        var toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center;">' +
-            '<label class="toggle-switch">' +
-            '<input type="checkbox" onchange="toggleIngredient(\'' + name + '\')" ' + checkedAttr + '>' +
-            '<span class="toggle-slider"></span>' +
-            '</label></div>';
+        var toggleHtml = '';
+        if (d.remaining <= 0) {
+            // Automatically add to disabled list if not there already (and remaining is 0)
+            if (isEnabled) {
+                disabledIngredients.push(name);
+                localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabledIngredients));
+                isEnabled = false;
+                opacityStyle = 'opacity: 0.5;';
+            }
+            toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center; width:100%;">' +
+                '<div style="width:100%; display:flex; border-radius:4px; overflow:hidden;">' +
+                '<div style="flex:1; background:#e0e0e0; color:#000; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">มี</div>' +
+                '<div style="flex:1; background:#f44336; color:#fff; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem; font-weight:bold;">หมด</div>' +
+                '</div></div>';
+        } else {
+            // Active stock style
+            var mainChecked = isEnabled ? 'checked' : '';
+            if (isEnabled) {
+                toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center; width:100%; cursor:pointer;" onclick="toggleIngredient(\'' + name + '\')">' +
+                    '<div style="width:100%; display:flex; border-radius:4px; overflow:hidden;">' +
+                    '<div style="flex:1; background:#4BA1FB; color:#fff; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">มี</div>' +
+                    '<div style="flex:1; background:#e0e0e0; color:#000; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">หมด</div>' +
+                    '</div></div>';
+            } else {
+                toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center; width:100%; cursor:pointer;" onclick="toggleIngredient(\'' + name + '\')">' +
+                    '<div style="width:100%; display:flex; border-radius:4px; overflow:hidden;">' +
+                    '<div style="flex:1; background:#e0e0e0; color:#000; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">มี</div>' +
+                    '<div style="flex:1; background:#f44336; color:#fff; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem; font-weight:bold;">หมด</div>' +
+                    '</div></div>';
+            }
+        }
 
         return '<div class="ing-card" style="' + opacityStyle + ' position:relative; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">' +
             '<div>' +
@@ -905,6 +986,9 @@ function renderReport() {
         var usedText = formatSecondaryUnit(name, usedQty, true);
         var remText = formatSecondaryUnit(name, remaining, true);
         var inText = formatSecondaryUnit(name, inQty, true);
+        if (name === 'กุ้ง' || name === 'น่องไก่') {
+            inText = parseFloat(Number(inQty).toFixed(3)) + ' กก.';
+        }
 
         html += '<tr>';
         html += '<td>' + name + '</td>';
@@ -1096,7 +1180,7 @@ function downloadReportForDate(dateStr) {
 
         reportData[ing] = {
             stockIn: inQty,
-            used: usedOnDate[ing] || 0, // Used ON THIS DATE
+            used: totalUsedUpToDate[ing] || 0, // Used total
             remaining: rem, // Historical remaining at the end of this date
             unit: ING_UNITS[ing]
         };
@@ -1104,11 +1188,11 @@ function downloadReportForDate(dateStr) {
 
     // --- Render Table ---
     var container = document.getElementById('report-table-container');
-    var html = '<table class="ing-table" style="width:100%; border-collapse:collapse; margin-top:15px; color:#000000;">';
-    html += '<tr><th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รายการ</th>';
-    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รับเข้า(รวม)</th>';
-    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">ที่ใช้ไป(' + displayDate + ')</th>';
-    html += '<th style="padding:10px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ(ณ วันนั้น)</th></tr>';
+    var html = '<table class="ing-table" style="width:100%; border-collapse:collapse; margin-top:5px; color:#000000;">';
+    html += '<tr><th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รายการ</th>';
+    html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รับเข้า</th>';
+    html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">ที่ใช้ไป</th>';
+    html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ</th></tr>';
 
     ALL_INGREDIENTS.forEach(function (name) {
         var data = reportData[name];
@@ -1141,15 +1225,14 @@ function downloadReportForDate(dateStr) {
         }
 
         html += '<tr>';
-        html += '<td style="padding:10px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
-        var inText = parseFloat(Number(inQty).toFixed(3)) + ' ' + displayUnit;
-        if (displayUnit === 'ถุง') {
-            var inSecondary = formatSecondaryUnit(name, inQty, true);
-            if (inSecondary) inText += ' / ' + inSecondary;
+        html += '<td style="padding:6px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
+        var inText = formatSecondaryUnit(name, inQty, true);
+        if (name === 'กุ้ง' || name === 'น่องไก่') {
+            inText = parseFloat(Number(inQty).toFixed(3)) + ' กก.';
         }
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + inText + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + usedText + '</td>';
-        html += '<td style="padding:10px; border:1px solid #000000; text-align:center; background:' + bgColor + '; font-weight:' + fontWeight + '; color:' + textColor + ';">' + remText + '</td>';
+        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + inText + '</td>';
+        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + usedText + '</td>';
+        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; background:' + bgColor + '; font-weight:' + fontWeight + '; color:' + textColor + ';">' + remText + '</td>';
         html += '</tr>';
     });
     html += '</table>';

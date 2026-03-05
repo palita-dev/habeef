@@ -15,10 +15,18 @@ if (_usersCache.length === 0) _usersCache = [DEFAULT_ADMIN];
 function syncFromServer() {
     fetch(SERVER_BASE + '/api/orders.php')
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (Array.isArray(data)) {
-                _ordersCache = data;
-                localStorage.setItem('habeef_orders', JSON.stringify(data));
+        .then(function (serverData) {
+            if (Array.isArray(serverData)) {
+                // Keep locally-saved orders that aren't in the server response yet
+                // (they may still be in-flight to the DB)
+                var localOrders = getOrders();
+                var serverIds = serverData.map(function (o) { return o.orderId; });
+                var localOnly = localOrders.filter(function (o) {
+                    return o.orderId && serverIds.indexOf(o.orderId) === -1;
+                });
+                var merged = serverData.concat(localOnly);
+                _ordersCache = merged;
+                localStorage.setItem('habeef_orders', JSON.stringify(merged));
             }
         }).catch(function () { });
 
@@ -186,6 +194,12 @@ var MENU_IMAGES = {
 
 // ===== ORDERS =====
 function getOrders() {
+    var saved = localStorage.getItem('habeef_orders');
+    if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch (e) { }
+    }
     return _ordersCache;
 }
 
@@ -200,8 +214,10 @@ function saveOrders(orders) {
 }
 
 function saveOrder(order) {
-    _ordersCache.push(order);
-    localStorage.setItem('habeef_orders', JSON.stringify(_ordersCache));
+    var currentOrders = getOrders();
+    currentOrders.push(order);
+    _ordersCache = currentOrders;
+    localStorage.setItem('habeef_orders', JSON.stringify(currentOrders));
     fetch(SERVER_BASE + '/api/orders_add.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -215,12 +231,64 @@ function getIngredientUsage() {
 }
 
 function saveIngredientUsage(ingredients, date) {
-    var log = getIngredientUsage();
-    log.push({ date: date.toISOString(), ingredients: ingredients });
-    localStorage.setItem('habeef_ingredients', JSON.stringify(log));
-    fetch(SERVER_BASE + '/api/ingredients.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(log)
-    }).catch(function () { });
+    var logs = getIngredientUsage();
+    logs.push({
+        id: Date.now().toString(),
+        date: date,
+        ingredients: Object.assign({}, ingredients)
+    });
+    localStorage.setItem('habeef_ingredients', JSON.stringify(logs));
+}
+
+// ===== STOCK UTILITIES =====
+function getAllRemainingStock() {
+    var stockIn = JSON.parse(localStorage.getItem('habeef_stock_in') || '{}');
+    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+
+    var usage = {};
+    usageLogs.forEach(function (log) {
+        var logTime = new Date(log.date);
+        var dKey = getDateKey(logTime);
+        if (!usage[dKey]) usage[dKey] = {};
+        for (var ingName in log.ingredients) {
+            usage[dKey][ingName] = (usage[dKey][ingName] || 0) + log.ingredients[ingName];
+        }
+    });
+
+    var totalIn = {};
+    for (var d in stockIn) {
+        for (var ing in stockIn[d]) {
+            if (totalIn[ing] === undefined) totalIn[ing] = 0;
+            var itemData = stockIn[d][ing];
+            var q = 0;
+            if (typeof itemData === 'number') {
+                q = itemData;
+            } else if (itemData && typeof itemData.qty === 'number') {
+                q = itemData.qty;
+            }
+            totalIn[ing] += q;
+        }
+    }
+
+    var totalUsed = {};
+    for (var d2 in usage) {
+        for (var ing2 in usage[d2]) {
+            if (totalUsed[ing2] === undefined) totalUsed[ing2] = 0;
+            totalUsed[ing2] += usage[d2][ing2];
+        }
+    }
+
+    var remaining = {};
+    var allKeys = Object.keys(totalIn).concat(Object.keys(totalUsed));
+    var uniqueKeys = allKeys.filter(function (item, pos) {
+        return allKeys.indexOf(item) == pos;
+    });
+
+    uniqueKeys.forEach(function (ing) {
+        var rem = (totalIn[ing] || 0) - (totalUsed[ing] || 0);
+        if (rem < 0) rem = 0;
+        remaining[ing] = rem;
+    });
+
+    return remaining;
 }

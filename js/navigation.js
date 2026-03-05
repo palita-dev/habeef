@@ -15,6 +15,7 @@ function showPage(pageId) {
 
 // ===== ไปหน้าเมนู =====
 function goToMenu() {
+  if (typeof editingCartIndex !== 'undefined') editingCartIndex = -1;
   updateCartBadge();
   showPage('page-menu');
 }
@@ -36,15 +37,38 @@ function goToCustomize(menuId) {
 // ===== แสดงเมนู =====
 function renderMenu() {
   var container = document.getElementById('menu-list');
+  var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
+
+  var disabledIngredients = [];
+  try {
+    var saved = localStorage.getItem('habeef_disabled_ingredients');
+    if (saved) disabledIngredients = JSON.parse(saved);
+  } catch (e) { }
+
   container.innerHTML = MENU_ITEMS.map(function (item) {
+    var isOutOfStock = false;
+    var nameSuffix = '';
+
+    if (item.id === 'tom-yam-seafood') {
+      var shrimpDisabled = disabledIngredients.indexOf('กุ้ง') !== -1;
+      var squidDisabled = disabledIngredients.indexOf('หมึก') !== -1;
+      if ((remaining['กุ้ง'] || 0) <= 0 || (remaining['หมึก'] || 0) <= 0 || shrimpDisabled || squidDisabled) {
+        isOutOfStock = true;
+        nameSuffix = ' <span style="color:#D32F2F; font-size:1.1em; font-weight:bold; margin-left:8px;">(หมด)</span>';
+      }
+    }
+
     var imgHtml = item.image
       ? '<img src="' + item.image + '" alt="' + item.name + '" class="menu-food-img" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
       '<div class="menu-img" style="display:none">' + item.emoji + '</div>'
       : '<div class="menu-img">' + item.emoji + '</div>';
-    return '<div class="menu-card" onclick="goToCustomize(\'' + item.id + '\')">' +
+
+    var cardStyle = isOutOfStock ? ' opacity: 0.5; pointer-events: none; filter: grayscale(1); ' : ' cursor: pointer; ';
+
+    return '<div class="menu-card" style="' + cardStyle + '" onclick="goToCustomize(\'' + item.id + '\')">' +
       '<div class="menu-img-wrap">' + imgHtml + '</div>' +
       '<div class="menu-info">' +
-      '<div class="menu-name">' + item.name + '</div>' +
+      '<div class="menu-name">' + item.name + nameSuffix + '</div>' +
       '<div class="menu-price-text">' + item.price + ' บาท</div>' +
       '</div>' +
       '<div class="menu-desc">' + item.desc + '</div>' +
@@ -74,9 +98,11 @@ function renderCustomizeForm(menu) {
     if (saved) disabledIngredients = JSON.parse(saved);
   } catch (e) { }
 
-  var activeNoodles = NOODLE_OPTIONS.filter(function (n) { return disabledIngredients.indexOf(n.ingredient) === -1; });
-  var activeMeats = MEAT_OPTIONS.filter(function (n) { return disabledIngredients.indexOf(n.ingredient) === -1; });
-  var activeExtras = EXTRA_OPTIONS.filter(function (n) { return n.isNone || disabledIngredients.indexOf(n.ingredient) === -1; });
+  var activeNoodles = NOODLE_OPTIONS;
+  var activeMeats = MEAT_OPTIONS;
+  var activeExtras = EXTRA_OPTIONS;
+
+  var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
 
   // === เลย์เอาต์ เส้น และ ผสมเส้น (เคียงข้างกัน) ===
   if (menu.hasNoodle && activeNoodles.length > 0) {
@@ -89,9 +115,14 @@ function renderCustomizeForm(menu) {
     html += '<div style="text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 10px;">เลือกอย่างน้อย 1 รายการ</div>';
     html += '<div class="section-body" style="padding-left: 10px;">';
     activeNoodles.forEach(function (opt, i) {
-      html += '<label class="option-item" style="margin-bottom: 8px;">' +
-        '<input type="radio" name="noodle" value="' + opt.id + '" onchange="updateMixedNoodleState()">' +
-        '<span class="option-label" style="font-size: 1rem;">' + opt.name + '</span></label>';
+      var reqQty = (typeof FORMULA !== 'undefined' && FORMULA[opt.ingredient]) ? FORMULA[opt.ingredient] : 0;
+      var isToggledOff = opt.ingredient && disabledIngredients.indexOf(opt.ingredient) !== -1;
+      var isOos = opt.ingredient && (remaining[opt.ingredient] || 0) < reqQty || isToggledOff;
+      var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
+      var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
+      html += '<label class="option-item" style="margin-bottom: 8px;' + opacity + '">' +
+        '<input type="radio" name="noodle" value="' + opt.id + '" onchange="updateMixedNoodleState()"' + (isOos ? ' disabled' : '') + '>' +
+        '<span class="option-label" style="font-size: 1rem;">' + opt.name + oosLabel + '</span></label>';
     });
     html += '</div></div>'; // จบคอลัมน์ 1
 
@@ -101,9 +132,14 @@ function renderCustomizeForm(menu) {
     html += '<div style="text-align: center; font-size: 0.8rem; color: transparent; margin-bottom: 10px;">-</div>'; // placeholder ให้ความสูงเท่ากัน
     html += '<div class="section-body" style="padding-left: 10px;">';
     activeNoodles.forEach(function (opt) {
-      html += '<label class="option-item" style="margin-bottom: 8px;">' +
-        '<input type="radio" name="mixed-noodle" value="' + opt.id + '" onclick="toggleRadio(this)">' +
-        '<span class="option-label" style="font-size: 1rem;">' + opt.name + '</span></label>';
+      var reqQty = (typeof FORMULA !== 'undefined' && FORMULA[opt.ingredient]) ? FORMULA[opt.ingredient] : 0;
+      var isToggledOff = opt.ingredient && disabledIngredients.indexOf(opt.ingredient) !== -1;
+      var isOos = opt.ingredient && (remaining[opt.ingredient] || 0) < reqQty || isToggledOff;
+      var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
+      var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
+      html += '<label class="option-item" style="margin-bottom: 8px;' + opacity + '">' +
+        '<input type="radio" name="mixed-noodle" value="' + opt.id + '" onclick="toggleRadio(this)"' + (isOos ? ' disabled' : '') + '>' +
+        '<span class="option-label" style="font-size: 1rem;">' + opt.name + oosLabel + '</span></label>';
     });
     html += '</div></div>'; // จบคอลัมน์ 2
 
@@ -116,9 +152,14 @@ function renderCustomizeForm(menu) {
       '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">เนื้อสัตว์</div>' +
       '<div class="section-body" style="padding: 10px;">';
     activeMeats.forEach(function (opt, i) {
-      html += '<label class="option-item">' +
-        '<input type="radio" name="meat" value="' + opt.id + '">' +
-        '<span class="option-label">' + opt.name + '</span></label>';
+      var reqQty = (typeof FORMULA !== 'undefined' && FORMULA[opt.ingredient]) ? FORMULA[opt.ingredient] : 0;
+      var isToggledOff = opt.ingredient && disabledIngredients.indexOf(opt.ingredient) !== -1;
+      var isOos = opt.ingredient && (remaining[opt.ingredient] || 0) < reqQty || isToggledOff;
+      var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
+      var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
+      html += '<label class="option-item" style="' + opacity + '">' +
+        '<input type="radio" name="meat" value="' + opt.id + '"' + (isOos ? ' disabled' : '') + '>' +
+        '<span class="option-label">' + opt.name + oosLabel + '</span></label>';
     });
     html += '</div></div>';
   }
@@ -128,9 +169,19 @@ function renderCustomizeForm(menu) {
     '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">ผัก</div>' +
     '<div class="section-body" style="padding: 10px;">';
   VEGGIE_OPTIONS.forEach(function (opt, i) {
-    html += '<label class="option-item">' +
-      '<input type="radio" name="veggie" value="' + opt.id + '">' +
-      '<span class="option-label">' + opt.name + '</span></label>';
+    var isOos = false;
+    if (opt.hasVeg) {
+      var pbQty = (typeof FORMULA !== 'undefined' && FORMULA['ผักบุ้ง']) ? FORMULA['ผักบุ้ง'] : 0;
+      var tngQty = (typeof FORMULA !== 'undefined' && FORMULA['ถั่วงอก']) ? FORMULA['ถั่วงอก'] : 0;
+      if (((remaining['ผักบุ้ง'] || 0) < pbQty) || ((remaining['ถั่วงอก'] || 0) < tngQty)) {
+        isOos = true;
+      }
+    }
+    var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
+    var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
+    html += '<label class="option-item" style="' + opacity + '">' +
+      '<input type="radio" name="veggie" value="' + opt.id + '"' + (isOos ? ' disabled' : '') + '>' +
+      '<span class="option-label">' + opt.name + oosLabel + '</span></label>';
   });
   html += '</div></div>';
 
@@ -140,10 +191,15 @@ function renderCustomizeForm(menu) {
       '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">สั่งเพิ่ม <span style="font-size: 0.8rem; font-weight: normal; margin-left: auto;">(เลือกได้หลายอย่าง)</span></div>' +
       '<div class="section-body" style="padding: 10px;">';
     activeExtras.forEach(function (opt) {
-      html += '<label class="option-item">' +
+      var reqQty = (typeof FORMULA !== 'undefined' && FORMULA[opt.ingredient]) ? FORMULA[opt.ingredient] : 0;
+      var isToggledOff = opt.ingredient && disabledIngredients.indexOf(opt.ingredient) !== -1;
+      var isOos = opt.ingredient && (remaining[opt.ingredient] || 0) < reqQty || isToggledOff;
+      var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
+      var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
+      html += '<label class="option-item" style="' + opacity + '">' +
         '<input type="checkbox" name="extras" value="' + opt.id + '"' +
-        ' onchange="handleExtraChange(this,' + (opt.isNone ? 'true' : 'false') + ')">' +
-        '<span class="option-label">' + opt.name + '</span>' +
+        ' onchange="handleExtraChange(this,' + (opt.isNone ? 'true' : 'false') + ')"' + (isOos ? ' disabled' : '') + '>' +
+        '<span class="option-label">' + opt.name + oosLabel + '</span>' +
         (opt.price > 0 ? '<span class="option-price">+' + opt.price + '฿</span>' : '') +
         '</label>';
     });

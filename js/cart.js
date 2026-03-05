@@ -16,6 +16,45 @@ const FORMULA = {
     'ไข่': 1 / 30
 };
 
+var editingCartIndex = -1;
+
+function editCartItem(index) {
+    editingCartIndex = index;
+    var item = cart[index];
+    goToCustomize(item.menuId);
+
+    // Attempt to pre-fill the form
+    setTimeout(function () {
+        var form = document.getElementById('customize-form');
+        if (!form) return;
+
+        var inputs = form.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+        inputs.forEach(function (input) {
+            var labelSpan = input.closest('.option-item').querySelector('.option-label');
+            var labelText = labelSpan ? labelSpan.textContent.replace(' (หมด)', '').trim() : '';
+            var priceSpan = input.closest('.option-item').querySelector('.option-price');
+            var fullText = labelText;
+            if (priceSpan) fullText += ' ' + priceSpan.textContent.trim();
+
+            // special cases
+            if (input.name === 'mixed-noodle') {
+                fullText = 'ผสม' + labelText;
+            }
+            if (input.name === 'veggie' && input.value === 'veg-no') {
+                fullText = 'ไม่ใส่ผัก';
+            }
+
+            if (item.details.indexOf(fullText) > -1 || (item.details.length === 0 && input.value === 'extra-none')) {
+                input.checked = true;
+                if (input.type === 'radio') input.dataset.wasChecked = "true";
+                if (typeof updateMixedNoodleState === 'function' && input.name === 'noodle') updateMixedNoodleState();
+            }
+        });
+
+        if (typeof validateCustomizeForm === 'function') validateCustomizeForm();
+    }, 100);
+}
+
 function addToCart() {
     if (!currentMenuItem) return;
 
@@ -112,22 +151,51 @@ function addToCart() {
         details.push(eName);
     });
 
-    // === เพิ่มลงตะกร้า ===
-    var cartItem = {
-        id: Date.now().toString(),
-        menuId: menu.id,
-        name: menu.name,
-        basePrice: menu.price,
-        totalPrice: totalPrice,
-        details: details,
-        ingredients: ingredients,
-        qty: 1
-    };
+    // === เพิ่มลงตะกร้า / อัพเดต ===
+    var existingIndex = cart.findIndex(function (c, idx) {
+        if (editingCartIndex === idx) return false;
+        if (c.menuId !== menu.id) return false;
+        if (c.details.length !== details.length) return false;
+        var sameDetails = true;
+        for (var i = 0; i < details.length; i++) {
+            if (c.details.indexOf(details[i]) === -1) {
+                sameDetails = false; break;
+            }
+        }
+        return sameDetails;
+    });
 
-    cart.push(cartItem);
+    if (editingCartIndex > -1) {
+        if (existingIndex > -1) {
+            cart[existingIndex].qty += cart[editingCartIndex].qty;
+            cart.splice(editingCartIndex, 1);
+        } else {
+            cart[editingCartIndex].totalPrice = totalPrice;
+            cart[editingCartIndex].details = details;
+            cart[editingCartIndex].ingredients = ingredients;
+        }
+        editingCartIndex = -1;
+    } else {
+        if (existingIndex > -1) {
+            cart[existingIndex].qty += 1;
+        } else {
+            var cartItem = {
+                id: Date.now().toString(),
+                menuId: menu.id,
+                name: menu.name,
+                basePrice: menu.price,
+                totalPrice: totalPrice,
+                details: details,
+                ingredients: ingredients,
+                qty: 1
+            };
+            cart.push(cartItem);
+        }
+    }
+
     saveCart();
     updateCartBadge();
-    showToast('เพิ่ม ' + menu.name + ' ลงตะกร้าแล้ว ✓');
+    showToast('บันทึก ' + menu.name + ' สำเร็จ ✓');
     goToMenu();
 }
 
@@ -191,38 +259,37 @@ function renderCart() {
         } else {
             imgHtml = '<div class="item-img" style="background:#FFF3E0; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
         }
+        var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + item.qty + '</span>' : '';
 
-        return `
-        <tr class="cart-table-row">
-            <td class="td-item" style="padding-top: 16px; padding-bottom: 16px;">
-                <div class="item-wrapper">
-                    <span class="item-index">${index + 1}</span>
-                    ${imgHtml}
-                    <div class="item-text">
-                        <div class="item-name">${item.name}</div>
-                        <div class="cart-row-details">
-                            ${detailsHtml}
-                        </div>
-                    </div>
-                </div>
-            </td>
-            <td class="td-price" style="text-align: right; vertical-align: top; padding: 10px 15px 10px 0;">
-                <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%; min-height: 80px;">
-                    <div style="text-align: right; margin-bottom: 10px;">
-                        <button onclick="removeFromCart(${index})" style="background: transparent; border: none; font-size: 1.8rem; color: #C62828; cursor: pointer; line-height: 1; padding: 0; font-weight: bold;">&times;</button>
-                    </div>
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-                        <div class="price-val" style="font-size: 1.25rem; font-weight: 700; color: #333; white-space: nowrap;">${item.totalPrice} ฿</div>
-                        <div class="qty-control-pill" style="margin: 0; transform: scale(1.1); transform-origin: right center;">
-                            <button onclick="changeQty(${index}, -1)">−</button>
-                            <span>${item.qty}</span>
-                            <button onclick="changeQty(${index}, 1)">+</button>
-                        </div>
-                    </div>
-                </div>
-            </td>
-        </tr>
-        `;
+        return '<tr class="cart-table-row">' +
+            '<td class="td-item" style="padding-top:16px; padding-bottom:16px; cursor:pointer;" onclick="if(event.target.tagName !== \'BUTTON\') editCartItem(' + index + ')">' +
+            '<div class="item-wrapper">' +
+            '<span class="item-index">' + (index + 1) + '</span>' +
+            imgHtml +
+            '<div class="item-text">' +
+            '<div class="item-name">' + item.name + qtyLabel + '</div>' +
+            '<div class="cart-row-details">' +
+            detailsHtml +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '</td>' +
+            '<td class="td-price" style="text-align:right; vertical-align:top; border-bottom:1px dashed #eee; padding:10px 15px 10px 0;">' +
+            '<div style="display:flex; flex-direction:column; justify-content:space-between; height:100%; min-height:80px;">' +
+            '<div style="text-align:right; margin-bottom:10px;">' +
+            '<button onclick="removeFromCart(' + index + ')" style="background:transparent; border:none; font-size:1.8rem; color:#C62828; cursor:pointer; line-height:1; padding:0; font-weight:bold;">&times;</button>' +
+            '</div>' +
+            '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
+            '<div class="price-val" style="font-size:1.25rem; font-weight:700; color:#333; white-space:nowrap;">' + (item.totalPrice * item.qty) + ' ฿</div>' +
+            '<div class="qty-control-pill" style="margin:0; transform:scale(1.1); transform-origin:right center;">' +
+            '<button onclick="changeQty(' + index + ', -1)">−</button>' +
+            '<span>' + item.qty + '</span>' +
+            '<button onclick="changeQty(' + index + ', 1)">+</button>' +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '</td>' +
+            '</tr>';
     }).join('');
 
     updateCartTotal();
@@ -311,9 +378,10 @@ function placeOrder() {
             }
         }
 
-        // Title line: qty x name (no price)
+        // Title line: name x qty (no base price)
+        var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + item.qty + '</span>' : '';
         var textHtml = '<div style="flex: 1; text-align: left;">';
-        textHtml += '<div style="font-weight: 600; font-size: 0.95rem; color: #222;">' + item.qty + ' x ' + item.name + '</div>';
+        textHtml += '<div style="font-weight: 600; font-size: 0.95rem; color: #222; display:flex; align-items:center;">' + item.name + qtyLabel + '</div>';
 
         // Details on separate lines
         if (item.details.length > 0) {

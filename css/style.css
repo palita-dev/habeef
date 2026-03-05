@@ -802,7 +802,7 @@ body {
 }
 
 .receipt-label-box {
-  background: #FFE082;
+  background: #fff;
   color: #333;
   font-weight: 700;
   display: inline-block;
@@ -867,7 +867,8 @@ body {
 }
 
 .receipt-total-box {
-  background: #FFC107;
+  background: #E3F2FD;
+  color: #1976D2;
   border-radius: 30px;
   padding: 12px 20px;
   display: flex;

@@ -200,15 +200,16 @@ function renderReceipt(order) {
             imgHtml = '<div class="receipt-col-img" style="background:#fce4ec;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">' + (item.emoji || '🍜') + '</div>';
         }
 
+        var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.2rem; margin-left:8px;">x' + item.qty + '</span>' : '';
+
         return '<div class="receipt-row">' +
             '<div style="width:30px;font-weight:700;color:#888;">' + (idx + 1) + '</div>' +
             imgHtml +
-            '<div class="receipt-col-info">' +
-            '<div class="receipt-item-name">' + item.name + '</div>' +
+            '<div class="receipt-col-info" style="flex:1;">' +
+            '<div class="receipt-item-name" style="font-weight:700; font-size:1.1rem; color:#222; display:flex; align-items:center;">' + item.name + qtyLabel + '</div>' +
             '<div class="receipt-item-detail">' + item.details.join(', ') + '</div>' +
             '</div>' +
-            '<div class="receipt-col-price">' + item.totalPrice + ' ฿</div>' +
-            '<div class="receipt-col-qty">' + item.qty + '</div>' +
+            '<div class="receipt-col-price" style="font-weight:700; color:#C62828; font-size:1.1rem;">' + item.totalPrice + ' ฿</div>' +
             '</div>';
     }).join('');
 
