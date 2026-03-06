@@ -42,7 +42,7 @@ function executePlaceOrder() {
             }
         });
         assignedTable = 'กลับบ้านคิว ' + num;
-        localStorage.setItem('habeef_takeaway_queue', assignedTable);
+        sessionStorage.setItem('habeef_takeaway_queue', assignedTable);
     }
 
     var orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
@@ -61,11 +61,11 @@ function executePlaceOrder() {
     saveIngredientUsage(orderIngredients, now);
 
     // Save active order ID for customer
-    localStorage.setItem('habeef_active_order', orderId);
+    // Optionally track active order in session for polling
 
     renderReceipt(order);
     cart = [];
-    localStorage.removeItem(getCartKey());
+    saveCart(); // Clears cart on server for this table
     updateCartBadge();
     showPage('page-receipt');
     startReceiptPolling();
@@ -81,7 +81,7 @@ function checkActiveOrder(isPolling) {
     var checkTable = currentTable;
 
     if (checkTable === 'กลับบ้าน') {
-        var savedQueue = localStorage.getItem('habeef_takeaway_queue');
+        var savedQueue = sessionStorage.getItem('habeef_takeaway_queue');
         if (savedQueue) {
             var isActive = orders.some(function (o) {
                 return o.table === savedQueue && (o.status === 'pending' || o.status === 'served');
@@ -90,6 +90,7 @@ function checkActiveOrder(isPolling) {
                 checkTable = savedQueue;
             } else {
                 localStorage.removeItem('habeef_takeaway_queue');
+                sessionStorage.removeItem('habeef_takeaway_queue');
             }
         }
     }

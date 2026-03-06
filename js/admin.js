@@ -8,14 +8,75 @@ document.addEventListener('DOMContentLoaded', function () {
     currentUser = requireAuth(['admin']);
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
-    renderUserList();
     generateStaffQR();
     generateTableQR();
-    // Load saved Gmail
-    var savedGmail = localStorage.getItem('habeef_admin_email') || '';
-    var gmailInput = document.getElementById('admin-gmail');
-    if (gmailInput) gmailInput.value = savedGmail;
+
+    // Wait for server data to load before rendering
+    if (typeof syncFromServer === 'function') {
+        var syncPromise = syncFromServer();
+        if (syncPromise && syncPromise.then) {
+            syncPromise.then(function () {
+                renderUserList();
+                loadAdminEmail();
+            });
+        } else {
+            renderUserList();
+            setTimeout(loadAdminEmail, 500);
+        }
+    } else {
+        renderUserList();
+        setTimeout(loadAdminEmail, 500);
+    }
+
+    // Load admin email from MySQL (via users cache, synced from server)
+    function loadAdminEmail() {
+        var users = getUsers();
+        var adminUser = users.find(function (u) { return u.role === 'admin'; });
+        var savedGmail = adminUser && adminUser.email ? adminUser.email : '';
+        var gmailInput = document.getElementById('admin-gmail');
+        if (gmailInput) gmailInput.value = savedGmail;
+
+        if (!savedGmail) {
+            document.getElementById('force-email-modal').style.display = 'flex';
+            var confirmGroup = document.getElementById('gmail-confirm-group');
+            if (confirmGroup) confirmGroup.style.display = 'none';
+        } else {
+            var confirmGroup = document.getElementById('gmail-confirm-group');
+            if (confirmGroup) confirmGroup.style.display = 'block';
+        }
+    }
 });
+
+function saveForceAdminGmail() {
+    var email = document.getElementById('force-admin-gmail').value.trim();
+    var errEl = document.getElementById('force-email-error');
+    errEl.style.display = 'none';
+
+    if (!email) {
+        errEl.textContent = 'กรุณากรอก Gmail เพื่อความปลอดภัย';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // Save to server database (MySQL)
+    var users = getUsers();
+    var adminUser = users.find(function (u) { return u.role === 'admin'; });
+    if (adminUser) {
+        adminUser.email = email;
+        saveUsers(users);
+    }
+
+    // Update main account page input as well
+    var gmailInput = document.getElementById('admin-gmail');
+    if (gmailInput) gmailInput.value = email;
+
+    // Show confirm group for future edits
+    var confirmGroup = document.getElementById('gmail-confirm-group');
+    if (confirmGroup) confirmGroup.style.display = 'block';
+
+    document.getElementById('force-email-modal').style.display = 'none';
+    showToast('บันทึก Email สำเร็จ ✓');
+}
 
 // ===== GMAIL SETTINGS =====
 function saveAdminGmail() {
@@ -26,29 +87,43 @@ function saveAdminGmail() {
 
     var email = document.getElementById('admin-gmail').value.trim();
     var pw = document.getElementById('gmail-confirm-pw').value.trim();
+    // Retrieve current email from MySQL users cache
+    var users = getUsers();
+    var adminUser = users.find(function (u) { return u.role === 'admin'; });
+    var currentSavedEmail = adminUser && adminUser.email ? adminUser.email : '';
 
     if (!email) {
         errEl.textContent = 'กรุณากรอก Gmail';
         errEl.style.display = 'block';
         return;
     }
-    if (!pw) {
-        errEl.textContent = 'กรุณาป้อนรหัสผ่านแอดมินเพื่อยืนยัน';
-        errEl.style.display = 'block';
-        return;
+
+    if (currentSavedEmail) {
+        if (!pw) {
+            errEl.textContent = 'กรุณาป้อนรหัสผ่านแอดมินเพื่อยืนยัน';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        var admin = adminUser;
+        if (!admin || admin.password !== pw) {
+            errEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
+            errEl.style.display = 'block';
+            return;
+        }
     }
 
-    // Verify admin password
-    var users = getUsers();
-    var admin = users.find(function (u) { return u.role === 'admin'; });
-    if (!admin || admin.password !== pw) {
-        errEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
-        errEl.style.display = 'block';
-        return;
+    // Save to server database (MySQL)
+    if (adminUser) {
+        adminUser.email = email;
+        saveUsers(users);
     }
 
-    localStorage.setItem('habeef_admin_email', email);
     document.getElementById('gmail-confirm-pw').value = '';
+
+    var confirmGroup = document.getElementById('gmail-confirm-group');
+    if (confirmGroup) confirmGroup.style.display = 'block';
+
     sucEl.textContent = '✅ บันทึก Gmail เรียบร้อยแล้ว';
     sucEl.style.display = 'block';
 }
@@ -139,6 +214,10 @@ function submitUserForm() {
         }
         showToast('สร้างบัญชีเรียบร้อย ✓');
     }
+
+    // Refresh UI immediately
+    renderUserList();
+    setTimeout(syncFromServer, 100); // trigger sync
     showTab('page-users');
 }
 
@@ -366,17 +445,31 @@ function confirmChangePassword() {
 
 function deleteNotification(id) {
     if (!confirm('ต้องการลบการแจ้งเตือนนี้หรือไม่?')) return;
-    var notifs = getNotifications();
-    notifs = notifs.filter(function (n) { return n.id !== id; });
-    saveNotifications(notifs);
-    renderNotifications();
-    updateNotifBadge();
+    fetch(window.location.origin + '/api/notifications.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: id })
+    }).then(function () {
+        _fetchNotifications(function () {
+            renderNotifications();
+            updateNotifBadge();
+        });
+    }).catch(function () { });
 }
 
-// Auto-update badge and render on page load
+// Auto-update badge and render on page load — now polls MySQL
+function _refreshNotificationsAndBadge() {
+    _fetchNotifications(function () {
+        updateNotifBadge();
+        if (document.getElementById('notif-dropdown') &&
+            document.getElementById('notif-dropdown').style.display === 'block') {
+            renderNotifications();
+        }
+    });
+}
 updateNotifBadge();
 renderNotifications();
-setInterval(updateNotifBadge, 3000);
+setInterval(_refreshNotificationsAndBadge, 3000);
 
 // Toggle notification dropdown panel
 function toggleNotifPanel() {

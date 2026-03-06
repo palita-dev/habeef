@@ -29,9 +29,18 @@ CREATE TABLE `users` (
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
   `full_name` varchar(100) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `role` enum('admin','owner','staff') NOT NULL DEFAULT 'staff',
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `email`, `role`) VALUES
+(1, 'admin', '1234', 'Admin ผู้ดูแลระบบ', NULL, 'admin'),
+
 
 
 -- --------------------------------------------------------
@@ -256,6 +265,9 @@ ALTER TABLE `order_ingredient_usages`
 --
 
 --
+-- Constraints for table `order_ingredient_usages`
+--
+--
 -- Constraints for table `stock_in`
 --
 ALTER TABLE `stock_in`
@@ -275,6 +287,63 @@ ALTER TABLE `order_details`
 ALTER TABLE `order_ingredient_usages`
   ADD CONSTRAINT `order_ingredient_usages_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `order_ingredient_usages_ibfk_2` FOREIGN KEY (`ingredient_name`) REFERENCES `ingredients` (`ingredient_name`) ON UPDATE CASCADE;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cart`
+--
+
+CREATE TABLE `cart` (
+  `cart_id` int(11) NOT NULL AUTO_INCREMENT,
+  `table_id` varchar(50) NOT NULL,
+  `menu_id` varchar(50) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 1,
+  `total_price` decimal(10,2) NOT NULL,
+  `options_text` text DEFAULT NULL,
+  `options_json` longtext DEFAULT NULL CHECK (json_valid(`options_json`)),
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`cart_id`),
+  KEY `table_id` (`table_id`),
+  KEY `menu_id` (`menu_id`),
+  CONSTRAINT `cart_ibfk_1` FOREIGN KEY (`table_id`) REFERENCES `tables` (`table_id`) ON DELETE CASCADE,
+  CONSTRAINT `cart_ibfk_2` FOREIGN KEY (`menu_id`) REFERENCES `menus` (`menu_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `stock_out`
+--
+
+CREATE TABLE `stock_out` (
+  `stock_out_id` int(11) NOT NULL AUTO_INCREMENT,
+  `ingredient_name` varchar(100) NOT NULL,
+  `quantity` decimal(10,2) NOT NULL,
+  `unit` varchar(50) NOT NULL,
+  `stock_out_date` datetime DEFAULT current_timestamp(),
+  `user_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`stock_out_id`),
+  KEY `ingredient_name` (`ingredient_name`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `stock_out_ibfk_1` FOREIGN KEY (`ingredient_name`) REFERENCES `ingredients` (`ingredient_name`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `stock_out_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `message` varchar(255) NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`notification_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 COMMIT;
 

@@ -39,10 +39,9 @@ function renderMenu() {
   var container = document.getElementById('menu-list');
   var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
 
-  var disabledIngredients = [];
+  var disabledIngredients = window._disabledIngredientsCache || [];
   try {
-    var saved = localStorage.getItem('habeef_disabled_ingredients');
-    if (saved) disabledIngredients = JSON.parse(saved);
+    if (!disabledIngredients.length) disabledIngredients = getDisabledIngredients() || [];
   } catch (e) { }
 
   container.innerHTML = MENU_ITEMS.map(function (item) {
@@ -92,10 +91,9 @@ function renderCustomizeForm(menu) {
   var html = '';
 
   // Get disabled ingredients
-  var disabledIngredients = [];
+  var disabledIngredients = window._disabledIngredientsCache || [];
   try {
-    var saved = localStorage.getItem('habeef_disabled_ingredients');
-    if (saved) disabledIngredients = JSON.parse(saved);
+    if (!disabledIngredients.length) disabledIngredients = getDisabledIngredients() || [];
   } catch (e) { }
 
   var activeNoodles = NOODLE_OPTIONS;

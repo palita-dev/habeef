@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     renderRemaining();
     renderReport();
     populateIngList();
+    populateSoIngList();
 });
 
 // ===== TAB NAVIGATION =====
@@ -165,80 +166,98 @@ function hideStockInForm() {
     document.getElementById('stockin-form-container').style.display = 'none';
 }
 
-function getStockIn() {
-    var loadedStr = localStorage.getItem('habeef_stock_in') || '{}';
-    if (loadedStr.trim() === '[]') loadedStr = '{}';
-    var data = null;
-    try {
-        data = JSON.parse(loadedStr);
-    } catch (e) {
-        data = {};
-    }
-    if (Array.isArray(data)) data = {};
+// ===== STOCK OUT (MANUAL DEDUCTION) =====
+function clearStockOutForm() {
+    var itemEl = document.getElementById('so-item');
+    var qtyEl = document.getElementById('so-qty');
+    var unitEl = document.getElementById('so-unit');
+    var labelEl = document.getElementById('so-unit-label');
+    if (itemEl) itemEl.value = '';
+    if (qtyEl) qtyEl.value = '';
+    if (unitEl) unitEl.value = '';
+    if (labelEl) labelEl.textContent = 'จำนวน';
 
-    // check if it's the old flat structure (e.g. {"เส้นใหญ่": 5}) without date keys
-    var hasDateKeys = false;
-    var keys = Object.keys(data);
-    for (var i = 0; i < keys.length; i++) {
-        if (keys[i].indexOf('-') > -1) {
-            hasDateKeys = true;
-            break;
-        }
-    }
-
-    // Recover if we accidentally double-nested it previously
-    var isDoubleNested = false;
-    if (hasDateKeys) {
-        var mergedData = {};
-        for (var k in data) {
-            // Check if data[k] contains ANOTHER date key
-            var hasInnerDate = false;
-            for (var innerK in data[k]) {
-                if (innerK.indexOf('-') > -1 && innerK.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    hasInnerDate = true;
-                    break;
-                }
-            }
-
-            if (hasInnerDate) {
-                isDoubleNested = true;
-                // Merge inner dates and non-dates
-                for (innerK in data[k]) {
-                    if (innerK.indexOf('-') > -1 && innerK.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        // This is a date key hidden inside another date key
-                        if (!mergedData[innerK]) mergedData[innerK] = {};
-                        Object.assign(mergedData[innerK], data[k][innerK]);
-                    } else {
-                        // This is a valid ingredient at the wrong level? No, it's at the correct level, but the parent `k` is the date key
-                        if (!mergedData[k]) mergedData[k] = {};
-                        mergedData[k][innerK] = data[k][innerK];
-                    }
-                }
-            } else {
-                mergedData[k] = data[k];
-            }
-        }
-        if (isDoubleNested) {
-            data = mergedData;
-        }
-    }
-
-    if (!hasDateKeys && keys.length > 0) {
-        var today = getDateKey(new Date());
-        var migrated = {};
-        migrated[today] = data;
-        localStorage.setItem('habeef_stock_in', JSON.stringify(migrated));
-        return migrated;
-    } else if (isDoubleNested) {
-        localStorage.setItem('habeef_stock_in', JSON.stringify(data));
-        return data;
-    }
-
-    return data;
+    var dispText = document.getElementById('so-item-text');
+    if (dispText) dispText.innerHTML = 'เลือกวัตถุดิบ';
+    var disp = document.getElementById('so-item-display');
+    if (disp) disp.style.color = '#999';
+    var list = document.getElementById('so-item-list');
+    if (list) list.style.display = 'none';
 }
-function saveStockIn(data) {
-    localStorage.setItem('habeef_stock_in', JSON.stringify(data));
+
+function populateSoIngList() {
+    var list = document.getElementById('so-item-list');
+    if (!list) return;
+    list.innerHTML = ALL_INGREDIENTS.map(function (name) {
+        return '<div onclick="selectSoIngredient(\'' + name + '\')" ' +
+            'style="padding:12px 16px; font-size:1rem; cursor:pointer; border-bottom:1px solid #f0f0f0; color:#333;" ' +
+            'onmouseover="this.style.background=\'#FFF8E1\'" onmouseout="this.style.background=\'#fff\'">' +
+            (ING_EMOJIS[name] || '📦') + ' ' + name +
+            '</div>';
+    }).join('');
 }
+
+function toggleSoDropdown() {
+    var list = document.getElementById('so-item-list');
+    if (!list) return;
+    list.style.display = (list.style.display === 'none') ? 'block' : 'none';
+}
+
+function selectSoIngredient(name) {
+    document.getElementById('so-item').value = name;
+    var dispText = document.getElementById('so-item-text');
+    if (dispText) dispText.innerHTML = (ING_EMOJIS[name] || '📦') + ' ' + name;
+    var disp = document.getElementById('so-item-display');
+    if (disp) disp.style.color = '#333';
+    document.getElementById('so-item-list').style.display = 'none';
+
+    var unit = ING_UNITS[name] || 'หน่วย';
+    document.getElementById('so-unit').value = unit;
+    document.getElementById('so-unit-label').textContent = 'จำนวน (' + unit + ')';
+    document.getElementById('so-qty').focus();
+}
+
+function showStockOutForm() {
+    clearStockOutForm();
+    var container = document.getElementById('stockout-form-container');
+    if (container) container.style.display = 'flex';
+    var list = document.getElementById('so-item-list');
+    if (list) list.style.display = 'block';
+}
+
+function hideStockOutForm() {
+    clearStockOutForm();
+    var container = document.getElementById('stockout-form-container');
+    if (container) container.style.display = 'none';
+}
+
+function addStockOut() {
+    var item = document.getElementById('so-item').value;
+    var qty = parseInt(document.getElementById('so-qty').value);
+    var unit = document.getElementById('so-unit').value.trim();
+
+    if (!item || !qty || qty <= 0) {
+        showToast('กรุณากรอกข้อมูลให้ครบและถูกต้อง');
+        return;
+    }
+    if (!unit) unit = ING_UNITS[item] || 'หน่วย';
+
+    var outData = getStockOut();
+    outData.push({
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        item: item,
+        qty: qty,
+        unit: unit
+    });
+
+    saveStockOut(outData);
+    autoSyncIngredientToggles(); // auto-update disabled list
+    hideStockOutForm();
+    renderRemaining();
+    showToast('บันทึกเอา ' + item + ' ออก ' + qty + ' ' + unit + ' เรียบร้อย ✓');
+}
+
 
 function addStockIn() {
     var item = document.getElementById('si-item').value;
@@ -263,6 +282,7 @@ function addStockIn() {
     showToast('บันทึก ' + item + ' ' + qty + ' ' + unit + ' เรียบร้อย ✓');
 
     saveStockIn(data);
+    autoSyncIngredientToggles(); // auto-update disabled list after stock change
     hideStockInForm();
     renderStockInToday();
 }
@@ -606,6 +626,7 @@ function saveEditStockIn() {
     }
 
     saveStockIn(data);
+    autoSyncIngredientToggles(); // auto-update disabled list after stock change
     showToast('บันทึกการแก้ไขเรียบร้อย ✓');
     closeEditStockInModal();
     renderStockInToday();
@@ -615,7 +636,7 @@ function saveEditStockIn() {
 function getRemaining() {
     var dateKey = getDateKey(new Date());
     var stockIn = getStockIn();
-    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+    var usageLogs = (typeof getIngredientUsage === 'function') ? getIngredientUsage() : [];
 
     // Convert array of logs to date key map
     var usage = {};
@@ -659,9 +680,16 @@ function getRemaining() {
         }
     }
 
+    var stockOutLogs = getStockOut();
+    var totalOut = {};
+    stockOutLogs.forEach(function (log) {
+        if (totalOut[log.item] === undefined) totalOut[log.item] = 0;
+        totalOut[log.item] += log.qty;
+    });
+
     var result = {};
     ALL_INGREDIENTS.forEach(function (ing) {
-        var remaining = (totalIn[ing] || 0) - (totalUsed[ing] || 0);
+        var remaining = (totalIn[ing] || 0) - (totalUsed[ing] || 0) - (totalOut[ing] || 0);
         if (remaining < 0) remaining = 0;
 
         var unit = ING_UNITS[ing];
@@ -799,7 +827,49 @@ function formatSecondaryUnit(name, qty, returnRawText) {
     return parts.join(' ');
 }
 
+// ===== AUTO-SYNC INGREDIENT TOGGLES =====
+// Automatically enable/disable ingredients based on stock vs formula
+function autoSyncIngredientToggles() {
+    if (typeof FORMULA === 'undefined' || typeof getAllRemainingStock !== 'function') return;
+
+    var remaining = getAllRemainingStock();
+    var disabled = window._disabledIngredientsCache || [];
+    try { if (!disabled.length) disabled = getDisabledIngredients() || []; } catch (e) { }
+    disabled = disabled.slice(); // clone
+    var changed = false;
+
+    Object.keys(FORMULA).forEach(function (ing) {
+        var reqQty = FORMULA[ing]; // amount needed per bowl
+        var rem = remaining[ing] || 0;
+        var idx = disabled.indexOf(ing);
+        var isDisabled = idx !== -1;
+
+        if (rem < reqQty) {
+            // Stock insufficient → auto-disable if not already
+            if (!isDisabled) {
+                disabled.push(ing);
+                changed = true;
+            }
+        } else {
+            // Stock OK → auto-enable if was disabled by system
+            // Only auto-enable; do not override manual-disable
+            // We can't distinguish manual vs auto in simple list, but:
+            // If stock is now sufficient, always restore availability
+            if (isDisabled) {
+                disabled.splice(idx, 1);
+                changed = true;
+            }
+        }
+    });
+
+    if (changed) {
+        saveDisabledIngredients(disabled);
+    }
+}
+
+
 function renderRemaining() {
+    autoSyncIngredientToggles(); // auto-enable/disable based on stock
     var remaining = getRemaining();
     var keys = ALL_INGREDIENTS.slice(); // copy to mutate
 
@@ -814,10 +884,7 @@ function renderRemaining() {
         });
     }
 
-    function getDisabledIngredients() {
-        var saved = localStorage.getItem('habeef_disabled_ingredients');
-        return saved ? JSON.parse(saved) : [];
-    }
+    // Use global getDisabledIngredients() from auth.js (MySQL-backed)
 
     // Helper: show custom confirm modal
     window.showIngredientConfirm = function (name, message, confirmLabel, confirmColor, onConfirm) {
@@ -857,7 +924,7 @@ function renderRemaining() {
                 '#D32F2F',
                 function () {
                     disabled.push(name);
-                    localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabled));
+                    saveDisabledIngredients(disabled);
                     renderRemaining();
                 }
             );
@@ -870,7 +937,7 @@ function renderRemaining() {
                 '#1976D2',
                 function () {
                     disabled.splice(idx, 1);
-                    localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabled));
+                    saveDisabledIngredients(disabled);
                     renderRemaining();
                 }
             );
@@ -907,7 +974,7 @@ function renderRemaining() {
             // Automatically add to disabled list if not there already (and remaining is 0)
             if (isEnabled) {
                 disabledIngredients.push(name);
-                localStorage.setItem('habeef_disabled_ingredients', JSON.stringify(disabledIngredients));
+                saveDisabledIngredients(disabledIngredients);
                 isEnabled = false;
                 opacityStyle = 'opacity: 0.5;';
             }
@@ -1039,7 +1106,7 @@ function openReportHistoryModal() {
     }
 
     // Add dates from ingredient usage (habeef_ingredients)
-    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+    var usageLogs = (typeof getIngredientUsage === 'function') ? getIngredientUsage() : [];
     usageLogs.forEach(function (log) {
         if (log.date) {
             var dStr = getShiftDateStr(new Date(log.date));
@@ -1133,7 +1200,7 @@ function downloadReportForDate(dateStr) {
     var targetDate = parseBEDate(dateStr);
 
     // Calculate usage on specific date and total historical usage up to that date
-    var usageLogs = JSON.parse(localStorage.getItem('habeef_ingredients') || '[]');
+    var usageLogs = (typeof getIngredientUsage === 'function') ? getIngredientUsage() : [];
     var totalUsedUpToDate = {};
     usageLogs.forEach(function (log) {
         if (log.date) {
@@ -1171,16 +1238,32 @@ function downloadReportForDate(dateStr) {
         }
     }
 
+    // Calculate total historical stock out up to that date
+    var stockOutLogs = getStockOut();
+    var totalOutUpToDate = {};
+    stockOutLogs.forEach(function (log) {
+        if (log.date) {
+            var logDateStr = getShiftDateStr(new Date(log.date));
+            var logDate = parseBEDate(logDateStr);
+            if (logDate <= targetDate) {
+                if (totalOutUpToDate[log.item] === undefined) totalOutUpToDate[log.item] = 0;
+                totalOutUpToDate[log.item] += log.qty;
+            }
+        }
+    });
+
     var reportData = {};
     ALL_INGREDIENTS.forEach(function (ing) {
         var inQty = totalInUpToDate[ing] || 0;
         var usedTotal = totalUsedUpToDate[ing] || 0;
-        var rem = inQty - usedTotal;
+        var outTotal = totalOutUpToDate[ing] || 0;
+        var rem = inQty - usedTotal - outTotal;
         if (rem < 0) rem = 0; // clamp negative to 0 like current logic
 
         reportData[ing] = {
             stockIn: inQty,
-            used: totalUsedUpToDate[ing] || 0, // Used total
+            used: usedTotal, // Used total
+            out: outTotal,
             remaining: rem, // Historical remaining at the end of this date
             unit: ING_UNITS[ing]
         };
@@ -1192,7 +1275,8 @@ function downloadReportForDate(dateStr) {
     html += '<tr><th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รายการ</th>';
     html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">รับเข้า</th>';
     html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">ที่ใช้ไป</th>';
-    html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ</th></tr>';
+    html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">คงเหลือ</th>';
+    html += '<th style="padding:6px; border:1px solid #000000; background:none; font-weight:bold; color:#000000;">ควรซื้อเพิ่ม</th></tr>';
 
     ALL_INGREDIENTS.forEach(function (name) {
         var data = reportData[name];
@@ -1224,6 +1308,17 @@ function downloadReportForDate(dateStr) {
             fontWeight = 'bold';
         }
 
+        var shouldBuy = 0;
+        var targetStock = usedQty * 1.5; // Example logic: recommended stock is 1.5x of usage
+        if (targetStock > 0 && rem < targetStock) {
+            shouldBuy = targetStock - rem;
+        }
+        var shouldBuyText = '-';
+        if (shouldBuy > 0) {
+            shouldBuyText = formatSecondaryUnit(name, shouldBuy, true);
+            if (!shouldBuyText) shouldBuyText = parseFloat(Number(shouldBuy).toFixed(3)) + ' ' + displayUnit;
+        }
+
         html += '<tr>';
         html += '<td style="padding:6px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
         var inText = formatSecondaryUnit(name, inQty, true);
@@ -1233,6 +1328,7 @@ function downloadReportForDate(dateStr) {
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + inText + '</td>';
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + usedText + '</td>';
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; background:' + bgColor + '; font-weight:' + fontWeight + '; color:' + textColor + ';">' + remText + '</td>';
+        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:bold; color:#D32F2F;">' + shouldBuyText + '</td>';
         html += '</tr>';
     });
     html += '</table>';

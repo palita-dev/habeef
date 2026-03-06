@@ -8,10 +8,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-$host = 'localhost';
-$db_user = 'appvizac_habeefnoodle';
-$db_pass = 'kh89mNtD';
-$db_name = 'appvizac_habeefnoodle';
+$host = '127.0.0.1';
+$db_user = 'root';
+$db_pass = '';
+$db_name = 'habeef';
 
 // Create connection
 $conn = new mysqli($host, $db_user, $db_pass, $db_name);

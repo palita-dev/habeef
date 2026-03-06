@@ -171,8 +171,8 @@
                     <label style="font-size:0.8rem; color:#666;">Gmail แอดมิน</label>
                     <input type="email" id="admin-gmail" class="form-input" placeholder="example@gmail.com">
                 </div>
-                <div class="form-group" style="margin-bottom:10px;">
-                    <label style="font-size:0.8rem; color:#666;">ยืนยันรหัสผ่านแอดมิน</label>
+                <div class="form-group" id="gmail-confirm-group" style="margin-bottom:10px;">
+                    <label style="font-size:0.8rem; color:#666;">ยืนยันรหัสผ่านแอดมิน เพื่อบันทึกการเปลี่ยนแปลง</label>
                     <input type="password" id="gmail-confirm-pw" class="form-input" placeholder="ป้อนรหัสผ่านแอดมิน">
                 </div>
                 <div id="gmail-error" style="color:#C62828; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
@@ -203,6 +203,26 @@
             <button class="btn btn-full"
                 style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;"
                 onclick="closeChangePwModal()">ยกเลิก</button>
+        </div>
+    </div>
+
+    <!-- ===== บังคับตั้งค่า Email (Force Email Setup) Modal ===== -->
+    <div id="force-email-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; font-family:'Prompt',sans-serif;">
+        <div
+            style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.4);">
+            <div style="font-size:3rem; margin-bottom:8px;">📧</div>
+            <h3 style="margin:0 0 8px 0; color:#333;">ตั้งค่า Email ยืนยันตัวตน</h3>
+            <p style="color:#666; font-size:0.85rem; margin:0 0 16px 0; line-height:1.4;">
+                เพื่อความปลอดภัยของระบบแอดมิน กรุณากำหนด Email สำหรับใช้กู้คืนรหัสผ่านในกรณีที่คุณลืมรหัสผ่าน
+            </p>
+            <div style="text-align:left; margin-bottom:16px;">
+                <label style="font-size:0.8rem; color:#666; font-weight:600; margin-bottom:4px; display:block;">Gmail แอดมิน</label>
+                <input type="email" id="force-admin-gmail" class="form-input" placeholder="example@gmail.com" value="ninjanoi7730@gmail.com">
+            </div>
+            <div id="force-email-error" style="color:#C62828; font-size:0.8rem; margin-bottom:12px; display:none; text-align:left;"></div>
+            <button class="btn btn-yellow btn-full" onclick="saveForceAdminGmail()"
+                style="padding:12px; font-size:1rem;">บันทึก Email ของฉัน</button>
         </div>
     </div>
 

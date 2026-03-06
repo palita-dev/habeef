@@ -2,7 +2,7 @@
 require_once 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $sql = "SELECT username, password, role, full_name as name FROM users";
+    $sql = "SELECT username, password, role, full_name as name, email FROM users";
     $result = $conn->query($sql);
     $users = array();
 
@@ -14,31 +14,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     
     // For local fallback if table is empty
     if (empty($users)) {
-        $users[] = array("username" => "admin", "password" => "123", "role" => "admin", "name" => "Admin ผู้ดูแลระบบ");
+        $users[] = array("username" => "admin", "password" => "1234", "role" => "admin", "name" => "Admin ผู้ดูแลระบบ");
     }
     
     echo json_encode($users);
+
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Note: The existing node API rewrites the whole user array. 
-    // For PHP/MySQL, we might need a sync logic or just handle individual create/update elsewhere.
-    // To match node behavior as closely as possible for `saveUsers(users)`, we might truncate & insert, 
-    // but that's dangerous. Let's assume standard behavior: just return success or implement sync.
+    // The frontend sends the entire users array whenever changes are made (Node.js legacy behavior).
+    // We should safely merge (UPSERT) these into MySQL.
     
-    // For now, mirroring the "fake" success of Node if it was just dumping JSON.
-    // In a real DB, you'd insert/update records.
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
     
     if (is_array($data)) {
-        // Very basic sync: Clear and insert (DANGEROUS IN PROD, but matches local DB JSON behavior)
-        $conn->query("TRUNCATE TABLE users");
-        $stmt = $conn->prepare("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)");
-        foreach($data as $u) {
-            $name = isset($u['name']) ? $u['name'] : $u['username'];
-            $stmt->bind_param("ssss", $u['username'], $u['password'], $u['role'], $name);
-            $stmt->execute();
+        // Prepare an UPSERT statement (Insert, on duplicate key update)
+        // Requires 'username' to be UNIQUE KEY in MySQL, which it is.
+        $stmt = $conn->prepare("
+            INSERT INTO users (username, password, role, full_name, email) 
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+                password = VALUES(password),
+                role = VALUES(role),
+                full_name = VALUES(full_name),
+                email = VALUES(email)
+        ");
+
+        if ($stmt) {
+            // Keep track of incoming usernames so we can delete ones that were removed from the frontend list
+            $incomingUsernames = [];
+
+            foreach($data as $u) {
+                if (empty($u['username'])) continue;
+                $incomingUsernames[] = "'" . $conn->real_escape_string($u['username']) . "'";
+                
+                $name = isset($u['name']) ? $u['name'] : $u['username'];
+                $email = isset($u['email']) ? $u['email'] : null;
+                $stmt->bind_param("sssss", $u['username'], $u['password'], $u['role'], $name, $email);
+                $stmt->execute();
+            }
+            $stmt->close();
+
+            // Delete users that are no longer in the payload (unless table is empty)
+            // But NEVER delete the default 'admin' just in case.
+            if (!empty($incomingUsernames)) {
+                $usernamesList = implode(',', $incomingUsernames);
+                $conn->query("DELETE FROM users WHERE username NOT IN ($usernamesList) AND username != 'admin'");
+            }
         }
-        $stmt->close();
     }
     
     echo json_encode(["success" => true]);

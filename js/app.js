@@ -106,11 +106,10 @@ var cart = [];
 document.addEventListener('DOMContentLoaded', function () {
   guestId = generateGuestId();
 
-  // Restore table from localStorage if not set from URL
+  // Restore table from localStorage if not set from URL (UI preference only)
   var savedTable = localStorage.getItem('habeef_current_table');
   if (savedTable && !currentTable) {
     currentTable = savedTable;
-    // Update display
     var disp = document.getElementById('table-display');
     if (disp) disp.textContent = currentTable.startsWith('กลับบ้าน') ? currentTable : 'โต๊ะ ' + currentTable;
   }
@@ -120,33 +119,37 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ===== UTILITY =====
-function getCartKey() {
-  return currentTable ? 'habeef_cart_' + currentTable : 'habeef_cart';
-}
-
 function loadCartForTable() {
-  var key = getCartKey();
-  var saved = localStorage.getItem(key);
-  if (saved) {
-    try {
-      cart = JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to parse cart", e);
-      cart = [];
-    }
-  } else {
+  if (!currentTable) {
     cart = [];
+    updateCartBadge();
+    return;
   }
-  updateCartBadge();
+  fetch(SERVER_BASE + '/api/cart.php?table_id=' + encodeURIComponent(currentTable))
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (Array.isArray(data)) {
+        cart = data;
+      } else {
+        cart = [];
+      }
+      updateCartBadge();
+      if (typeof renderCart === 'function') renderCart();
+    })
+    .catch(function () {
+      cart = [];
+      updateCartBadge();
+    });
 }
 
 function generateGuestId() {
-  let storedGuest = localStorage.getItem('habeef_guest_id');
+  // Use session storage so guest ID is per-session, not persistent across browsers
+  let storedGuest = sessionStorage.getItem('habeef_guest_id');
   if (storedGuest) {
     return storedGuest;
   }
   let newGuest = 'G' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
-  localStorage.setItem('habeef_guest_id', newGuest);
+  sessionStorage.setItem('habeef_guest_id', newGuest);
   return newGuest;
 }
 

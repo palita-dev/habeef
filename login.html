@@ -186,15 +186,16 @@
 
             // Check if admin
             if (user.role === 'admin') {
-                if (!ADMIN_EMAIL) {
+                var currentAdminEmail = localStorage.getItem('habeef_admin_email') || '';
+                if (!currentAdminEmail) {
                     errEl.textContent = 'ยังไม่ได้ตั้งค่า Gmail แอดมิน กรุณาติดต่อผู้ดูแลระบบ';
                     errEl.style.display = 'block';
                     return;
                 }
                 var subject = encodeURIComponent('ขอเปลี่ยนรหัสผ่าน - บัญชี: ' + username);
                 var body = encodeURIComponent('สวัสดีครับ/ค่ะ\n\nต้องการขอเปลี่ยนรหัสผ่านสำหรับบัญชี: ' + username + '\n\nกรุณาดำเนินการเปลี่ยนรหัสผ่านให้ด้วยครับ/ค่ะ\n\nขอบคุณครับ/ค่ะ');
-                window.open('mailto:' + ADMIN_EMAIL + '?subject=' + subject + '&body=' + body, '_blank');
-                sucEl.textContent = '📧 เปิดอีเมลเพื่อส่งคำขอเรียบร้อยแล้ว';
+                window.open('mailto:' + currentAdminEmail + '?subject=' + subject + '&body=' + body, '_blank');
+                sucEl.textContent = '📧 เด้งหน้าต่างส่งอีเมลไปยัง ' + currentAdminEmail + ' เรียบร้อยแล้ว';
                 sucEl.style.display = 'block';
                 return;
             }

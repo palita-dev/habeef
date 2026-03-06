@@ -177,8 +177,68 @@ function addToCart() {
         editingCartIndex = -1;
     } else {
         if (existingIndex > -1) {
+            var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
+            var currentCartUsage = {};
+            cart.forEach(function (c) {
+                for (var ing in c.ingredients) {
+                    currentCartUsage[ing] = (currentCartUsage[ing] || 0) + (c.ingredients[ing] * c.qty);
+                }
+            });
+
+            var canAdd = true;
+            var exceededIngredient = '';
+            for (var ing in cart[existingIndex].ingredients) {
+                var neededMore = cart[existingIndex].ingredients[ing];
+                var used = currentCartUsage[ing] || 0;
+                var stock = remaining[ing] || 0;
+                if ((used + neededMore) > (stock + 1e-9)) {
+                    canAdd = false;
+                    exceededIngredient = ing;
+                    break;
+                }
+            }
+
+            if (!canAdd) {
+                if (typeof showToast === 'function') {
+                    showToast('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
+                } else {
+                    alert('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
+                }
+                return;
+            }
+
             cart[existingIndex].qty += 1;
         } else {
+            var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
+            var currentCartUsage = {};
+            cart.forEach(function (c) {
+                for (var ing in c.ingredients) {
+                    currentCartUsage[ing] = (currentCartUsage[ing] || 0) + (c.ingredients[ing] * c.qty);
+                }
+            });
+
+            var canAdd = true;
+            var exceededIngredient = '';
+            for (var ing in ingredients) {
+                var neededMore = ingredients[ing];
+                var used = currentCartUsage[ing] || 0;
+                var stock = remaining[ing] || 0;
+                if ((used + neededMore) > (stock + 1e-9)) {
+                    canAdd = false;
+                    exceededIngredient = ing;
+                    break;
+                }
+            }
+
+            if (!canAdd) {
+                if (typeof showToast === 'function') {
+                    showToast('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
+                } else {
+                    alert('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
+                }
+                return;
+            }
+
             var cartItem = {
                 id: Date.now().toString(),
                 menuId: menu.id,
@@ -282,9 +342,9 @@ function renderCart() {
             '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
             '<div class="price-val" style="font-size:1.25rem; font-weight:700; color:#333; white-space:nowrap;">' + (item.totalPrice * item.qty) + ' ฿</div>' +
             '<div class="qty-control-pill" style="margin:0; transform:scale(1.1); transform-origin:right center;">' +
-            '<button onclick="changeQty(' + index + ', -1)">−</button>' +
+            '<button onclick="changeQty(' + index + ', -1, event)">−</button>' +
             '<span>' + item.qty + '</span>' +
-            '<button onclick="changeQty(' + index + ', 1)">+</button>' +
+            '<button onclick="changeQty(' + index + ', 1, event)">+</button>' +
             '</div>' +
             '</div>' +
             '</div>' +
@@ -295,9 +355,79 @@ function renderCart() {
     updateCartTotal();
 }
 
+function showInlineError(el, msg) {
+    var existing = el.parentNode.querySelector('.inline-error-tooltip');
+    if (existing) existing.remove();
+
+    var tooltip = document.createElement('div');
+    tooltip.className = 'inline-error-tooltip';
+    tooltip.textContent = msg;
+    tooltip.style.cssText = 'position: absolute; right: calc(100% + 14px); top: 50%; transform: translateY(-50%); background: #222; color: #fff; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; white-space: nowrap; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); pointer-events: none; animation: popIn 0.2s ease-out;';
+
+    var arrow = document.createElement('div');
+    arrow.style.cssText = 'position: absolute; top: 50%; left: 100%; transform: translateY(-50%); width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 6px solid #222;';
+    tooltip.appendChild(arrow);
+
+    if (getComputedStyle(el.parentNode).position === 'static') {
+        el.parentNode.style.position = 'relative';
+    }
+
+    el.parentNode.appendChild(tooltip);
+
+    setTimeout(function () {
+        if (tooltip.parentNode) {
+            tooltip.style.opacity = '0';
+            tooltip.style.transition = 'opacity 0.3s';
+            setTimeout(function () {
+                if (tooltip.parentNode) tooltip.remove();
+            }, 300);
+        }
+    }, 2000);
+}
+
 // ===== เปลี่ยนจำนวน =====
-function changeQty(index, delta) {
+function changeQty(index, delta, event) {
     if (index < 0 || index >= cart.length) return;
+
+    if (delta > 0) {
+        var item = cart[index];
+        var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
+
+        var currentCartUsage = {};
+        cart.forEach(function (c) {
+            for (var ing in c.ingredients) {
+                currentCartUsage[ing] = (currentCartUsage[ing] || 0) + (c.ingredients[ing] * c.qty);
+            }
+        });
+
+        var canAdd = true;
+        var exceededIngredient = '';
+
+        for (var ing in item.ingredients) {
+            var neededMore = item.ingredients[ing];
+            var used = currentCartUsage[ing] || 0;
+            var stock = remaining[ing] || 0;
+
+            if ((used + neededMore) > (stock + 1e-9)) {
+                canAdd = false;
+                exceededIngredient = ing;
+                break;
+            }
+        }
+
+        if (!canAdd) {
+            var msg = 'วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้';
+            if (event && event.target) {
+                showInlineError(event.target, msg);
+            } else if (typeof showToast === 'function') {
+                showToast(msg);
+            } else {
+                alert(msg);
+            }
+            return;
+        }
+    }
+
     cart[index].qty += delta;
     if (cart[index].qty <= 0) {
         cart[index].qty = 1;
@@ -412,5 +542,10 @@ function closeConfirmOrder() {
 }
 
 function saveCart() {
-    localStorage.setItem(getCartKey(), JSON.stringify(cart));
+    if (!currentTable) return;
+    fetch(SERVER_BASE + '/api/cart.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync', table_id: currentTable, cart: cart })
+    }).catch(function () { });
 }

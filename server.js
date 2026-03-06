@@ -91,6 +91,32 @@ app.post('/api/ingredients', (req, res) => {
     res.json({ success: true });
 });
 
+// Stock-in data
+app.get('/api/stockin', (req, res) => {
+    const db = readDb();
+    res.json(db.stockin || {});
+});
+
+app.post('/api/stockin', (req, res) => {
+    const db = readDb();
+    db.stockin = req.body;
+    writeDb(db);
+    res.json({ success: true });
+});
+
+// Stock-out (manual deductions)
+app.get('/api/stockout', (req, res) => {
+    const db = readDb();
+    res.json(db.stockout || []);
+});
+
+app.post('/api/stockout', (req, res) => {
+    const db = readDb();
+    db.stockout = req.body;
+    writeDb(db);
+    res.json({ success: true });
+});
+
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n======================================`);
