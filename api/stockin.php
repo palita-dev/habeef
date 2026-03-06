@@ -40,20 +40,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode($stockIn);
 
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // The frontend currently sends the ENTRIE stock data structure. 
-    // We will sync it by truncating/replacing for now to mirror the localStorage drop-in replacement,
-    // or properly handle inserts. 
-    // Since the JS sends the full JSON tree on every add/edit, we will rebuild the table.
-    
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
     
+    if (isset($data['action'])) {
+        if ($data['action'] === 'add') {
+            $ingName = $conn->real_escape_string($data['ingredient_name']);
+            $qty = (float)$data['quantity'];
+            $unit = $conn->real_escape_string($data['unit']);
+            $time = date('Y-m-d H:i:s', strtotime($data['time']));
+            $userId = isset($data['user_id']) ? (int)$data['user_id'] : null;
+            
+            $stmt = $conn->prepare("INSERT INTO stock_in (ingredient_name, quantity, unit, stock_in_date, user_id) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("sdssi", $ingName, $qty, $unit, $time, $userId);
+            if ($stmt->execute()) {
+                echo json_encode(["success" => true, "id" => $conn->insert_id]);
+            } else {
+                echo json_encode(["success" => false, "error" => $conn->error]);
+            }
+            $stmt->close();
+            exit;
+        } elseif ($data['action'] === 'edit') {
+            $id = (int)$data['stock_in_id'];
+            $ingName = $conn->real_escape_string($data['ingredient_name']);
+            $qty = (float)$data['quantity'];
+            $unit = $conn->real_escape_string($data['unit']);
+            // We usually don't change the time on edit in this UI, but we could.
+            
+            $stmt = $conn->prepare("UPDATE stock_in SET ingredient_name = ?, quantity = ?, unit = ? WHERE stock_in_id = ?");
+            $stmt->bind_param("sdsi", $ingName, $qty, $unit, $id);
+            if ($stmt->execute()) {
+                echo json_encode(["success" => true]);
+            } else {
+                echo json_encode(["success" => false, "error" => $conn->error]);
+            }
+            $stmt->close();
+            exit;
+        } elseif ($data['action'] === 'delete') {
+            $id = (int)$data['stock_in_id'];
+            $stmt = $conn->prepare("DELETE FROM stock_in WHERE stock_in_id = ?");
+            $stmt->bind_param("i", $id);
+            echo json_encode(["success" => $stmt->execute()]);
+            $stmt->close();
+            exit;
+        }
+    }
+
+    // Fallback/Legacy Sync (Matches existing behavior but warned)
     if (is_array($data)) {
         $conn->query("TRUNCATE TABLE stock_in");
         
         $stmt = $conn->prepare("INSERT INTO stock_in (ingredient_name, quantity, unit, stock_in_date) VALUES (?, ?, ?, ?)");
         if ($stmt) {
             foreach($data as $dateKey => $dayData) {
+                if (!is_array($dayData)) continue; 
                 foreach($dayData as $ingName => $itemData) {
                     if (isset($itemData['entries']) && is_array($itemData['entries'])) {
                         foreach($itemData['entries'] as $entry) {

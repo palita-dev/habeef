@@ -24,8 +24,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
     
-    // Check if it's a full array sync
-    if (is_array($data) && !isset($data['action'])) {
+    // Check if it's a specific action (incremental update)
+    if (isset($data['action'])) {
+        if ($data['action'] === 'add') {
+            $item = $conn->real_escape_string($data['item']);
+            $qty = (float)$data['qty'];
+            $unit = $conn->real_escape_string($data['unit']);
+            $time = date('Y-m-d H:i:s', strtotime($data['date']));
+            $userId = isset($data['user_id']) ? (int)$data['user_id'] : null;
+            
+            $stmt = $conn->prepare("INSERT INTO stock_out (ingredient_name, quantity, unit, stock_out_date, user_id) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("sdssi", $item, $qty, $unit, $time, $userId);
+            if ($stmt->execute()) {
+                echo json_encode(["success" => true, "id" => $conn->insert_id]);
+            } else {
+                echo json_encode(["success" => false, "error" => $conn->error]);
+            }
+            $stmt->close();
+            exit;
+        } elseif ($data['action'] === 'delete') {
+            $id = (int)$data['id'];
+            $stmt = $conn->prepare("DELETE FROM stock_out WHERE stock_out_id = ?");
+            $stmt->bind_param("i", $id);
+            echo json_encode(["success" => $stmt->execute()]);
+            $stmt->close();
+            exit;
+        }
+    }
+
+    // legacy/sync fallback
+    if (is_array($data)) {
         $conn->query("TRUNCATE TABLE stock_out");
         
         $stmt = $conn->prepare("INSERT INTO stock_out (ingredient_name, quantity, unit, stock_out_date) VALUES (?, ?, ?, ?)");
@@ -43,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         echo json_encode(["success" => true]);
     } else {
-        echo json_encode(["success" => false, "error" => "Unsupported action"]);
+        echo json_encode(["success" => false, "error" => "Invalid data"]);
     }
 }
 

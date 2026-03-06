@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var gmailInput = document.getElementById('admin-gmail');
         if (gmailInput) gmailInput.value = savedGmail;
 
+        updateAdminEmailUI();
+
         if (!savedGmail) {
             document.getElementById('force-email-modal').style.display = 'flex';
             var confirmGroup = document.getElementById('gmail-confirm-group');
@@ -69,6 +71,7 @@ function saveForceAdminGmail() {
     // Update main account page input as well
     var gmailInput = document.getElementById('admin-gmail');
     if (gmailInput) gmailInput.value = email;
+    updateAdminEmailUI();
 
     // Show confirm group for future edits
     var confirmGroup = document.getElementById('gmail-confirm-group');
@@ -79,11 +82,45 @@ function saveForceAdminGmail() {
 }
 
 // ===== GMAIL SETTINGS =====
+function updateAdminEmailUI() {
+    var users = getUsers();
+    var adminUser = users.find(function (u) { return u.role === 'admin'; });
+    var savedGmail = adminUser && adminUser.email ? adminUser.email : '';
+    var displayEl = document.getElementById('current-admin-gmail-display');
+    if (displayEl) {
+        displayEl.textContent = savedGmail ? savedGmail : 'ยังไม่ได้ตั้งค่า';
+    }
+}
+
+function toggleGmailEdit(show) {
+    var displayMode = document.getElementById('gmail-display-mode');
+    var editMode = document.getElementById('gmail-edit-mode');
+    var errEl = document.getElementById('gmail-error');
+    var pwInput = document.getElementById('gmail-confirm-pw');
+    
+    if (errEl) errEl.style.display = 'none';
+    if (pwInput) pwInput.value = '';
+
+    if (show) {
+        if (displayMode) displayMode.style.display = 'none';
+        if (editMode) editMode.style.display = 'block';
+        
+        // Load latest email into input
+        var users = getUsers();
+        var adminUser = users.find(function (u) { return u.role === 'admin'; });
+        var savedGmail = adminUser && adminUser.email ? adminUser.email : '';
+        var gmailInput = document.getElementById('admin-gmail');
+        if (gmailInput) gmailInput.value = savedGmail;
+    } else {
+        if (displayMode) displayMode.style.display = 'flex';
+        if (editMode) editMode.style.display = 'none';
+        updateAdminEmailUI();
+    }
+}
+
 function saveAdminGmail() {
     var errEl = document.getElementById('gmail-error');
-    var sucEl = document.getElementById('gmail-success');
     errEl.style.display = 'none';
-    sucEl.style.display = 'none';
 
     var email = document.getElementById('admin-gmail').value.trim();
     var pw = document.getElementById('gmail-confirm-pw').value.trim();
@@ -106,7 +143,9 @@ function saveAdminGmail() {
         }
 
         var admin = adminUser;
-        if (!admin || admin.password !== pw) {
+        var hashedPw = (typeof sha256 === 'function') ? sha256(pw) : pw;
+
+        if (!admin || (admin.password !== hashedPw && admin.password !== pw)) {
             errEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
             errEl.style.display = 'block';
             return;
@@ -124,8 +163,9 @@ function saveAdminGmail() {
     var confirmGroup = document.getElementById('gmail-confirm-group');
     if (confirmGroup) confirmGroup.style.display = 'block';
 
-    sucEl.textContent = '✅ บันทึก Gmail เรียบร้อยแล้ว';
-    sucEl.style.display = 'block';
+    updateAdminEmailUI();
+    showToast('บันทึก Gmail เรียบร้อยแล้ว ✓');
+    toggleGmailEdit(false);
 }
 
 // ===== TAB NAVIGATION =====
@@ -186,7 +226,8 @@ function showEditUser(username) {
     document.getElementById('form-submit-btn').textContent = 'บันทึกการแก้ไข';
     document.getElementById('f-role').value = user.role;
     document.getElementById('f-username').value = user.username;
-    document.getElementById('f-password').value = user.password;
+    document.getElementById('f-password').value = ''; // Don't show hashed password
+    document.getElementById('pw-hint').style.display = 'block'; // Show hint
     document.getElementById('f-username').readOnly = true;
     showTab('page-user-form');
 }
@@ -196,20 +237,54 @@ function submitUserForm() {
     var role = document.getElementById('f-role').value;
     var username = document.getElementById('f-username').value.trim();
     var password = document.getElementById('f-password').value.trim();
-    if (!role || !username || !password) {
+
+    var users = getUsers();
+    var existingUser = users.find(function (u) { return u.username === editingUser; });
+
+    if (!role || !username) {
         showToast('กรุณากรอกข้อมูลให้ครบ');
         return;
     }
-    var roleName = role === 'staff' ? 'พนักงาน' : 'เจ้าของร้าน';
+
+    if (!editingUser && !password) {
+        showToast('กรุณากรอกรหัสผ่านสำหรับบัญชีใหม่');
+        return;
+    }
+
+    var finalPassword = password;
+    if (editingUser && !password && existingUser) {
+        finalPassword = existingUser.password; // Keep old password
+    } else if (password) {
+        // Hash the new password before saving, using the existing sha256 function from auth
+        if (typeof sha256 === 'function') {
+            finalPassword = sha256(password);
+        } else {
+            // Fallback if sha256 isn't globally available here (it should be loaded in app.js/auth.js)
+            console.error('sha256 function is not available!');
+            finalPassword = password;
+        }
+    }
+
+    // Duplicate username check (for new accounts)
+    if (!editingUser) {
+        var duplicateCheck = users.find(function (u) { return u.username === username; });
+        if (duplicateCheck) {
+            showToast('❌ ชื่อบัญชี "' + username + '" มีอยู่แล้วในระบบ กรุณาใช้ชื่ออื่น');
+            document.getElementById('f-username').style.borderColor = '#F44336';
+            return;
+        }
+    }
+    // Reset border color if valid
+    document.getElementById('f-username').style.borderColor = '';
 
     if (editingUser) {
         // Edit mode
-        updateUser(editingUser, { role: role, password: password, name: username });
+        updateUser(editingUser, { role: role, password: finalPassword, name: username });
         showToast('แก้ไขบัญชีเรียบร้อย ✓');
     } else {
         // Create mode
-        if (!addUser(username, password, role, username)) {
-            showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว');
+        if (!addUser(username, finalPassword, role, username)) {
+            showToast('❌ ชื่อบัญชีนี้มีอยู่แล้ว');
             return;
         }
         showToast('สร้างบัญชีเรียบร้อย ✓');
@@ -223,11 +298,32 @@ function submitUserForm() {
 
 // ===== DELETE USER =====
 function confirmDeleteUser(username) {
-    if (confirm('ต้องการลบบัญชี "' + username + '" หรือไม่?')) {
+    // Create custom confirmation modal for deleting user
+    var modal = document.createElement('div');
+    modal.className = 'alert-modal show';
+    modal.innerHTML = `
+        <div class="alert-modal-content" style="padding:24px 20px 0; text-align:center; overflow:hidden;">
+            <div style="font-size:2.5rem; margin-bottom:15px;">⚠️</div>
+            <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:10px;">ยืนยันการลบ</h3>
+            <p style="font-size:0.95rem; color:#666; margin-bottom:20px;">ต้องการลบบัญชี "` + username + `" หรือไม่?</p>
+            <div style="display:flex; margin:0 -20px; border-top:1px solid #eee;">
+                <button id="btn-cancel-del-usr" style="flex:1; padding:14px; background:#f5f5f5; color:#555; border:none; border-right:1px solid #eee; border-radius:0 0 0 20px; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer;">ยกเลิก</button>
+                <button id="btn-confirm-del-usr" style="flex:1; padding:14px; background:#F44336; color:white; border:none; border-radius:0 0 20px 0; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer;">ลบเลย</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-cancel-del-usr').onclick = function () {
+        document.body.removeChild(modal);
+    };
+
+    document.getElementById('btn-confirm-del-usr').onclick = function () {
+        document.body.removeChild(modal);
         deleteUser(username);
         showToast('ลบบัญชีเรียบร้อย ✓');
         renderUserList();
-    }
+    };
 }
 
 // ===== QR CODES =====
@@ -357,19 +453,26 @@ function renderNotifications() {
     // Sort newest first
     notifs.sort(function (a, b) { return b.id - a.id; });
 
+    var users = typeof getUsers === 'function' ? getUsers() : [];
+    var roleNames = { staff: 'พนักงาน', owner: 'เจ้าของร้าน', admin: 'ผู้ดูแลระบบ' };
+
     var html = '';
     notifs.forEach(function (n) {
         var d = new Date(n.createdAt);
         var timeStr = d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543) + ' ' +
             d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
 
+        var u = users.find(function(user) { return user.username === n.username; });
+        var displayRole = u ? (roleNames[u.role] || u.role) : '';
+        var accountInfo = n.username + (displayRole ? ' (' + displayRole + ')' : '');
+
         html += '<div style="background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 1px 5px rgba(0,0,0,0.05);">' +
             '<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">' +
             '<div style="font-size:1.8rem;">🔑</div>' +
-            '<div style="flex:1;">' +
-            '<div style="font-weight:600; font-size:0.9rem;">บัญชี: ' + n.username + '</div>' +
-            '<div style="font-size:0.75rem; color:#888;">' + n.message + '</div>' +
-            '<div style="font-size:0.7rem; color:#aaa;">' + timeStr + '</div>' +
+            '<div style="flex:1; text-align:center;">' +
+            '<div style="font-weight:600; font-size:0.9rem; color:#333;">บัญชี: ' + accountInfo + '</div>' +
+            '<div style="font-size:0.8rem; color:#666; margin-top:2px;">' + n.message + '</div>' +
+            '<div style="font-size:0.75rem; color:#aaa; margin-top:2px;">' + timeStr + '</div>' +
             '</div>' +
             '</div>' +
             '<div style="display:flex; gap:8px;">' +
@@ -444,17 +547,43 @@ function confirmChangePassword() {
 }
 
 function deleteNotification(id) {
-    if (!confirm('ต้องการลบการแจ้งเตือนนี้หรือไม่?')) return;
-    fetch(window.location.origin + '/api/notifications.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', id: id })
-    }).then(function () {
-        _fetchNotifications(function () {
-            renderNotifications();
-            updateNotifBadge();
-        });
-    }).catch(function () { });
+    if (!id) return;
+
+    // Create custom confirmation modal for deleting notification
+    var modal = document.createElement('div');
+    modal.className = 'alert-modal show';
+    modal.innerHTML = `
+        <div class="alert-modal-content" style="padding:24px 20px 0; text-align:center; overflow:hidden;">
+            <div style="font-size:2.5rem; margin-bottom:15px;">🗑️</div>
+            <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:10px;">ยืนยันการลบ</h3>
+            <p style="font-size:0.95rem; color:#666; margin-bottom:20px;">ต้องการลบการแจ้งเตือนนี้หรือไม่?</p>
+            <div style="display:flex; margin:0 -20px; border-top:1px solid #eee;">
+                <button id="btn-cancel-del" style="flex:1; padding:14px; background:#f5f5f5; color:#555; border:none; border-right:1px solid #eee; border-radius:0 0 0 20px; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer;">ยกเลิก</button>
+                <button id="btn-confirm-del" style="flex:1; padding:14px; background:#F44336; color:white; border:none; border-radius:0 0 20px 0; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer;">ลบเลย</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-cancel-del').onclick = function () {
+        document.body.removeChild(modal);
+    };
+
+    document.getElementById('btn-confirm-del').onclick = function () {
+        document.body.removeChild(modal);
+        // User confirmed
+        fetch(window.location.origin + '/api/notifications.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: id })
+        }).then(function () {
+            _fetchNotifications(function () {
+                renderNotifications();
+                updateNotifBadge();
+                showToast('ลบการแจ้งเตือนแล้ว ✓');
+            });
+        }).catch(function () { });
+    };
 }
 
 // Auto-update badge and render on page load — now polls MySQL

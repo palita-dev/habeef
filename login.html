@@ -12,7 +12,7 @@
 </head>
 
 <body>
-    <div class="login-container">
+    <div class="login-container" id="main-login-view">
         <div class="login-card">
             <div style="font-size:3rem;margin-bottom:8px;">🍜</div>
             <h1>ก๋วยเตี๋ยวฮาบีฟ</h1>
@@ -35,6 +35,31 @@
         </div>
     </div>
 
+    <!-- ===== Reset Password View (Not used with async OTP flow but kept for legacy/safety) ===== -->
+    <div class="login-container" id="reset-password-view" style="display:none;">
+        <div class="login-card">
+            <div style="font-size:3rem;margin-bottom:8px;">🔐</div>
+            <h1>ตั้งรหัสผ่านใหม่</h1>
+            <p class="subtitle" style="color:#666;">สำหรับบัญชีแอดมิน</p>
+            <div class="form-group">
+                <label>รหัสผ่านใหม่</label>
+                <input type="password" id="new-reset-password" class="form-input" placeholder="รหัสผ่านใหม่">
+            </div>
+            <div class="form-group">
+                <label>ยืนยันรหัสผ่านใหม่</label>
+                <input type="password" id="confirm-reset-password" class="form-input"
+                    placeholder="ยืนยันรหัสผ่านอีกครั้ง">
+            </div>
+            <div id="reset-error" style="color:#C62828;font-size:0.82rem;margin-bottom:10px;display:none;"></div>
+            <div id="reset-success" style="color:#4CAF50;font-size:0.82rem;margin-bottom:10px;display:none;"></div>
+            <button id="reset-submit-btn" class="btn btn-yellow btn-full" onclick="submitResetPasswordOld()"
+                style="padding:12px; margin-bottom:10px;">บันทึกรหัสผ่านใหม่</button>
+            <button class="btn btn-full" onclick="showMainLogin()"
+                style="padding:12px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">ยกเลิก
+                / กลับไปเข้าสู่ระบบ</button>
+        </div>
+    </div>
+
     <!-- ===== Forgot Password Modal ===== -->
     <div id="forgot-modal"
         style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; font-family:'Prompt',sans-serif;">
@@ -42,19 +67,69 @@
             style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.2);">
             <div style="font-size:2.5rem; margin-bottom:8px;">🔑</div>
             <h3 style="margin:0 0 4px 0; color:#333;">ลืมรหัสผ่าน</h3>
-            <p style="color:#888; font-size:0.82rem; margin:0 0 16px 0;">กรอกชื่อบัญชีของคุณเพื่อขอเปลี่ยนรหัสผ่าน</p>
-            <input type="text" id="forgot-username" class="form-input" placeholder="ชื่อบัญชี"
-                style="margin-bottom:10px;">
-            <div id="forgot-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
-            <div id="forgot-success" style="color:#4CAF50; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
-            <div id="forgot-cooldown" style="color:#FF9800; font-size:0.82rem; margin-bottom:10px; display:none;"></div>
-            <button id="forgot-submit-btn" class="btn btn-yellow btn-full" onclick="submitForgot()"
-                style="padding:10px; margin-bottom:8px;">ยืนยัน</button>
-            <button class="btn btn-full"
-                style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;"
-                onclick="closeForgotModal()">ปิด</button>
+
+            <!-- Step 1: Enter username -->
+            <div id="forgot-step1">
+                <p style="color:#888; font-size:0.82rem; margin:0 0 16px 0;">กรอกชื่อบัญชีของคุณเพื่อขอเปลี่ยนรหัสผ่าน</p>
+                <input type="text" id="forgot-username-input" class="form-input" placeholder="ชื่อบัญชี"
+                    style="margin-bottom:10px;" onkeyup="if(event.key==='Enter') checkForgotUsername()">
+                <div id="forgot-step1-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <button id="forgot-step1-btn" class="btn btn-yellow btn-full" onclick="checkForgotUsername()"
+                    style="padding:10px; margin-bottom:8px;">ยืนยัน</button>
+                <button class="btn btn-full" onclick="closeForgotModal()"
+                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">ปิด</button>
+            </div>
+
+            <!-- Step 2A: Admin – enter email to send OTP -->
+            <div id="forgot-step-admin" style="display:none;">
+                <p style="color:#666; font-size:0.82rem; margin:0 0 4px 0;">บัญชีแอดมินพบแล้ว<br>กรอก Email ที่คุณลงทะเบียนไว้ในระบบ (ต้องตรงกันเป๊ะ)</p>
+                <div id="forgot-admin-username-label" style="font-weight:700; color:#333; margin:8px 0;"></div>
+                <input type="email" id="forgot-admin-email" class="form-input" placeholder="email@example.com"
+                    style="margin-bottom:10px;" onkeyup="if(event.key==='Enter') submitForgotAdmin()">
+                <div id="forgot-admin-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <div id="forgot-admin-success" style="color:#4CAF50; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <button id="forgot-admin-btn" class="btn btn-yellow btn-full" onclick="submitForgotAdmin()"
+                    style="padding:10px; margin-bottom:8px;">ส่งรหัสยืนยัน 📧</button>
+                <button class="btn btn-full" onclick="backToStep1()"
+                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">← ย้อนกลับ</button>
+            </div>
+
+            <!-- Step 3: Admin – enter OTP -->
+            <div id="forgot-step-otp" style="display:none;">
+                <p style="color:#666; font-size:0.82rem; margin:0 0 16px 0;">ระบบได้ส่งรหัสยืนยัน 6 หลักไปที่อีเมลของคุณแล้ว<br>กรุณานำรหัสมากรอกด้านล่าง</p>
+                <input type="text" id="forgot-otp-input" class="form-input" placeholder="000000" maxlength="6"
+                    style="margin-bottom:10px; text-align:center; font-size:1.5rem; letter-spacing:5px; font-weight:bold;" onkeyup="if(event.key==='Enter') submitForgotOtp()">
+                <div id="forgot-otp-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <button id="forgot-otp-btn" class="btn btn-yellow btn-full" onclick="submitForgotOtp()"
+                    style="padding:10px; margin-bottom:8px;">ตรวจสอบรหัส</button>
+                <button class="btn btn-full" onclick="backToStepAdmin()"
+                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">← เปลี่ยนอีเมล</button>
+            </div>
+
+            <!-- Step 4: Admin – set new password -->
+            <div id="forgot-step-reset" style="display:none;">
+                <p style="color:#4CAF50; font-size:0.9rem; font-weight:600; margin:0 0 16px 0;">✅ รหัสยืนยันถูกต้อง</p>
+                <p style="color:#666; font-size:0.82rem; margin:0 0 16px 0;">กรุณาตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ</p>
+                <input type="password" id="forgot-new-password" class="form-input" placeholder="รหัสผ่านใหม่"
+                    style="margin-bottom:10px;">
+                <input type="password" id="forgot-confirm-password" class="form-input" placeholder="ยืนยันรหัสผ่านใหม่"
+                    style="margin-bottom:10px;" onkeyup="if(event.key==='Enter') submitForgotResetPassword()">
+                <div id="forgot-reset-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <div id="forgot-reset-success" style="color:#4CAF50; font-size:0.9rem; font-weight:600; margin-bottom:16px; display:none;"></div>
+                <button id="forgot-reset-btn" class="btn btn-yellow btn-full" onclick="submitForgotResetPassword()"
+                    style="padding:10px; margin-bottom:8px;">บันทึกรหัสผ่านใหม่</button>
+            </div>
+
+            <!-- Step 2B: Non-admin – auto notify admin -->
+            <div id="forgot-step-user" style="display:none;">
+                <div id="forgot-success" style="color:#4CAF50; font-size:0.85rem; margin-bottom:10px; display:none;"></div>
+                <div id="forgot-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <button class="btn btn-full" onclick="closeForgotModal()"
+                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">ปิด</button>
+            </div>
         </div>
     </div>
+
 
     <script src="js/auth.js"></script>
     <script>
@@ -99,114 +174,366 @@
         }
 
         // ===== FORGOT PASSWORD =====
-        var ADMIN_EMAIL = localStorage.getItem('habeef_admin_email') || '';
-        var COOLDOWN_MS = 60000; // 1 นาที
-        var forgotCooldownTimer = null;
+        var API_BASE = window.location.origin + window.location.pathname.replace('login.html', '');
+        var _forgotAdminUsername = '';
+        var _forgotValidToken = ''; // Keep variable token logic
 
         function openForgotModal() {
+            backToStep1();
             document.getElementById('forgot-modal').style.display = 'flex';
-            document.getElementById('forgot-username').value = '';
-            document.getElementById('forgot-error').style.display = 'none';
-            document.getElementById('forgot-success').style.display = 'none';
-            checkCooldown();
+            setTimeout(function() { document.getElementById('forgot-username-input').focus(); }, 100);
         }
 
         function closeForgotModal() {
             document.getElementById('forgot-modal').style.display = 'none';
-            if (forgotCooldownTimer) { clearInterval(forgotCooldownTimer); forgotCooldownTimer = null; }
         }
 
-        function checkCooldown() {
-            var lastTime = parseInt(localStorage.getItem('habeef_forgot_cooldown') || '0');
-            var now = Date.now();
-            var remaining = COOLDOWN_MS - (now - lastTime);
-            if (remaining > 0) {
-                disableForgotBtn(remaining);
-                return true;
+        // Back from Step 2 to Step 1
+        function backToStep1() {
+            document.getElementById('forgot-step1').style.display = 'block';
+            document.getElementById('forgot-step-admin').style.display = 'none';
+            document.getElementById('forgot-step-user').style.display = 'none';
+            document.getElementById('forgot-step-otp').style.display = 'none';
+            document.getElementById('forgot-step-reset').style.display = 'none';
+            
+            document.getElementById('forgot-username-input').value = '';
+            document.getElementById('forgot-step1-error').style.display = 'none';
+            document.getElementById('forgot-admin-error').style.display = 'none';
+            document.getElementById('forgot-admin-success').style.display = 'none';
+            document.getElementById('forgot-admin-email').value = '';
+            var btn = document.getElementById('forgot-admin-btn');
+            if (btn) {
+                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ส่งรหัสยืนยัน 📧';
             }
-            enableForgotBtn();
-            return false;
+            _forgotAdminUsername = '';
+            _forgotValidToken = '';
         }
 
-        function disableForgotBtn(remaining) {
-            var btn = document.getElementById('forgot-submit-btn');
-            var cdEl = document.getElementById('forgot-cooldown');
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
-            cdEl.style.display = 'block';
-
-            function updateTimer() {
-                var left = parseInt(localStorage.getItem('habeef_forgot_cooldown') || '0');
-                var rem = COOLDOWN_MS - (Date.now() - left);
-                if (rem <= 0) {
-                    enableForgotBtn();
-                    if (forgotCooldownTimer) { clearInterval(forgotCooldownTimer); forgotCooldownTimer = null; }
-                    return;
-                }
-                var secs = Math.ceil(rem / 1000);
-                cdEl.textContent = '⏳ กรุณารอ ' + secs + ' วินาที ก่อนส่งคำขอใหม่';
-            }
-            updateTimer();
-            if (forgotCooldownTimer) clearInterval(forgotCooldownTimer);
-            forgotCooldownTimer = setInterval(updateTimer, 1000);
+        function backToStepAdmin() {
+            document.getElementById('forgot-step-otp').style.display = 'none';
+            document.getElementById('forgot-step-admin').style.display = 'block';
+            document.getElementById('forgot-otp-input').value = '';
+            document.getElementById('forgot-otp-error').style.display = 'none';
         }
 
-        function enableForgotBtn() {
-            var btn = document.getElementById('forgot-submit-btn');
-            var cdEl = document.getElementById('forgot-cooldown');
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-            cdEl.style.display = 'none';
-        }
-
-        function submitForgot() {
-            var errEl = document.getElementById('forgot-error');
-            var sucEl = document.getElementById('forgot-success');
+        // Step 1: Check if username exists and determine role
+        function checkForgotUsername() {
+            var username = document.getElementById('forgot-username-input').value.trim();
+            var errEl = document.getElementById('forgot-step1-error');
+            var btn = document.getElementById('forgot-step1-btn');
             errEl.style.display = 'none';
-            sucEl.style.display = 'none';
 
-            if (checkCooldown()) return;
-
-            var username = document.getElementById('forgot-username').value.trim();
             if (!username) {
                 errEl.textContent = 'กรุณากรอกชื่อบัญชี';
                 errEl.style.display = 'block';
                 return;
             }
 
-            var users = getUsers();
-            var user = users.find(function (u) { return u.username === username; });
-            if (!user) {
-                errEl.textContent = 'ไม่พบชื่อบัญชีนี้ในระบบ';
+            btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'กำลังตรวจสอบ...';
+
+            fetch(API_BASE + 'api/forgot_password.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'check_username', username: username })
+            })
+            .then(function(res) {
+                return res.text().then(function(text) {
+                    var d;
+                    try { d = JSON.parse(text); }
+                    catch(e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                    return { status: res.status, data: d };
+                });
+            })
+            .then(function(r) {
+                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยัน';
+                if (r.status !== 200) {
+                    errEl.textContent = '❌ ' + (r.data.error || 'ไม่พบชื่อบัญชีนี้ในระบบ');
+                    errEl.style.display = 'block';
+                    return;
+                }
+                var role = r.data.role;
+                _forgotAdminUsername = username;
+                document.getElementById('forgot-step1').style.display = 'none';
+
+                if (role === 'admin') {
+                    // Show email input for admin
+                    document.getElementById('forgot-admin-username-label').textContent = '👤 ' + username;
+                    document.getElementById('forgot-step-admin').style.display = 'block';
+                    setTimeout(function() { document.getElementById('forgot-admin-email').focus(); }, 100);
+                } else {
+                    // Notify admin automatically for staff/owner
+                    document.getElementById('forgot-step-user').style.display = 'block';
+                    _notifyAdminForUser(username);
+                }
+            })
+            .catch(function(err) {
+                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยัน';
+                errEl.textContent = '❌ ' + err.message;
+                errEl.style.display = 'block';
+            });
+        }
+
+        // Step 2A: Admin sends email
+        function submitForgotAdmin() {
+            var email = document.getElementById('forgot-admin-email').value.trim();
+            var errEl = document.getElementById('forgot-admin-error');
+            var sucEl = document.getElementById('forgot-admin-success');
+            var btn = document.getElementById('forgot-admin-btn');
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+
+            if (!email) {
+                errEl.textContent = 'กรุณากรอก Email';
                 errEl.style.display = 'block';
                 return;
             }
 
-            // Check if admin
-            if (user.role === 'admin') {
-                var currentAdminEmail = localStorage.getItem('habeef_admin_email') || '';
-                if (!currentAdminEmail) {
-                    errEl.textContent = 'ยังไม่ได้ตั้งค่า Gmail แอดมิน กรุณาติดต่อผู้ดูแลระบบ';
-                    errEl.style.display = 'block';
-                    return;
-                }
-                var subject = encodeURIComponent('ขอเปลี่ยนรหัสผ่าน - บัญชี: ' + username);
-                var body = encodeURIComponent('สวัสดีครับ/ค่ะ\n\nต้องการขอเปลี่ยนรหัสผ่านสำหรับบัญชี: ' + username + '\n\nกรุณาดำเนินการเปลี่ยนรหัสผ่านให้ด้วยครับ/ค่ะ\n\nขอบคุณครับ/ค่ะ');
-                window.open('mailto:' + currentAdminEmail + '?subject=' + subject + '&body=' + body, '_blank');
-                sucEl.textContent = '📧 เด้งหน้าต่างส่งอีเมลไปยัง ' + currentAdminEmail + ' เรียบร้อยแล้ว';
-                sucEl.style.display = 'block';
+            btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'กำลังส่ง...';
+
+            fetch(API_BASE + 'api/send_reset_email.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'send_reset_by_email', username: _forgotAdminUsername, email: email })
+            })
+            .then(function(res) {
+                return res.text().then(function(text) {
+                    var d;
+                    try { d = JSON.parse(text); }
+                    catch(e) { throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (ข้อมูลจากเซิร์ฟเวอร์: ' + (text ? text.substring(0, 50) : 'ว่างเปล่า') + '...)'); }
+                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                    return d;
+                });
+            })
+            .then(function() {
+                // Success: move to OTP step
+                document.getElementById('forgot-step-admin').style.display = 'none';
+                document.getElementById('forgot-step-otp').style.display = 'block';
+                setTimeout(function() { document.getElementById('forgot-otp-input').focus(); }, 100);
+            })
+            .catch(function(err) {
+                errEl.innerHTML = '❌ ' + err.message;
+                errEl.style.display = 'block';
+                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ส่งรหัสยืนยัน 📧';
+            });
+        }
+
+        // Step 3: Admin verifies OTP
+        function submitForgotOtp() {
+            var otp = document.getElementById('forgot-otp-input').value.trim();
+            var errEl = document.getElementById('forgot-otp-error');
+            var btn = document.getElementById('forgot-otp-btn');
+            errEl.style.display = 'none';
+
+            if (!otp || otp.length !== 6) {
+                errEl.textContent = 'กรุณากรอกรหัส 6 หลัก';
+                errEl.style.display = 'block';
                 return;
             }
 
-            // Non-admin: send notification to admin
-            addNotification(username);
-            localStorage.setItem('habeef_forgot_cooldown', Date.now().toString());
+            btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'กำลังตรวจสอบ...';
 
-            sucEl.textContent = '✅ ส่งคำขอเปลี่ยนรหัสผ่านไปยังแอดมินเรียบร้อยแล้ว';
+            fetch(API_BASE + 'api/verify_reset_otp.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'verify_otp', username: _forgotAdminUsername, otp: otp })
+            })
+            .then(function (res) {
+                return res.text().then(function (text) {
+                    var d;
+                    try { d = JSON.parse(text); }
+                    catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                    return d;
+                });
+            })
+            .then(function () {
+                // OTP Valid
+                _forgotValidToken = otp; // Store valid OTP as token for next step
+                document.getElementById('forgot-step-otp').style.display = 'none';
+                document.getElementById('forgot-step-reset').style.display = 'block';
+                setTimeout(function() { document.getElementById('forgot-new-password').focus(); }, 100);
+            })
+            .catch(function (err) {
+                errEl.textContent = '❌ ' + err.message;
+                errEl.style.display = 'block';
+                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ตรวจสอบรหัส';
+            });
+        }
+
+        // Step 4: Admin sets new password inside modal
+        function submitForgotResetPassword() {
+            var npw = document.getElementById('forgot-new-password').value.trim();
+            var cpw = document.getElementById('forgot-confirm-password').value.trim();
+            var errEl = document.getElementById('forgot-reset-error');
+            var sucEl = document.getElementById('forgot-reset-success');
+            var btn = document.getElementById('forgot-reset-btn');
+
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+
+            if (!npw || !cpw) {
+                errEl.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วน';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (npw !== cpw) {
+                errEl.textContent = 'รหัสผ่านไม่ตรงกัน';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (npw.length < 4) {
+                errEl.textContent = 'รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.textContent = 'กำลังบันทึก...';
+
+            fetch(API_BASE + 'api/reset_password.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'reset_password', username: _forgotAdminUsername, token: _forgotValidToken, new_password: sha256(npw) })
+            })
+            .then(function (res) {
+                return res.text().then(function (text) {
+                    var d;
+                    try { d = JSON.parse(text); }
+                    catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                    return d;
+                });
+            })
+            .then(function (data) {
+                sucEl.innerHTML = '✅ รีเซ็ตรหัสผ่านสำเร็จ!';
+                sucEl.style.display = 'block';
+                btn.textContent = 'ปิด';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.onclick = closeForgotModal; // change action to close
+            })
+            .catch(function (err) {
+                errEl.textContent = '❌ ' + err.message;
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.textContent = 'บันทึกรหัสผ่านใหม่';
+            });
+        }
+
+        // Step 2B: Non-admin – notify admin
+        function _notifyAdminForUser(username) {
+            var sucEl = document.getElementById('forgot-success');
+            var errEl = document.getElementById('forgot-error');
+            sucEl.style.display = 'none';
+            errEl.style.display = 'none';
+            sucEl.textContent = '⏳ กำลังส่งการแจ้งเตือน...';
             sucEl.style.display = 'block';
-            checkCooldown();
+
+            fetch(API_BASE + 'api/send_reset_email.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'notify_admin', username: username })
+            })
+            .then(function(res) {
+                return res.text().then(function(text) {
+                    var d;
+                    try { d = JSON.parse(text); }
+                    catch(e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                    return d;
+                });
+            })
+            .then(function() {
+                sucEl.innerHTML = '✅ ส่งการแจ้งเตือนไปยังแอดมินแล้ว<br>กรุณารอแอดมินติดต่อกลับ';
+                sucEl.style.display = 'block';
+            })
+            .catch(function(err) {
+                sucEl.style.display = 'none';
+                errEl.textContent = '❌ ' + err.message;
+                errEl.style.display = 'block';
+            });
+        }
+
+        // ===== RESET PASSWORD LOGIC (Legacy URL parameter support) =====
+        var urlParams = new URLSearchParams(window.location.search);
+        var resetToken = urlParams.get('reset_token');
+
+        if (resetToken) {
+            document.getElementById('main-login-view').style.display = 'none';
+            document.getElementById('reset-password-view').style.display = 'flex';
+        }
+
+        function showMainLogin() {
+            // Remove the token from URL without reloading
+            var url = new URL(window.location);
+            url.searchParams.delete('reset_token');
+            window.history.replaceState({}, document.title, url);
+
+            document.getElementById('reset-password-view').style.display = 'none';
+            document.getElementById('main-login-view').style.display = 'flex';
+        }
+
+        function submitResetPasswordOld() {
+            var npw = document.getElementById('new-reset-password').value.trim();
+            var cpw = document.getElementById('confirm-reset-password').value.trim();
+            var errEl = document.getElementById('reset-error');
+            var sucEl = document.getElementById('reset-success');
+            var btn = document.getElementById('reset-submit-btn');
+
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+
+            if (!npw || !cpw) {
+                errEl.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วน';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (npw !== cpw) {
+                errEl.textContent = 'รหัสผ่านไม่ตรงกัน';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (npw.length < 4) {
+                errEl.textContent = 'รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.textContent = 'กำลังบันทึก...';
+
+            fetch(window.location.origin + window.location.pathname.replace('login.html', '') + 'api/reset_password.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'reset_password', token: resetToken, new_password: sha256(npw) })
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    sucEl.innerHTML = '✅ รีเซ็ตรหัสผ่านสำเร็จ! กรุณากลับไปเข้าสู่ระบบ';
+                    sucEl.style.display = 'block';
+                    document.getElementById('new-reset-password').value = '';
+                    document.getElementById('confirm-reset-password').value = '';
+                    btn.textContent = 'ตั้งรหัสผ่านเรียบร้อย';
+                })
+                .catch(function (err) {
+                    errEl.textContent = '❌ ' + err.message;
+                    errEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.textContent = 'บันทึกรหัสผ่านใหม่';
+                });
         }
     </script>
 </body>

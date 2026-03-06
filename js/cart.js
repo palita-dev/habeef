@@ -202,7 +202,7 @@ function addToCart() {
                 if (typeof showToast === 'function') {
                     showToast('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
                 } else {
-                    alert('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
+                    console.log('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
                 }
                 return;
             }
@@ -234,7 +234,7 @@ function addToCart() {
                 if (typeof showToast === 'function') {
                     showToast('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
                 } else {
-                    alert('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
+                    console.log('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
                 }
                 return;
             }
@@ -422,7 +422,7 @@ function changeQty(index, delta, event) {
             } else if (typeof showToast === 'function') {
                 showToast(msg);
             } else {
-                alert(msg);
+                console.log(msg);
             }
             return;
         }

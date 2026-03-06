@@ -867,34 +867,57 @@ function serveAllOrders() {
 }
 
 function processPayment(tableId) {
-    if (!confirm('ยืนยันรับชำระเงิน โต๊ะ ' + tableId + '?')) return;
+    // Create custom confirmation modal for payment
+    var modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:300px; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:10px;">💰</div>
+            <h3 style="margin:0 0 10px 0;">ยืนยันรับชำระเงิน</h3>
+            <p style="margin:0 0 20px 0; color:#666;">โต๊ะ ` + tableId + ` ใช่หรือไม่?</p>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-cancel-pay" style="flex:1; padding:10px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; font-family:'Prompt',sans-serif;">ยกเลิก</button>
+                <button id="btn-confirm-pay" style="flex:1; padding:10px; border-radius:10px; border:none; background:#4CAF50; color:white; cursor:pointer; font-family:'Prompt',sans-serif;">ยืนยัน</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 
-    var orders = getOrders();
-    var now = new Date().toISOString();
-    var count = 0;
+    document.getElementById('btn-cancel-pay').onclick = function () {
+        document.body.removeChild(modal);
+    };
 
-    var isGuestPaid = tableId.startsWith('GUEST_');
-    var targetGuestId = isGuestPaid ? tableId.substring(6) : null;
+    document.getElementById('btn-confirm-pay').onclick = function () {
+        document.body.removeChild(modal);
+        // Process payment
+        var orders = getOrders();
+        var now = new Date().toISOString();
+        var count = 0;
 
-    orders.forEach(function (o) {
-        var match = false;
-        if (isGuestPaid) {
-            match = o.guestId === targetGuestId && o.table && o.table.startsWith('กลับบ้าน');
-        } else {
-            match = o.table === tableId;
-        }
+        var isGuestPaid = tableId.startsWith('GUEST_');
+        var targetGuestId = isGuestPaid ? tableId.substring(6) : null;
 
-        if (match && (o.status === 'pending' || o.status === 'served')) {
-            o.status = 'paid';
-            o.paidAt = now;
-            count++;
-        }
-    });
+        orders.forEach(function (o) {
+            var match = false;
+            if (isGuestPaid) {
+                match = o.guestId === targetGuestId && o.table && o.table.startsWith('กลับบ้าน');
+            } else {
+                match = o.table === tableId;
+            }
 
-    saveOrders(orders);
-    showToast('ชำระเงินเรียบร้อย (' + count + ' บิล)');
-    closeModal();
-    renderTableGrid();
+            if (match && (o.status === 'pending' || o.status === 'served')) {
+                o.status = 'paid';
+                o.paidAt = now;
+                count++;
+            }
+        });
+
+        saveOrders(orders);
+        showToast('ชำระเงินเรียบร้อย (' + count + ' บิล)');
+        closeModal();
+        renderTableGrid();
+    };
 }
 
 // Auto refresh

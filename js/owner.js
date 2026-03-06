@@ -35,26 +35,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
 
-    // Migrate old units 'กก.' to 'กิโลกรัม'
+    // Migrate old units 'กก.' to 'กิโลกรัม' (Display only, no automatic save)
     var data = getStockIn();
-    var migrated = false;
     for (var dateKey in data) {
+        if (!data[dateKey] || typeof data[dateKey] !== 'object') continue;
         for (var itemName in data[dateKey]) {
             if (data[dateKey][itemName].unit === 'กก.') {
                 data[dateKey][itemName].unit = 'กิโลกรัม';
-                migrated = true;
             }
             if (data[dateKey][itemName].entries) {
                 data[dateKey][itemName].entries.forEach(function (entry) {
-                    if (entry.unit === 'กก.') {
-                        entry.unit = 'กิโลกรัม';
-                        migrated = true;
-                    }
+                    if (entry.unit === 'กก.') entry.unit = 'กิโลกรัม';
                 });
             }
         }
     }
-    if (migrated) saveStockIn(data);
 
     // Remove the old <select> population logic as `si-item` is now a hidden input,
     // not a select element. Trying to appendChild to a hidden input causes an error 
@@ -242,20 +237,25 @@ function addStockOut() {
     }
     if (!unit) unit = ING_UNITS[item] || 'หน่วย';
 
-    var outData = getStockOut();
-    outData.push({
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
+    var entry = {
         item: item,
         qty: qty,
-        unit: unit
-    });
+        unit: unit,
+        date: new Date().toISOString()
+    };
 
-    saveStockOut(outData);
-    autoSyncIngredientToggles(); // auto-update disabled list
-    hideStockOutForm();
-    renderRemaining();
-    showToast('บันทึกเอา ' + item + ' ออก ' + qty + ' ' + unit + ' เรียบร้อย ✓');
+    addStockOutToServer(entry, function(res) {
+        if (res.success) {
+            _fetchStockOut(function() {
+                autoSyncIngredientToggles();
+                hideStockOutForm();
+                renderRemaining();
+                showToast('บันทึกเอา ' + item + ' ออก ' + qty + ' ' + unit + ' เรียบร้อย ✓');
+            });
+        } else {
+            showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        }
+    });
 }
 
 
@@ -270,21 +270,25 @@ function addStockIn() {
     }
     if (!unit) unit = ING_UNITS[item] || 'หน่วย';
 
-    var dateKey = getDateKey(new Date());
-    var data = getStockIn();
-    if (!data[dateKey]) data[dateKey] = {};
-    if (!data[dateKey][item]) data[dateKey][item] = { qty: 0, unit: unit, entries: [] };
+    var entry = {
+        name: item,
+        qty: qty,
+        unit: unit,
+        time: new Date().toISOString()
+    };
 
-    // เพิ่มใหม่
-    data[dateKey][item].qty += qty;
-    data[dateKey][item].unit = unit;
-    data[dateKey][item].entries.push({ qty: qty, unit: unit, time: new Date().toISOString() });
-    showToast('บันทึก ' + item + ' ' + qty + ' ' + unit + ' เรียบร้อย ✓');
-
-    saveStockIn(data);
-    autoSyncIngredientToggles(); // auto-update disabled list after stock change
-    hideStockInForm();
-    renderStockInToday();
+    addStockInToServer(entry, function(res) {
+        if (res.success) {
+            _fetchStockIn(function() {
+                autoSyncIngredientToggles();
+                hideStockInForm();
+                renderStockInToday();
+                showToast('บันทึก ' + item + ' ' + qty + ' ' + unit + ' เรียบร้อย ✓');
+            });
+        } else {
+            showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        }
+    });
 }
 
 function adjustQty(inputId, delta) {
@@ -370,9 +374,7 @@ function _renderStockInList(containerId, isFull) {
         });
     });
 
-    if (needsSave) {
-        saveStockIn(data); // save the migrated structure back
-    }
+    // No automatic save here to prevent data loss on partial loads
 
     if (allEntries.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;font-size:0.9rem;">ยังไม่มีรายการบันทึก</div>';
@@ -587,7 +589,6 @@ function closeEditStockInModal() {
 
 function saveEditStockIn() {
     var newItemName = document.getElementById('edit-si-item').value;
-    var origItemName = document.getElementById('edit-si-original-item').value || newItemName;
     var entryIndex = parseInt(document.getElementById('edit-si-index').value);
     var newQty = parseInt(document.getElementById('edit-si-qty').value);
     var unit = document.getElementById('edit-si-unit').value || ING_UNITS[newItemName] || 'หน่วย';
@@ -595,41 +596,38 @@ function saveEditStockIn() {
     if (!newItemName) { showToast('กรุณาเลือกวัตถุดิบ'); return; }
     if (!newQty || newQty <= 0) { showToast('จำนวนต้องมากกว่า 0'); return; }
 
-    var dateKey = document.getElementById('edit-si-datekey').value || getDateKey(new Date());
+    var dateKey = document.getElementById('edit-si-datekey').value;
+    var origItemName = document.getElementById('edit-si-original-item').value;
+    
+    // We need the ACTUAL stock_in_id from the database. 
+    // _renderStockInList populated the entries with IDs from the database.
     var data = getStockIn();
-    if (!data[dateKey] || !data[dateKey][origItemName] || !data[dateKey][origItemName].entries) {
-        showToast('ไม่พบรายการที่ต้องการแก้ไข'); return;
+    var entry = data[dateKey][origItemName].entries[entryIndex];
+    var stockInId = entry.id; // Corrected from .id which comes from api/stockin.php GET
+
+    if (!stockInId) {
+        showToast('ไม่สามารถแก้ไขรายการได้ (ไม่พบ ID)');
+        return;
     }
 
-    var origEntry = data[dateKey][origItemName].entries[entryIndex];
-    if (!origEntry) { showToast('ไม่พบรายการ'); return; }
-    var oldQty = origEntry.qty;
+    var editEntry = {
+        name: newItemName,
+        qty: newQty,
+        unit: unit
+    };
 
-    if (newItemName === origItemName) {
-        // Same ingredient — just update qty
-        data[dateKey][origItemName].qty = data[dateKey][origItemName].qty - oldQty + newQty;
-        data[dateKey][origItemName].entries[entryIndex].qty = newQty;
-        data[dateKey][origItemName].entries[entryIndex].unit = unit;
-    } else {
-        // Ingredient changed — remove old entry, add to new ingredient
-        data[dateKey][origItemName].qty -= oldQty;
-        data[dateKey][origItemName].entries.splice(entryIndex, 1);
-        if (data[dateKey][origItemName].qty <= 0 && data[dateKey][origItemName].entries.length === 0) {
-            delete data[dateKey][origItemName];
+    editStockInOnServer(stockInId, editEntry, function(res) {
+        if (res.success) {
+            _fetchStockIn(function() {
+                autoSyncIngredientToggles();
+                showToast('บันทึกการแก้ไขเรียบร้อย ✓');
+                closeEditStockInModal();
+                renderStockInToday();
+            });
+        } else {
+            showToast('เกิดข้อผิดพลาดในการบันทึกการแก้ไข');
         }
-        if (!data[dateKey][newItemName]) {
-            data[dateKey][newItemName] = { qty: 0, unit: unit, entries: [] };
-        }
-        data[dateKey][newItemName].qty += newQty;
-        data[dateKey][newItemName].unit = unit;
-        data[dateKey][newItemName].entries.push({ qty: newQty, unit: unit, time: origEntry.time });
-    }
-
-    saveStockIn(data);
-    autoSyncIngredientToggles(); // auto-update disabled list after stock change
-    showToast('บันทึกการแก้ไขเรียบร้อย ✓');
-    closeEditStockInModal();
-    renderStockInToday();
+    });
 }
 
 // ===== REMAINING =====
@@ -701,7 +699,7 @@ function getRemaining() {
 
         result[ing] = {
             stockIn: totalIn[ing] || 0,
-            used: totalUsed[ing] || 0,
+            used: (totalUsed[ing] || 0) + (totalOut[ing] || 0),
             remaining: remaining,
             unit: unit
         };
@@ -1262,7 +1260,7 @@ function downloadReportForDate(dateStr) {
 
         reportData[ing] = {
             stockIn: inQty,
-            used: usedTotal, // Used total
+            used: usedTotal + outTotal, // Used total includes manual stock-out
             out: outTotal,
             remaining: rem, // Historical remaining at the end of this date
             unit: ING_UNITS[ing]

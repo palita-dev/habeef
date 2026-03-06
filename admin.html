@@ -88,9 +88,11 @@
                     <label>ชื่อผู้ใช้</label>
                     <input type="text" id="f-username" class="form-input" placeholder="ชื่อผู้ใช้">
                 </div>
-                <div class="form-group">
-                    <label>รหัสผ่าน</label>
-                    <input type="text" id="f-password" class="form-input" placeholder="รหัสผ่าน">
+                <div style="margin-bottom:15px;">
+                    <div style="font-size:0.85rem; color:#999; margin-bottom:5px;">รหัสผ่าน</div>
+                    <input type="password" id="f-password" class="form-input" placeholder="รหัสผ่าน">
+                    <div id="pw-hint" style="font-size:0.75rem; color:#999; margin-top:5px; display:none;">
+                        (เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน)</div>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-dark" onclick="showTab('page-users')">ยกเลิก</button>
@@ -166,19 +168,33 @@
             <!-- Gmail Settings -->
             <div
                 style="background:#fff; border-radius:12px; padding:16px; margin-top:12px; box-shadow:0 1px 5px rgba(0,0,0,0.05);">
-                <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:#333;">📧 ตั้งค่า Gmail สำหรับลืมรหัสผ่าน</h3>
-                <div class="form-group" style="margin-bottom:10px;">
-                    <label style="font-size:0.8rem; color:#666;">Gmail แอดมิน</label>
-                    <input type="email" id="admin-gmail" class="form-input" placeholder="example@gmail.com">
+                
+                <!-- Display Mode -->
+                <div id="gmail-display-mode" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:0.8rem; color:#666; margin-bottom:4px;">📧 Gmail แอดมิน</div>
+                        <div id="current-admin-gmail-display" style="font-weight:600; color:#333; font-size:1rem;">-</div>
+                    </div>
+                    <button class="btn btn-sm btn-dark" id="btn-edit-gmail" onclick="toggleGmailEdit(true)" style="padding:8px 16px; border-radius:8px;">แก้ไข</button>
                 </div>
-                <div class="form-group" id="gmail-confirm-group" style="margin-bottom:10px;">
-                    <label style="font-size:0.8rem; color:#666;">ยืนยันรหัสผ่านแอดมิน เพื่อบันทึกการเปลี่ยนแปลง</label>
-                    <input type="password" id="gmail-confirm-pw" class="form-input" placeholder="ป้อนรหัสผ่านแอดมิน">
+
+                <!-- Edit Mode -->
+                <div id="gmail-edit-mode" style="display:none;">
+                    <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:#333;">📧 ตั้งค่า Gmail สำหรับลืมรหัสผ่าน</h3>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.8rem; color:#666;">Gmail แอดมิน</label>
+                        <input type="email" id="admin-gmail" class="form-input" placeholder="example@gmail.com">
+                    </div>
+                    <div class="form-group" id="gmail-confirm-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.8rem; color:#666;">ยืนยันรหัสผ่านแอดมิน เพื่อบันทึกการเปลี่ยนแปลง</label>
+                        <input type="password" id="gmail-confirm-pw" class="form-input" placeholder="ป้อนรหัสผ่านแอดมิน">
+                    </div>
+                    <div id="gmail-error" style="color:#C62828; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" style="flex:1; padding:10px; background:#f5f5f5; border:none; border-radius:10px; font-family:'Prompt',sans-serif; cursor:pointer; font-weight:500;" onclick="toggleGmailEdit(false)">ยกเลิก</button>
+                        <button class="btn btn-yellow" style="flex:1; padding:10px;" onclick="saveAdminGmail()">บันทึก Gmail</button>
+                    </div>
                 </div>
-                <div id="gmail-error" style="color:#C62828; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
-                <div id="gmail-success" style="color:#4CAF50; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
-                <button class="btn btn-yellow btn-full" onclick="saveAdminGmail()" style="padding:10px;">บันทึก
-                    Gmail</button>
             </div>
         </div>
     </div>
@@ -217,10 +233,13 @@
                 เพื่อความปลอดภัยของระบบแอดมิน กรุณากำหนด Email สำหรับใช้กู้คืนรหัสผ่านในกรณีที่คุณลืมรหัสผ่าน
             </p>
             <div style="text-align:left; margin-bottom:16px;">
-                <label style="font-size:0.8rem; color:#666; font-weight:600; margin-bottom:4px; display:block;">Gmail แอดมิน</label>
-                <input type="email" id="force-admin-gmail" class="form-input" placeholder="example@gmail.com" value="ninjanoi7730@gmail.com">
+                <label style="font-size:0.8rem; color:#666; font-weight:600; margin-bottom:4px; display:block;">Email
+                    แอดมิน</label>
+                <input type="email" id="force-admin-gmail" class="form-input" placeholder="example@gmail.com"
+                    value="palita.ja@rmutsvmail.com">
             </div>
-            <div id="force-email-error" style="color:#C62828; font-size:0.8rem; margin-bottom:12px; display:none; text-align:left;"></div>
+            <div id="force-email-error"
+                style="color:#C62828; font-size:0.8rem; margin-bottom:12px; display:none; text-align:left;"></div>
             <button class="btn btn-yellow btn-full" onclick="saveForceAdminGmail()"
                 style="padding:12px; font-size:1rem;">บันทึก Email ของฉัน</button>
         </div>
@@ -240,8 +259,8 @@
         </button>
     </div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/auth.js?v=202603061825"></script>
+    <script src="js/admin.js?v=202603061825"></script>
 </body>
 
 </html>

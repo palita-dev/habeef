@@ -55,7 +55,7 @@ function toggleIngredientDisabled(name, isDisabled) {
 getDisabledIngredients(null);
 
 // Default admin account (fallback only)
-var DEFAULT_ADMIN = { username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบ' };
+var DEFAULT_ADMIN = { username: 'admin', password: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', role: 'admin', name: 'ผู้ดูแลระบบ' };
 
 // ===== IN-MEMORY CACHE (synced from server, not from localStorage) =====
 var _ordersCache = [];
@@ -262,10 +262,22 @@ function updateUser(oldUsername, newData) {
     var users = getUsers();
     var idx = users.findIndex(function (u) { return u.username === oldUsername; });
     if (idx === -1) return false;
+    
+    // Create a copy to avoid directly mutating the reference immediately
+    var updatedUser = Object.assign({}, users[idx]);
+    
+    // Hash new password if provided, otherwise keep existing
     if (newData.password) {
-        newData.password = sha256(newData.password);
+        updatedUser.password = sha256(newData.password);
     }
-    users[idx] = Object.assign(users[idx], newData);
+    
+    // Apply other role/username/name updates
+    if (newData.role) updatedUser.role = newData.role;
+    if (newData.username) updatedUser.username = newData.username;
+    if (newData.name) updatedUser.name = newData.name;
+    if (newData.email !== undefined) updatedUser.email = newData.email;
+
+    users[idx] = updatedUser;
     saveUsers(users);
     return true;
 }
@@ -409,6 +421,55 @@ function saveStockIn(data) {
     }).catch(function () { });
 }
 
+function addStockInToServer(entry, callback) {
+    var user = getCurrentUser();
+    var payload = {
+        action: 'add',
+        ingredient_name: entry.name,
+        quantity: entry.qty,
+        unit: entry.unit,
+        time: entry.time,
+        user_id: user ? user.user_id : null
+    };
+    fetch(SERVER_BASE + '/api/stockin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) { if (callback) callback(res); })
+    .catch(function() { if (callback) callback({success: false}); });
+}
+
+function editStockInOnServer(id, entry, callback) {
+    var payload = {
+        action: 'edit',
+        stock_in_id: id,
+        ingredient_name: entry.name,
+        quantity: entry.qty,
+        unit: entry.unit
+    };
+    fetch(SERVER_BASE + '/api/stockin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) { if (callback) callback(res); })
+    .catch(function() { if (callback) callback({success: false}); });
+}
+
+function deleteStockInFromServer(id, callback) {
+    fetch(SERVER_BASE + '/api/stockin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', stock_in_id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) { if (callback) callback(res); })
+    .catch(function() { if (callback) callback({success: false}); });
+}
+
 // ===== STOCK OUT — from MySQL =====
 function getStockOut() {
     return window._stockOutCache || [];
@@ -435,6 +496,37 @@ function saveStockOut(data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     }).catch(function () { });
+}
+
+function addStockOutToServer(entry, callback) {
+    var user = getCurrentUser();
+    var payload = {
+        action: 'add',
+        item: entry.item,
+        qty: entry.qty,
+        unit: entry.unit,
+        date: entry.date,
+        user_id: user ? user.user_id : null
+    };
+    fetch(SERVER_BASE + '/api/stockout.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) { if (callback) callback(res); })
+    .catch(function() { if (callback) callback({success: false}); });
+}
+
+function deleteStockOutFromServer(id, callback) {
+    fetch(SERVER_BASE + '/api/stockout.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) { if (callback) callback(res); })
+    .catch(function() { if (callback) callback({success: false}); });
 }
 
 // ===== INGREDIENT USAGE — still from orders in MySQL =====

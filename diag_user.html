@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagnostic User Check</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>User Diagnostic</h2>
+    <div id="result">Loading...</div>
+    <script>
+        fetch('temp_check_user.php')
+            .then(r => r.text())
+            .then(data => {
+                document.getElementById('result').innerHTML = '<pre>' + data + '</pre>';
+            })
+            .catch(err => {
+                document.getElementById('result').innerHTML = 'Error: ' + err;
+            });
+    </script>
+</body>
+</html>

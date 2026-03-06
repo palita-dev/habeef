@@ -8,10 +8,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-$host = '127.0.0.1';
-$db_user = 'root';
-$db_pass = '';
-$db_name = 'habeef';
+if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['SERVER_ADDR'] === '127.0.0.1' || $_SERVER['SERVER_ADDR'] === '::1') {
+    $host = '127.0.0.1';
+    $db_user = 'root';
+    $db_pass = '';
+    $db_name = 'habeef';
+} else {
+    $host = 'localhost';
+    $db_user = 'appvizac_habeefnoodle';
+    $db_pass = 'kh89mNtD';
+    $db_name = 'appvizac_habeefnoodle';
+}
 
 // Create connection
 $conn = new mysqli($host, $db_user, $db_pass, $db_name);

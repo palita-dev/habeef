@@ -2,6 +2,9 @@
 require_once 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Ensure email column exists (auto-fix for production)
+    $conn->query("ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `email` VARCHAR(255) NULL DEFAULT NULL");
+    
     $sql = "SELECT username, password, role, full_name as name, email FROM users";
     $result = $conn->query($sql);
     $users = array();
