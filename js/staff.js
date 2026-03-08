@@ -15,12 +15,14 @@ document.addEventListener('DOMContentLoaded', function () {
     calendarMonth = now.getMonth();
     selectedDate = null;
 
-    // Initialize known orders on load so we don't alert old ones
-    var initialOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
-    knownOrderIds = initialOrders.map(function (o) { return o.orderId; });
+    // Initialize known orders AFTER sync
+    syncFromServer().then(function() {
+        var initialOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
+        knownOrderIds = initialOrders.map(function (o) { return o.orderId; });
 
-    renderOrderList();
-    updateNotificationPanel();
+        renderCurrentView();
+        updateNotificationPanel();
+    });
 
     // Auto refresh UI every 10s
     setInterval(function () {

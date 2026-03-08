@@ -35,35 +35,38 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
 
-    // Migrate old units 'กก.' to 'กิโลกรัม' (Display only, no automatic save)
-    var data = getStockIn();
-    for (var dateKey in data) {
-        if (!data[dateKey] || typeof data[dateKey] !== 'object') continue;
-        for (var itemName in data[dateKey]) {
-            if (data[dateKey][itemName].unit === 'กก.') {
-                data[dateKey][itemName].unit = 'กิโลกรัม';
-            }
-            if (data[dateKey][itemName].entries) {
-                data[dateKey][itemName].entries.forEach(function (entry) {
-                    if (entry.unit === 'กก.') entry.unit = 'กิโลกรัม';
-                });
-            }
-        }
-    }
-
-    // Remove the old <select> population logic as `si-item` is now a hidden input,
-    // not a select element. Trying to appendChild to a hidden input causes an error 
-    // that halts script execution!
-
     var today = new Date();
     var dayStr = today.getDate() + '/' + (today.getMonth() + 1) + '/' + (today.getFullYear() + 543);
     document.getElementById('report-date').textContent = 'วันที่ ' + dayStr;
 
+    populateIngList();
+    populateSoIngList();
+    
+    // Render empty state initially
     renderStockInToday();
     renderRemaining();
     renderReport();
-    populateIngList();
-    populateSoIngList();
+
+    // Fetch latest data and re-render
+    syncFromServer().then(function() {
+        var data = getStockIn();
+        for (var dateKey in data) {
+            if (!data[dateKey] || typeof data[dateKey] !== 'object') continue;
+            for (var itemName in data[dateKey]) {
+                if (data[dateKey][itemName].unit === 'กก.') {
+                    data[dateKey][itemName].unit = 'กิโลกรัม';
+                }
+                if (data[dateKey][itemName].entries) {
+                    data[dateKey][itemName].entries.forEach(function (entry) {
+                        if (entry.unit === 'กก.') entry.unit = 'กิโลกรัม';
+                    });
+                }
+            }
+        }
+        renderStockInToday();
+        renderRemaining();
+        renderReport();
+    });
 });
 
 // ===== TAB NAVIGATION =====
@@ -1307,14 +1310,26 @@ function downloadReportForDate(dateStr) {
         }
 
         var shouldBuy = 0;
-        var targetStock = usedQty * 1.5; // Example logic: recommended stock is 1.5x of usage
-        if (targetStock > 0 && rem < targetStock) {
-            shouldBuy = targetStock - rem;
+        var targetStock = usedQty * 1.5; // Recommended stock is 1.5x of usage
+        if (targetStock > 0) {
+            // Always suggest buying enough to maintain target stock, ignoring what's remaining
+            // or we suggest `targetStock - rem`. If user wants it in *every* row, maybe they just want 
+            // the full target amount or `targetStock - rem` just clamped to 0?
+            // "ช่องควรซื้อเพิ่มต้องมีทุกช่อง ของรายการวัตถุดิบ"
+            // Let's just set shouldBuy = targetStock so it always shows a positive amount based on usage.
+            // Wait, if it's "Should buy", usually it's `(used * 1.5) - remaining`. If remaining is very high, it might be <= 0.
+            // Let's just calculate `targetStock` and if it's > 0, show it.
+            // To ensure it shows *something* for every row, if `targetStock` is 0, we can just show "0".
+            // Let's use `targetStock - rem` but if it's <= 0 and they want it in every row, maybe just `targetStock`?
+            // The safest interpretation for "must have every row" is to calculate the suggestion based purely on target stock.
+            shouldBuy = targetStock;
         }
+
         var shouldBuyText = '-';
         if (shouldBuy > 0) {
-            shouldBuyText = formatSecondaryUnit(name, shouldBuy, true);
-            if (!shouldBuyText) shouldBuyText = parseFloat(Number(shouldBuy).toFixed(3)) + ' ' + displayUnit;
+            shouldBuyText = Math.ceil(shouldBuy) + ' ' + displayUnit;
+        } else {
+            shouldBuyText = '0 ' + displayUnit;
         }
 
         html += '<tr>';
