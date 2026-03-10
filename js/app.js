@@ -258,39 +258,6 @@ function decodeTableId(encodedStr) {
       return parts[0];
     }
   } catch (e) {
-    return null;
-  }
-  return null;
-}
-
-// ===== AUTO SELECT TABLE FROM URL =====
-window.addEventListener('DOMContentLoaded', function () {
-  var urlParams = new URLSearchParams(window.location.search);
-  var q = urlParams.get('q');
-
-  if (q) {
-    var decodedTableId = decodeTableId(q);
-    if (decodedTableId) {
-      var tableId = decodedTableId;
-      // Map URL param text to dropdown value. e.g. "?q=ENCODED" -> "1"
-      if (decodedTableId === 'takeaway' || decodedTableId === 'กลับบ้าน') {
-        tableId = 'กลับบ้าน';
-      }
-      // Small delay to ensure DOM is fully ready
-      setTimeout(function () {
-        selectLandingTable(tableId, true);
-      }, 50);
-    } else {
-      console.error("Invalid QR Code");
-      showToast("QR Code ไม่ถูกต้อง หรือล้าสมัย");
-    }
-  }
-});
-
-// ===== ALERT MODAL =====
-function showAlert() {
-  var modal = document.getElementById('alert-modal');
-  if (modal) {
     modal.classList.add('show');
     goToMenu(); // Navigate back to menu
     // Highlight table selector
