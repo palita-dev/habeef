@@ -175,6 +175,14 @@ function addToCart() {
             cart[editingCartIndex].ingredients = ingredients;
         }
         editingCartIndex = -1;
+        
+        if (typeof resetCustomizeButtons === 'function') resetCustomizeButtons();
+        updateCartBadge();
+        saveCart();
+        showToast('แก้ไข ' + menu.name + ' เรียบร้อย');
+        window.scrollTo(0, 0);
+        goToMenu();
+        return;
     } else {
         if (existingIndex > -1) {
             var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
@@ -253,9 +261,11 @@ function addToCart() {
         }
     }
 
+    if (typeof resetCustomizeButtons === 'function') resetCustomizeButtons();
     saveCart();
     updateCartBadge();
     showToast('บันทึก ' + menu.name + ' สำเร็จ ✓');
+    window.scrollTo(0, 0);
     goToMenu();
 }
 
@@ -322,11 +332,14 @@ function renderCart() {
         var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + item.qty + '</span>' : '';
 
         return '<tr class="cart-table-row">' +
-            '<td class="td-item" style="padding-top:16px; padding-bottom:16px; cursor:pointer;" onclick="if(event.target.tagName !== \'BUTTON\') editCartItem(' + index + ')">' +
+            '<td class="td-item" style="padding-top:16px; padding-bottom:16px;">' +
             '<div class="item-wrapper">' +
             '<span class="item-index">' + (index + 1) + '</span>' +
+            '<div style="display:flex; flex-direction:column; align-items:center; cursor:pointer; margin-right:12px;" onclick="editCartItem(' + index + ')">' +
             imgHtml +
-            '<div class="item-text">' +
+            '<span class="item-edit-tag">แก้ไข</span>' +
+            '</div>' +
+            '<div class="item-text" onclick="editCartItem(' + index + ')" style="cursor:pointer;">' +
             '<div class="item-name">' + item.name + qtyLabel + '</div>' +
             '<div class="cart-row-details">' +
             detailsHtml +

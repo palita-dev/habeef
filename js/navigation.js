@@ -16,6 +16,7 @@ function showPage(pageId) {
 // ===== ไปหน้าเมนู =====
 function goToMenu() {
   if (typeof editingCartIndex !== 'undefined') editingCartIndex = -1;
+  if (typeof resetCustomizeButtons === 'function') resetCustomizeButtons();
   updateCartBadge();
   if (typeof renderMenu === 'function') renderMenu();
   showPage('page-menu');
@@ -29,6 +30,7 @@ function goToCart() {
 
 // ===== ไปหน้าเลือกวัตถุดิบ =====
 function goToCustomize(menuId) {
+  if (typeof resetCustomizeButtons === 'function') resetCustomizeButtons();
   currentMenuItem = MENU_ITEMS.find(function (m) { return m.id === menuId; });
   if (!currentMenuItem) return;
   renderCustomizeForm(currentMenuItem);

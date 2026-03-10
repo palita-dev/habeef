@@ -128,7 +128,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (menuPage && menuPage.classList.contains('active')) {
       renderMenu();
     }
-  }, 10000); // Sync is every 3s, so 10s is reasonable for UI refresh
+  }, 10000);
+
+  // Auto-refresh cart periodically if on the cart page
+  setInterval(function() {
+    var cartPage = document.getElementById('page-cart');
+    if (cartPage && cartPage.classList.contains('active')) {
+      loadCartForTable();
+    }
+  }, 10000);
 });
 
 // ===== UTILITY =====
@@ -138,6 +146,7 @@ function loadCartForTable() {
     updateCartBadge();
     return;
   }
+  // Fetch cart from server (single source of truth)
   fetch(SERVER_BASE + '/api/cart.php?table_id=' + encodeURIComponent(currentTable))
     .then(function (r) { return r.json(); })
     .then(function (data) {
@@ -150,8 +159,7 @@ function loadCartForTable() {
       if (typeof renderCart === 'function') renderCart();
     })
     .catch(function () {
-      cart = [];
-      updateCartBadge();
+      // Server unreachable — keep current cart, don't clear
     });
 }
 
@@ -308,4 +316,72 @@ function closeAlert() {
       sel.style.boxShadow = '';
     }
   }
+}
+function editCartItem(index) {
+  var item = cart[index];
+  if (!item) return;
+
+  editingCartIndex = index;
+  currentMenuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
+  if (!currentMenuItem) return;
+
+  renderCustomizeForm(currentMenuItem);
+
+  // Pre-fill options
+  setTimeout(function () {
+    // Select noodles
+    var noodles = document.querySelectorAll('input[name="noodle"]');
+    var mixedNoodles = document.querySelectorAll('input[name="mixed-noodle"]');
+    
+    // We need to parse details to match back to radio values if possible
+    // simplified: assume name match in details
+    if (item.details) {
+      item.details.forEach(function(d) {
+        var n = NOODLE_OPTIONS.find(function(o) { return o.name === d; });
+        if (n) {
+           var r = Array.from(noodles).find(function(i) { return i.value === n.id; });
+           if (r) r.checked = true;
+           updateMixedNoodleState();
+        }
+        
+        var m = MEAT_OPTIONS.find(function(o) { return o.name === d; });
+        if (m) {
+           var r = document.querySelector('input[name="meat"][value="' + m.id + '"]');
+           if (r) r.checked = true;
+        }
+
+        VEGGIE_OPTIONS.forEach(function(v) {
+          if (v.name === d) {
+             var r = document.querySelector('input[name="veggie"][value="' + v.id + '"]');
+             if (r) r.checked = true;
+          }
+        });
+
+        EXTRA_OPTIONS.forEach(function(e) {
+           if (e.name === d || d.startsWith(e.name)) {
+              var cb = document.querySelector('input[name="extras"][value="' + e.id + '"]');
+              if (cb) cb.checked = true;
+           }
+        });
+      });
+    }
+    
+    // UI Update for Edit Mode
+    var btnAdd = document.querySelector('.btn-add');
+    if (btnAdd) {
+      btnAdd.textContent = 'บันทึกการแก้ไข';
+      btnAdd.style.background = '#4CAF50'; // Green for save
+    }
+    
+    validateCustomizeForm();
+    showPage('page-customize');
+  }, 100);
+}
+
+function resetCustomizeButtons() {
+    var btnAdd = document.querySelector('.btn-add');
+    if (btnAdd) {
+      btnAdd.textContent = 'เพิ่มลงตะกร้า';
+      btnAdd.style.background = '';
+    }
 }

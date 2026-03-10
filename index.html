@@ -5,8 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script>
-        // If not a table-specific QR link (no 'q' param), redirect to staff login
-        if (!window.location.search.includes('q=')) {
+        // Check URL for 'q' param, OR fallback to localStorage
+        var urlParams = new URLSearchParams(window.location.search);
+        var urlQ = urlParams.get('q');
+        var localQ = localStorage.getItem('habeef_q_param');
+        
+        // If neither exists, redirect to staff login
+        if (!urlQ && !localQ) {
             window.location.href = "login.html?s=c3RhZmZfbG9naW4lN0NoYWJlZWZfc2VjcmV0XzIwMjQ%3D";
         }
     </script>
@@ -14,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=202603101530">
 </head>
 
 <body>
@@ -286,11 +291,11 @@
     </div>
   </div>
 
-  <script src="js/auth.js?v=202603081850"></script>
-  <script src="js/app.js?v=202603081850"></script>
-  <script src="js/navigation.js?v=202603081850"></script>
-  <script src="js/cart.js?v=202603081850"></script>
-  <script src="js/order.js?v=202603081850"></script>
+  <script src="js/auth.js?v=202603101655"></script>
+  <script src="js/app.js?v=202603101655"></script>
+  <script src="js/navigation.js?v=202603101655"></script>
+  <script src="js/cart.js?v=202603101655"></script>
+  <script src="js/order.js?v=202603101655"></script>
 </body>
 
 </html>
