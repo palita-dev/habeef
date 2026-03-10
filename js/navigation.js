@@ -17,6 +17,7 @@ function showPage(pageId) {
 function goToMenu() {
   if (typeof editingCartIndex !== 'undefined') editingCartIndex = -1;
   updateCartBadge();
+  if (typeof renderMenu === 'function') renderMenu();
   showPage('page-menu');
 }
 
@@ -169,9 +170,17 @@ function renderCustomizeForm(menu) {
   VEGGIE_OPTIONS.forEach(function (opt, i) {
     var isOos = false;
     if (opt.hasVeg) {
+      // Check stock
       var pbQty = (typeof FORMULA !== 'undefined' && FORMULA['ผักบุ้ง']) ? FORMULA['ผักบุ้ง'] : 0;
       var tngQty = (typeof FORMULA !== 'undefined' && FORMULA['ถั่วงอก']) ? FORMULA['ถั่วงอก'] : 0;
-      if (((remaining['ผักบุ้ง'] || 0) < pbQty) || ((remaining['ถั่วงอก'] || 0) < tngQty)) {
+      
+      var isPbDisabled = disabledIngredients.indexOf('ผักบุ้ง') !== -1;
+      var isTngDisabled = disabledIngredients.indexOf('ถั่วงอก') !== -1;
+
+      if (
+          ((remaining['ผักบุ้ง'] || 0) < pbQty) || ((remaining['ถั่วงอก'] || 0) < tngQty) ||
+          isPbDisabled || isTngDisabled
+      ) {
         isOos = true;
       }
     }

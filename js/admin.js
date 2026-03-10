@@ -277,53 +277,84 @@ function submitUserForm() {
     // Reset border color if valid
     document.getElementById('f-username').style.borderColor = '';
 
-    if (editingUser) {
-        // Edit mode
-        updateUser(editingUser, { role: role, password: finalPassword, name: username });
-        showToast('แก้ไขบัญชีเรียบร้อย ✓');
-    } else {
-        // Create mode
-        if (!addUser(username, finalPassword, role, username)) {
-            showToast('❌ ชื่อบัญชีนี้มีอยู่แล้ว');
-            return;
-        }
-        showToast('สร้างบัญชีเรียบร้อย ✓');
+    var msg = editingUser ? 'ยืนยันการบันทึกการแก้ไขบัญชี "' + username + '"?' : 'ยืนยันการสร้างบัญชีใหม่ "' + username + '"?';
+    if (password && editingUser) {
+        msg = 'ยืนยันการแก้ไขข้อมูลและเปลี่ยนรหัสผ่านใหม่สำหรับบัญชี "' + username + '"?';
     }
 
-    // Refresh UI immediately
-    renderUserList();
-    setTimeout(syncFromServer, 100); // trigger sync
-    showTab('page-users');
+    showConfirmDialog({
+        title: editingUser ? 'ยืนยันการแก้ไข' : 'ยืนยันการสร้างบัญชี',
+        message: msg,
+        icon: '👤',
+        confirmText: editingUser ? 'บันทึกข้อมูล' : 'สร้างบัญชี',
+        confirmColor: '#FFC107',
+        confirmTextColor: '#333',
+        onConfirm: function () {
+            if (editingUser) {
+                // Edit mode
+                updateUser(editingUser, { role: role, password: finalPassword, name: username });
+                showToast('แก้ไขบัญชีเรียบร้อย ✓');
+            } else {
+                // Create mode
+                if (!addUser(username, finalPassword, role, username)) {
+                    showToast('❌ ชื่อบัญชีนี้มีอยู่แล้ว');
+                    return;
+                }
+                showToast('สร้างบัญชีเรียบร้อย ✓');
+            }
+
+            // Refresh UI immediately
+            renderUserList();
+            setTimeout(syncFromServer, 100); // trigger sync
+            showTab('page-users');
+        }
+    });
 }
 
-// ===== DELETE USER =====
-function confirmDeleteUser(username) {
-    // Create custom confirmation modal for deleting user
+function showConfirmDialog(options) {
     var modal = document.createElement('div');
     modal.className = 'alert-modal show';
+    modal.style.zIndex = '10000'; // Ensure it's above everything
     modal.innerHTML = `
-        <div class="alert-modal-content" style="padding:24px 20px 0; text-align:center; overflow:hidden;">
-            <div style="font-size:2.5rem; margin-bottom:15px;">⚠️</div>
-            <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:10px;">ยืนยันการลบ</h3>
-            <p style="font-size:0.95rem; color:#666; margin-bottom:20px;">ต้องการลบบัญชี "` + username + `" หรือไม่?</p>
-            <div style="display:flex; margin:0 -20px; border-top:1px solid #eee;">
-                <button id="btn-cancel-del-usr" style="flex:1; padding:14px; background:#f5f5f5; color:#555; border:none; border-right:1px solid #eee; border-radius:0 0 0 20px; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer;">ยกเลิก</button>
-                <button id="btn-confirm-del-usr" style="flex:1; padding:14px; background:#F44336; color:white; border:none; border-radius:0 0 20px 0; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer;">ลบเลย</button>
+        <div class="alert-modal-content" style="padding:0; text-align:center; overflow:hidden; border-radius:16px;">
+            <div style="padding:30px 20px 20px;">
+                <div style="font-size:3rem; margin-bottom:15px;">` + (options.icon || '⚠️') + `</div>
+                <h3 style="font-size:1.3rem; font-weight:700; color:#333; margin:0 0 10px 0;">` + (options.title || 'ยืนยันการทำรายการ') + `</h3>
+                <p style="font-size:0.95rem; color:#666; margin:0;">` + (options.message || 'คุณต้องการดำเนินการต่อหรือไม่?') + `</p>
+            </div>
+            <div style="display:flex; border-top:1px solid #eee;">
+                <button class="btn" id="dia-confirm" style="flex:1; padding:16px; background:` + (options.confirmColor || '#F44336') + `; color:` + (options.confirmTextColor || 'white') + `; border:none; border-right:1px solid #eee; border-radius:0 0 0 16px; font-family:'Prompt',sans-serif; font-size:1rem; font-weight:700; cursor:pointer;">` + (options.confirmText || 'ตกลง') + `</button>
+                <button class="btn" id="dia-cancel" style="flex:1; padding:16px; background:#f5f5f5; color:#555; border:none; border-radius:0 0 16px 0; font-family:'Prompt',sans-serif; font-size:1rem; font-weight:600; cursor:pointer;">` + (options.cancelText || 'ยกเลิก') + `</button>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
 
-    document.getElementById('btn-cancel-del-usr').onclick = function () {
+    document.getElementById('dia-cancel').onclick = function () {
         document.body.removeChild(modal);
+        if (typeof options.onCancel === 'function') options.onCancel();
     };
 
-    document.getElementById('btn-confirm-del-usr').onclick = function () {
+    document.getElementById('dia-confirm').onclick = function () {
         document.body.removeChild(modal);
-        deleteUser(username);
-        showToast('ลบบัญชีเรียบร้อย ✓');
-        renderUserList();
+        if (typeof options.onConfirm === 'function') options.onConfirm();
     };
+}
+
+// ===== DELETE USER =====
+function confirmDeleteUser(username) {
+    showConfirmDialog({
+        title: 'ยืนยันการลบ',
+        message: 'ต้องการลบบัญชี "' + username + '" หรือไม่?',
+        icon: '⚠️',
+        confirmText: 'ลบเลย',
+        confirmColor: '#F44336',
+        onConfirm: function () {
+            deleteUser(username);
+            showToast('ลบบัญชีเรียบร้อย ✓');
+            renderUserList();
+        }
+    });
 }
 
 // ===== QR CODES =====
@@ -354,7 +385,7 @@ function generateTableQR() {
     // Encode tableId for security
     var SECRET_SALT = 'habeef_secret_2024';
     var encodedTable = btoa(encodeURIComponent(tableId + '|' + SECRET_SALT));
-    var customerUrl = baseUrl + 'index.html?q=' + encodeURIComponent(encodedTable);
+    var customerUrl = baseUrl + '?q=' + encodeURIComponent(encodedTable);
 
     // Use Chart API or QR API
     var qrApiBase = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=';
@@ -532,58 +563,60 @@ function confirmChangePassword() {
         return;
     }
 
-    // Update user password
-    var success = updateUser(_changePwUsername, { password: newPw });
-    if (!success) {
-        errEl.textContent = 'ไม่พบบัญชีผู้ใช้นี้';
-        errEl.style.display = 'block';
-        return;
-    }
+    showConfirmDialog({
+        title: 'ยืนยันการเปลี่ยนรหัสผ่าน',
+        message: 'ต้องการตั้งรหัสผ่านใหม่ให้บัญชี "' + _changePwUsername + '" หรือไม่?',
+        icon: '🔐',
+        confirmText: 'ตกลง',
+        confirmColor: '#FFC107',
+        confirmTextColor: '#333',
+        onConfirm: function () {
+            // Update user password
+            var success = updateUser(_changePwUsername, { password: newPw });
+            if (!success) {
+                errEl.textContent = 'ไม่พบบัญชีผู้ใช้นี้';
+                errEl.style.display = 'block';
+                return;
+            }
 
-    // Remove notification
-    deleteNotification(_changePwNotifId);
-    closeChangePwModal();
-    showToast('เปลี่ยนรหัสผ่านเรียบร้อย ✓');
+            // Remove notification silently (no confirmation modal)
+            removeNotificationSilently(_changePwNotifId);
+            closeChangePwModal();
+            showToast('เปลี่ยนรหัสผ่านเรียบร้อย ✓');
+        }
+    });
+}
+
+function removeNotificationSilently(id) {
+    if (!id) return;
+    fetch(window.location.origin + '/api/notifications.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: id })
+    }).then(function () {
+        _fetchNotifications(function () {
+            renderNotifications();
+            updateNotifBadge();
+        });
+    }).catch(function (err) {
+        console.error('Failed to delete notification:', err);
+    });
 }
 
 function deleteNotification(id) {
     if (!id) return;
 
-    // Create custom confirmation modal for deleting notification
-    var modal = document.createElement('div');
-    modal.className = 'alert-modal show';
-    modal.innerHTML = `
-        <div class="alert-modal-content" style="padding:24px 20px 0; text-align:center; overflow:hidden;">
-            <div style="font-size:2.5rem; margin-bottom:15px;">🗑️</div>
-            <h3 style="font-size:1.2rem; font-weight:700; color:#333; margin-bottom:10px;">ยืนยันการลบ</h3>
-            <p style="font-size:0.95rem; color:#666; margin-bottom:20px;">ต้องการลบการแจ้งเตือนนี้หรือไม่?</p>
-            <div style="display:flex; margin:0 -20px; border-top:1px solid #eee;">
-                <button id="btn-cancel-del" style="flex:1; padding:14px; background:#f5f5f5; color:#555; border:none; border-right:1px solid #eee; border-radius:0 0 0 20px; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer;">ยกเลิก</button>
-                <button id="btn-confirm-del" style="flex:1; padding:14px; background:#F44336; color:white; border:none; border-radius:0 0 20px 0; font-family:'Prompt',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer;">ลบเลย</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('btn-cancel-del').onclick = function () {
-        document.body.removeChild(modal);
-    };
-
-    document.getElementById('btn-confirm-del').onclick = function () {
-        document.body.removeChild(modal);
-        // User confirmed
-        fetch(window.location.origin + '/api/notifications.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete', id: id })
-        }).then(function () {
-            _fetchNotifications(function () {
-                renderNotifications();
-                updateNotifBadge();
-                showToast('ลบการแจ้งเตือนแล้ว ✓');
-            });
-        }).catch(function () { });
-    };
+    showConfirmDialog({
+        title: 'ยืนยันการลบ',
+        message: 'ต้องการลบการแจ้งเตือนนี้หรือไม่?',
+        icon: '🗑️',
+        confirmText: 'ลบเลย',
+        confirmColor: '#F44336',
+        onConfirm: function () {
+            removeNotificationSilently(id);
+            showToast('ลบการแจ้งเตือนแล้ว ✓');
+        }
+    });
 }
 
 // Auto-update badge and render on page load — now polls MySQL

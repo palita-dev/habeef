@@ -218,7 +218,7 @@ function showTab(pageId, btn) {
 }
 
 // ===== VIEW MODE TOGGLE =====
-var currentViewMode = 'grid';
+var currentViewMode = 'list';
 
 function setViewMode(mode) {
     currentViewMode = mode;

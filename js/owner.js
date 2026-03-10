@@ -41,14 +41,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     populateIngList();
     populateSoIngList();
-    
+
     // Render empty state initially
     renderStockInToday();
     renderRemaining();
     renderReport();
 
     // Fetch latest data and re-render
-    syncFromServer().then(function() {
+    syncFromServer().then(function () {
         var data = getStockIn();
         for (var dateKey in data) {
             if (!data[dateKey] || typeof data[dateKey] !== 'object') continue;
@@ -131,10 +131,23 @@ function populateIngList() {
     }).join('');
 }
 
-function toggleIngDropdown() {
+function toggleIngDropdown(e) {
+    if (e) e.stopPropagation();
     var list = document.getElementById('si-item-list');
     if (!list) return;
-    list.style.display = (list.style.display === 'none') ? 'block' : 'none';
+
+    if (list.style.display === 'none') {
+        list.style.display = 'block';
+        // Add one-time listener to close when clicking outside
+        document.addEventListener('click', function closeSI(event) {
+            var disp = document.getElementById('si-item-display');
+            if (list.contains(event.target) || (disp && disp.contains(event.target))) return;
+            list.style.display = 'none';
+            document.removeEventListener('click', closeSI);
+        });
+    } else {
+        list.style.display = 'none';
+    }
 }
 
 function selectIngredient(name) {
@@ -195,10 +208,23 @@ function populateSoIngList() {
     }).join('');
 }
 
-function toggleSoDropdown() {
+function toggleSoDropdown(e) {
+    if (e) e.stopPropagation();
     var list = document.getElementById('so-item-list');
     if (!list) return;
-    list.style.display = (list.style.display === 'none') ? 'block' : 'none';
+
+    if (list.style.display === 'none') {
+        list.style.display = 'block';
+        // Add one-time listener to close when clicking outside
+        document.addEventListener('click', function closeSO(event) {
+            var disp = document.getElementById('so-item-display');
+            if (list.contains(event.target) || (disp && disp.contains(event.target))) return;
+            list.style.display = 'none';
+            document.removeEventListener('click', closeSO);
+        });
+    } else {
+        list.style.display = 'none';
+    }
 }
 
 function selectSoIngredient(name) {
@@ -247,9 +273,9 @@ function addStockOut() {
         date: new Date().toISOString()
     };
 
-    addStockOutToServer(entry, function(res) {
+    addStockOutToServer(entry, function (res) {
         if (res.success) {
-            _fetchStockOut(function() {
+            _fetchStockOut(function () {
                 autoSyncIngredientToggles();
                 hideStockOutForm();
                 renderRemaining();
@@ -280,9 +306,9 @@ function addStockIn() {
         time: new Date().toISOString()
     };
 
-    addStockInToServer(entry, function(res) {
+    addStockInToServer(entry, function (res) {
         if (res.success) {
-            _fetchStockIn(function() {
+            _fetchStockIn(function () {
                 autoSyncIngredientToggles();
                 hideStockInForm();
                 renderStockInToday();
@@ -452,9 +478,9 @@ function _renderStockInList(containerId, isFull) {
     if (displayEntries.length > 0) {
         if (!isFull) {
             html += '<h3 style="font-size:0.95rem; margin-bottom:10px; color:#555; font-weight:500;">ประวัติการบันทึก</h3>';
-            html += '<div style="background:#ECECEC; border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
+            html += '<div style="background:#E0D9D3; border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
         } else {
-            html += '<div style="border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
+            html += '<div style="background:#E0D9D3; border-radius: 12px; padding: 16px 12px; margin-bottom:20px;">';
         }
 
         var maxDisplay = isFull ? displayEntries.length : 4; // 1 latest + 3 older = 4 items used
@@ -507,9 +533,7 @@ function _renderStockInList(containerId, isFull) {
             html += '<button onclick="openStockInHistoryPage()" style="width:100%; padding:10px; border-radius:20px; border:none; background:#DFDFDF; color:#333; font-size:0.95rem; font-family:\'Prompt\', sans-serif; cursor:pointer; margin-top:8px;">ดูเพิ่มเติม</button>';
         }
 
-        if (historyItemsCount > 0 || isFull || (!isFull && allEntries.length > 0)) {
-            html += '</div>';
-        }
+        html += '</div>'; // close the background:#E0D9D3 container
     }
 
     if (container) container.innerHTML = html;
@@ -601,7 +625,7 @@ function saveEditStockIn() {
 
     var dateKey = document.getElementById('edit-si-datekey').value;
     var origItemName = document.getElementById('edit-si-original-item').value;
-    
+
     // We need the ACTUAL stock_in_id from the database. 
     // _renderStockInList populated the entries with IDs from the database.
     var data = getStockIn();
@@ -619,9 +643,9 @@ function saveEditStockIn() {
         unit: unit
     };
 
-    editStockInOnServer(stockInId, editEntry, function(res) {
+    editStockInOnServer(stockInId, editEntry, function (res) {
         if (res.success) {
-            _fetchStockIn(function() {
+            _fetchStockIn(function () {
                 autoSyncIngredientToggles();
                 showToast('บันทึกการแก้ไขเรียบร้อย ✓');
                 closeEditStockInModal();
@@ -642,6 +666,8 @@ function getRemaining() {
     // Convert array of logs to date key map
     var usage = {};
     usageLogs.forEach(function (log) {
+        // We already filtered by "served/completed" in getIngredientUsage() in auth.js
+        // but let's double check if getIngredientUsage returns the right subset.
         var logTime = new Date(log.date);
         var dKey = getDateKey(logTime);
         if (!usage[dKey]) usage[dKey] = {};
@@ -794,7 +820,7 @@ function formatSecondaryUnit(name, qty, returnRawText) {
                     var grams = Math.round(qty * 1000);
                     return grams + ' กรัม' + separator + '~' + pieces + ' ตัว';
                 }
-                return parseFloat(Number(qty).toFixed(3)) + ' กก.' + separator + '~' + pieces + ' ตัว';
+                return parseFloat(Number(qty).toFixed(2)) + ' กก.' + separator + '~' + pieces + ' ตัว';
             } else if (name === 'น่องไก่') {
                 var pieces = Math.round(qty * 162 / 13);
                 var separator = '<br>หรือ ';
@@ -802,13 +828,13 @@ function formatSecondaryUnit(name, qty, returnRawText) {
                     var grams = Math.round(qty * 1000);
                     return grams + ' กรัม' + separator + '~' + pieces + ' ชิ้น';
                 }
-                return parseFloat(Number(qty).toFixed(3)) + ' กก.' + separator + '~' + pieces + ' ชิ้น';
+                return parseFloat(Number(qty).toFixed(2)) + ' กก.' + separator + '~' + pieces + ' ชิ้น';
             } else {
                 if (qty < 1) {
                     var grams = Math.round(qty * 1000);
                     return grams + ' กรัม';
                 }
-                return parseFloat(Number(qty).toFixed(3)) + ' กก.';
+                return parseFloat(Number(qty).toFixed(2)) + ' กก.';
             }
             break;
 
@@ -816,7 +842,7 @@ function formatSecondaryUnit(name, qty, returnRawText) {
             if (ING_UNITS[name] === 'กิโลกรัม' && qty < 1 && qty > 0) {
                 return Math.round(qty * 1000) + ' กรัม';
             }
-            return parseFloat(Number(qty).toFixed(3)) + ' ' + (ING_UNITS[name] || 'หน่วย');
+            return parseFloat(Number(qty).toFixed(2)) + ' ' + (ING_UNITS[name] || 'หน่วย');
     }
 
     if (parts.length === 0) {
@@ -830,58 +856,35 @@ function formatSecondaryUnit(name, qty, returnRawText) {
 
 // ===== AUTO-SYNC INGREDIENT TOGGLES =====
 // Automatically enable/disable ingredients based on stock vs formula
+// DEPRECATED: No longer automatically syncing to database. Let user control manually.
 function autoSyncIngredientToggles() {
-    if (typeof FORMULA === 'undefined' || typeof getAllRemainingStock !== 'function') return;
-
-    var remaining = getAllRemainingStock();
-    var disabled = window._disabledIngredientsCache || [];
-    try { if (!disabled.length) disabled = getDisabledIngredients() || []; } catch (e) { }
-    disabled = disabled.slice(); // clone
-    var changed = false;
-
-    Object.keys(FORMULA).forEach(function (ing) {
-        var reqQty = FORMULA[ing]; // amount needed per bowl
-        var rem = remaining[ing] || 0;
-        var idx = disabled.indexOf(ing);
-        var isDisabled = idx !== -1;
-
-        if (rem < reqQty) {
-            // Stock insufficient → auto-disable if not already
-            if (!isDisabled) {
-                disabled.push(ing);
-                changed = true;
-            }
-        } else {
-            // Stock OK → auto-enable if was disabled by system
-            // Only auto-enable; do not override manual-disable
-            // We can't distinguish manual vs auto in simple list, but:
-            // If stock is now sufficient, always restore availability
-            if (isDisabled) {
-                disabled.splice(idx, 1);
-                changed = true;
-            }
-        }
-    });
-
-    if (changed) {
-        saveDisabledIngredients(disabled);
-    }
+    return;
 }
 
-
 function renderRemaining() {
-    autoSyncIngredientToggles(); // auto-enable/disable based on stock
+    // autoSyncIngredientToggles(); // DEPRECATED: Don't change DB automatically
     var remaining = getRemaining();
     var keys = ALL_INGREDIENTS.slice(); // copy to mutate
 
-    // Sorting logic
+    // Sorting logic — disabled items treated as 0, truly empty items are even lower
+    var disabledForSort = getDisabledIngredients();
+
+    function getEffectiveRemaining(name) {
+        var rem = remaining[name].remaining;
+        var isDisabled = disabledForSort.indexOf(name) !== -1;
+        // Yellow (manually disabled but has stock): treat as 0 (slightly above red)
+        if (isDisabled && rem > 0) return 0.001;
+        // Red (truly empty) or normal: use actual value
+        return rem;
+    }
+
     if (window.remainingSortMode === 'asc') {
         keys.sort(function (a, b) {
-            return remaining[a].remaining - remaining[b].remaining;
+            return getEffectiveRemaining(a) - getEffectiveRemaining(b);
         });
     } else if (window.remainingSortMode === 'desc') {
         keys.sort(function (a, b) {
-            return remaining[b].remaining - remaining[a].remaining;
+            return getEffectiveRemaining(b) - getEffectiveRemaining(a);
         });
     }
 
@@ -946,16 +949,22 @@ function renderRemaining() {
     }
 
     // Update button UI
+    var sortBtn = document.getElementById('btn-sort-remaining');
     var sortIcon = document.getElementById('sort-remaining-icon');
-    var sortText = document.getElementById('sort-remaining-text');
-    if (sortIcon && sortText) {
+    if (sortBtn && sortIcon) {
         if (window.remainingSortMode === 'asc') {
-            sortIcon.innerText = '▼';
-            sortText.innerText = 'น้อยไปมาก';
+            sortIcon.innerText = '↑';
+            sortBtn.style.background = '#ffffff'; // White for ASC
+            sortBtn.style.color = '#000000';
+            sortBtn.style.borderColor = '#cccccc';
         } else {
-            sortIcon.innerText = '▲';
-            sortText.innerText = 'มากไปน้อย';
+            sortIcon.innerText = '↓';
+            sortBtn.style.background = '#eeeeee'; // Light Gray for DESC to show difference
+            sortBtn.style.color = '#333333';
+            sortBtn.style.borderColor = '#aaaaaa';
         }
+        sortIcon.style.fontWeight = '900'; // Make it thicker
+        sortIcon.style.color = '#000000';
     }
 
     var container = document.getElementById('remaining-grid');
@@ -966,43 +975,46 @@ function renderRemaining() {
     container.innerHTML = keys.map(function (name) {
         var d = remaining[name];
         var isEnabled = disabledIngredients.indexOf(name) === -1;
-        var opacityStyle = isEnabled ? '' : 'opacity: 0.5;';
 
-        var warning = d.remaining <= 1 ? '<div class="ing-warning">⚠️</div>' : '';
+        // Only show warning ⚠️ if stock is low, NOT empty, AND NOT manually disabled
+        var warning = (d.remaining <= 1 && d.remaining > 0 && isEnabled) ? '<div class="ing-warning">⚠️</div>' : '';
 
+        var outOfStockBadge = '';
         var toggleHtml = '';
+        var cardExtraStyle = '';
+
         if (d.remaining <= 0) {
-            // Automatically add to disabled list if not there already (and remaining is 0)
-            if (isEnabled) {
-                disabledIngredients.push(name);
-                saveDisabledIngredients(disabledIngredients);
-                isEnabled = false;
-                opacityStyle = 'opacity: 0.5;';
-            }
-            toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center; width:100%;">' +
-                '<div style="width:100%; display:flex; border-radius:4px; overflow:hidden;">' +
-                '<div style="flex:1; background:#e0e0e0; color:#000; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">มี</div>' +
-                '<div style="flex:1; background:#f44336; color:#fff; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem; font-weight:bold;">หมด</div>' +
+            // CASE 1: AUTO OUT OF STOCK (STOCK = 0)
+            cardExtraStyle = 'border: 2px solid #f44336;';
+            outOfStockBadge = '<div style="position:absolute; top:6px; right:6px; background:rgba(255,255,255,0.5); color:#f44336; font-family:\'Prompt\', sans-serif; font-size:0.72rem; font-weight:bold; padding:2px 7px; border-radius:4px; border:1.5px solid #f44336; line-height:1.4; z-index:2;">หมด</div>';
+            toggleHtml = '<div style="margin-top: 10px; display: flex; justify-content: center; width:100%;">' +
+                '<div style="width:100%; display:flex; position:relative; background:#f0f0f0; border-radius:20px; padding:3px; box-sizing:border-box;">' +
+                '<div style="flex:1; color:#999; text-align:center; padding:6px 0; font-family:\'Prompt\', sans-serif; font-size:0.9rem; z-index:1;">มี</div>' +
+                '<div style="flex:1; color:#999; text-align:center; padding:6px 0; font-family:\'Prompt\', sans-serif; font-size:0.9rem; z-index:1;">หมด</div>' +
+                '<div style="position:absolute; right:3px; top:3px; bottom:3px; width:calc(50% - 3px); background:#f44336; color:#fff; display:flex; align-items:center; justify-content:center; font-family:\'Prompt\', sans-serif; font-size:0.9rem; font-weight:bold; border-radius:18px; box-shadow:0 2px 4px rgba(244,67,54,0.3); z-index:2;">หมด</div>' +
+                '</div></div>';
+        } else if (!isEnabled) {
+            // CASE 2: MANUAL OUT OF STOCK (STOCK > 0 BUT DISABLED)
+            cardExtraStyle = 'border: 2px solid #FF9800;';
+            outOfStockBadge = ''; // Manual disable: no corner badge (yellow badge removed)
+            toggleHtml = '<div style="margin-top: 10px; display: flex; justify-content: center; width:100%; cursor:pointer;" onclick="toggleIngredient(\'' + name + '\')">' +
+                '<div style="width:100%; display:flex; position:relative; background:#f5f5f5; border-radius:20px; padding:3px; box-sizing:border-box;">' +
+                '<div style="flex:1; color:#999; text-align:center; padding:6px 0; font-family:\'Prompt\', sans-serif; font-size:0.9rem; z-index:1;">มี</div>' +
+                '<div style="flex:1; color:#999; text-align:center; padding:6px 0; font-family:\'Prompt\', sans-serif; font-size:0.9rem; z-index:1;">หมด</div>' +
+                '<div style="position:absolute; right:3px; top:3px; bottom:3px; width:calc(50% - 3px); background:#FF9800; color:#fff; display:flex; align-items:center; justify-content:center; font-family:\'Prompt\', sans-serif; font-size:0.9rem; font-weight:bold; border-radius:18px; box-shadow:0 2px 4px rgba(255,152,0,0.3); z-index:2;">หมด</div>' +
                 '</div></div>';
         } else {
-            // Active stock style
-            var mainChecked = isEnabled ? 'checked' : '';
-            if (isEnabled) {
-                toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center; width:100%; cursor:pointer;" onclick="toggleIngredient(\'' + name + '\')">' +
-                    '<div style="width:100%; display:flex; border-radius:4px; overflow:hidden;">' +
-                    '<div style="flex:1; background:#4BA1FB; color:#fff; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">มี</div>' +
-                    '<div style="flex:1; background:#e0e0e0; color:#000; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">หมด</div>' +
-                    '</div></div>';
-            } else {
-                toggleHtml = '<div style="margin-top: 12px; display: flex; justify-content: center; width:100%; cursor:pointer;" onclick="toggleIngredient(\'' + name + '\')">' +
-                    '<div style="width:100%; display:flex; border-radius:4px; overflow:hidden;">' +
-                    '<div style="flex:1; background:#e0e0e0; color:#000; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem;">มี</div>' +
-                    '<div style="flex:1; background:#f44336; color:#fff; text-align:center; padding:8px 0; font-family:\'Prompt\', sans-serif; font-size:1.1rem; font-weight:bold;">หมด</div>' +
-                    '</div></div>';
-            }
+            // CASE 3: ACTIVE STOCK
+            toggleHtml = '<div style="margin-top: 10px; display: flex; justify-content: center; width:100%; cursor:pointer;" onclick="toggleIngredient(\'' + name + '\')">' +
+                '<div style="width:100%; display:flex; position:relative; background:#f5f5f5; border-radius:20px; padding:3px; box-sizing:border-box;">' +
+                '<div style="flex:1; color:#999; text-align:center; padding:6px 0; font-family:\'Prompt\', sans-serif; font-size:0.9rem; z-index:1;">มี</div>' +
+                '<div style="flex:1; color:#999; text-align:center; padding:6px 0; font-family:\'Prompt\', sans-serif; font-size:0.9rem; z-index:1;">หมด</div>' +
+                '<div style="position:absolute; left:3px; top:3px; bottom:3px; width:calc(50% - 3px); background:#4BA1FB; color:#fff; display:flex; align-items:center; justify-content:center; font-family:\'Prompt\', sans-serif; font-size:0.9rem; font-weight:bold; border-radius:18px; box-shadow:0 2px 4px rgba(75,161,251,0.3); z-index:2;">มี</div>' +
+                '</div></div>';
         }
 
-        return '<div class="ing-card" style="' + opacityStyle + ' position:relative; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">' +
+        return '<div class="ing-card" style="' + cardExtraStyle + ' position:relative; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">' +
+            outOfStockBadge +
             '<div>' +
             warning +
             '<div class="ing-card-img">' + (ING_EMOJIS[name] || '📦') + '</div>' +
@@ -1290,10 +1302,10 @@ function downloadReportForDate(dateStr) {
         var displayUnit = unit === 'กิโลกรัม' ? 'กก.' : unit;
 
         var usedText = formatSecondaryUnit(name, usedQty, true);
-        if (!usedText) usedText = parseFloat(Number(usedQty).toFixed(3)) + ' ' + displayUnit;
+        if (!usedText) usedText = parseFloat(Number(usedQty).toFixed(2)) + ' ' + displayUnit;
 
         var remText = formatSecondaryUnit(name, rem, true);
-        if (!remText) remText = parseFloat(Number(rem).toFixed(3)) + ' ' + displayUnit;
+        if (!remText) remText = parseFloat(Number(rem).toFixed(2)) + ' ' + displayUnit;
 
         var bgColor = 'transparent';
         var textColor = '#000000';
@@ -1310,38 +1322,63 @@ function downloadReportForDate(dateStr) {
         }
 
         var shouldBuy = 0;
-        var targetStock = usedQty * 1.5; // Recommended stock is 1.5x of usage
+
+        // Fixed daily purchase amounts (user-specified)
+        var FIXED_DAILY = {
+            'เนื้อวัว': 18,    // 18 กก.
+            'น่องไก่': 15,    // 15 กก.
+            'ผักบุ้ง': 10,    // 5-10 กก. (upper end)
+            'ถั่วงอก': 10,    // 5-10 กก. (upper end)
+            'กุ้ง': 3,        // 3 กก.
+            'หมึก': 1,        // 1 กก.
+            'ไข่': 3          // 3 แผง
+        };
+
+        // Formula-based amounts for noodles, ลูกชิ้น (200 bowls)
+        var FORMULA_200 = {
+            'เส้นเล็ก': (55 / 1000) * 200,
+            'เส้นใหญ่': (25 / 500) * 200,
+            'เส้นหมี่ขาว': (25 / 500) * 200,
+            'เส้นหมี่หยก': (1 / 4) * 200,
+            'เส้นหมี่เหลือง': (1 / 4) * 200,
+            'ลูกชิ้น': (2 / 90) * 200
+        };
+
+        var targetStock = 0;
+        if (FIXED_DAILY[name] !== undefined) {
+            targetStock = FIXED_DAILY[name];
+        } else if (FORMULA_200[name] !== undefined) {
+            targetStock = FORMULA_200[name];
+        }
+
         if (targetStock > 0) {
-            // Always suggest buying enough to maintain target stock, ignoring what's remaining
-            // or we suggest `targetStock - rem`. If user wants it in *every* row, maybe they just want 
-            // the full target amount or `targetStock - rem` just clamped to 0?
-            // "ช่องควรซื้อเพิ่มต้องมีทุกช่อง ของรายการวัตถุดิบ"
-            // Let's just set shouldBuy = targetStock so it always shows a positive amount based on usage.
-            // Wait, if it's "Should buy", usually it's `(used * 1.5) - remaining`. If remaining is very high, it might be <= 0.
-            // Let's just calculate `targetStock` and if it's > 0, show it.
-            // To ensure it shows *something* for every row, if `targetStock` is 0, we can just show "0".
-            // Let's use `targetStock - rem` but if it's <= 0 and they want it in every row, maybe just `targetStock`?
-            // The safest interpretation for "must have every row" is to calculate the suggestion based purely on target stock.
-            shouldBuy = targetStock;
+            shouldBuy = targetStock - rem;
+            if (shouldBuy < 0) shouldBuy = 0;
         }
 
         var shouldBuyText = '-';
         if (shouldBuy > 0) {
-            shouldBuyText = Math.ceil(shouldBuy) + ' ' + displayUnit;
-        } else {
-            shouldBuyText = '0 ' + displayUnit;
+            // For ไข่, use แผง (whole number since unit is แผง)
+            if (name === 'ไข่') {
+                shouldBuyText = Math.ceil(shouldBuy) + ' แผง';
+            } else {
+                shouldBuyText = Math.ceil(shouldBuy) + ' ' + displayUnit;
+            }
+        } else if (targetStock > 0) {
+            // Has a target but stock is already enough
+            shouldBuyText = '0 ' + (name === 'ไข่' ? 'แผง' : displayUnit);
         }
 
         html += '<tr>';
         html += '<td style="padding:6px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
         var inText = formatSecondaryUnit(name, inQty, true);
         if (name === 'กุ้ง' || name === 'น่องไก่') {
-            inText = parseFloat(Number(inQty).toFixed(3)) + ' กก.';
+            inText = parseFloat(Number(inQty).toFixed(2)) + ' กก.';
         }
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + inText + '</td>';
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + usedText + '</td>';
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; background:' + bgColor + '; font-weight:' + fontWeight + '; color:' + textColor + ';">' + remText + '</td>';
-        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:bold; color:#D32F2F;">' + shouldBuyText + '</td>';
+        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:bold; color:#000000;">' + shouldBuyText + '</td>';
         html += '</tr>';
     });
     html += '</table>';

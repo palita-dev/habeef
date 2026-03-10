@@ -23,8 +23,10 @@
         </div>
         <div class="section-bar" style="display:flex; justify-content:space-between; align-items:center;">
             <span>บันทึกวัตถุดิบเข้าวันนี้</span>
-            <button class="btn btn-red" onclick="showStockInForm()"
-                style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; padding: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">+</button>
+            <button class="btn btn-green" onclick="showStockInForm()"
+                style="border-radius:20px; padding:6px 16px; font-family:'Prompt', sans-serif; font-size:0.85rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; background:#4CAF50; color:#fff; border:none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <span style="font-size:1.2rem; line-height:1;">+</span>วัตถุดิบ
+            </button>
         </div>
         <div class="page-body">
             <div id="stockin-list-container">
@@ -181,13 +183,12 @@
             <span>วัตถุดิบคงเหลือ</span>
             <div style="display:flex; gap:8px;">
                 <button onclick="showStockOutForm()"
-                    style="background:#D32F2F; border:none; border-radius:20px; padding:4px 12px; font-family:'Prompt', sans-serif; font-size:0.8rem; cursor:pointer; color:#fff; display:flex; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="font-weight:bold; font-size:1.1rem; margin-right:4px;">-</span> เอาออก
+                    style="background:#D32F2F; border:none; border-radius:20px; padding:4px 16px; font-family:'Prompt', sans-serif; font-size:0.85rem; font-weight:700; cursor:pointer; color:#fff; display:flex; align-items:center; gap:2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span style="font-size:1.3rem; line-height:1;">-</span>วัตถุดิบ
                 </button>
                 <button id="btn-sort-remaining" onclick="toggleRemainingSort()"
-                    style="background:#fff; border:1px solid #ddd; border-radius:20px; padding:4px 12px; font-family:'Prompt', sans-serif; font-size:0.8rem; cursor:pointer; color:#555; display:flex; align-items:center; gap:4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <span id="sort-remaining-icon" style="font-size:0.75rem; color:#777;">&#9650;</span>
-                    <span id="sort-remaining-text">น้อยไปมาก</span>
+                    style="background:#fff; border:1px solid #ccc; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding:0;">
+                    <span id="sort-remaining-icon" style="font-size:1.5rem; color:#333; font-weight:900;">↑</span>
                 </button>
             </div>
         </div>
@@ -306,6 +307,8 @@
                 <div id="acc-role" style="font-size: 0.9rem; color: #999; margin-bottom: 20px;">เจ้าของร้าน</div>
                 <button class="btn btn-red btn-full" onclick="logout()" style="width:100%;">ออกจากระบบ</button>
             </div>
+
+            <!-- /Reset Data Card removed -->
         </div>
     </div>
 
@@ -383,8 +386,8 @@
 
     <div id="toast" class="toast"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/owner.js"></script>
+    <script src="js/auth.js?v=202603081850"></script>
+    <script src="js/owner.js?v=202603081850"></script>
 </body>
 
 </html>

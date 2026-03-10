@@ -24,6 +24,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 .print-only {
@@ -333,6 +334,46 @@ input[type="number"] {
 .form-input:focus {
     outline: none;
     border-color: #FFC107;
+}
+
+.password-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    line-height: 0;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    color: #888;
+    padding: 0 4px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    user-select: none;
+    transition: opacity 0.1s;
+}
+
+.password-toggle:active {
+    opacity: 0.6;
+}
+
+.form-input.password-input {
+    width: 100%;
+    padding-right: 44px;
+    box-sizing: border-box;
 }
 
 .form-select {
@@ -788,6 +829,7 @@ input:checked + .toggle-slider:before {
 
 .status-ok {
     /* No special background, default text */
+    background: transparent;
 }
 
 .status-low {
@@ -854,7 +896,7 @@ input:checked + .toggle-slider:before {
 .ing-warning {
     position: absolute;
     top: -4px;
-    right: -4px;
+    left: -4px;
     font-size: 1.3rem;
 }
 

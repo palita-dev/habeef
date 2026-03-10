@@ -52,7 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 
                 $name = isset($u['name']) ? $u['name'] : $u['username'];
                 $email = isset($u['email']) ? $u['email'] : null;
-                $stmt->bind_param("sssss", $u['username'], $u['password'], $u['role'], $name, $email);
+                
+                // Hash password with SHA-256 if not already hashed (64-char hex = already hashed)
+                $rawPass = $u['password'];
+                $passwordToSave = (strlen($rawPass) === 64 && ctype_xdigit($rawPass))
+                    ? $rawPass
+                    : hash('sha256', $rawPass);
+                
+                $stmt->bind_param("sssss", $u['username'], $passwordToSave, $u['role'], $name, $email);
                 $stmt->execute();
             }
             $stmt->close();

@@ -3,7 +3,7 @@ const MENU_ITEMS = [
   {
     id: 'nam-khon',
     name: 'ก๋วยเตี๋ยวน้ำข้น',
-    desc: '(เนื้อวัว / น่องไก่) +ลูกชิ้น',
+    desc: 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น',
     price: 50,
     emoji: '🍜',
     image: 'images/ก๋วยเตี๋ยวน้ำข้น.jpg',
@@ -14,7 +14,7 @@ const MENU_ITEMS = [
   {
     id: 'haeng',
     name: 'ก๋วยเตี๋ยวแห้ง',
-    desc: '(เนื้อวัว / น่องไก่) +ลูกชิ้น',
+    desc: 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น',
     price: 50,
     emoji: '🥢',
     image: 'images/ก๋วยเตี๋ยวแห้ง.jpg',
@@ -25,7 +25,7 @@ const MENU_ITEMS = [
   {
     id: 'tom-yam',
     name: 'ก๋วยเตี๋ยวต้มยำ',
-    desc: '(เนื้อวัว / น่องไก่)',
+    desc: 'เนื้อสด <br> เนื้อเปื่อย <br> น่องไก่',
     price: 60,
     emoji: '🌶️',
     image: 'images/ก๋วยเตี๋ยวต้มยำ.jpg',
@@ -47,7 +47,7 @@ const MENU_ITEMS = [
   {
     id: 'kao-lao',
     name: 'เกาเหลา',
-    desc: '(เนื้อวัว / น่องไก่) +ลูกชิ้น',
+    desc: 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น',
     price: 50,
     emoji: '🥣',
     image: 'images/เกาเหลา.jpg',
@@ -83,7 +83,7 @@ const VEGGIE_OPTIONS = [
 const EXTRA_OPTIONS = [
   { id: 'extra-none', name: 'ไม่สั่งเพิ่ม', price: 0, ingredient: null, isNone: true },
   { id: 'extra-egg', name: 'ไข่', price: 10, ingredient: 'ไข่' },
-  { id: 'extra-kiao', name: 'เกี๊ยว', price: 10, ingredient: null },
+
   { id: 'extra-lc', name: 'ลูกชิ้น', price: 10, ingredient: 'ลูกชิ้น' },
   { id: 'extra-nk', name: 'น่องไก่', price: 20, ingredient: 'น่องไก่' },
   { id: 'extra-ns', name: 'เนื้อสด', price: 20, ingredient: 'เนื้อวัว' },
@@ -115,7 +115,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   loadCartForTable();
-  renderMenu();
+  
+  // Wait for initial sync from server before first render
+  // This prevents ingredients showing as "Sold Out" (หมด) incorrectly due to empty cache
+  syncFromServer().then(function() {
+    renderMenu();
+  });
+
+  // Auto-refresh menu periodically if on the menu page
+  setInterval(function() {
+    var menuPage = document.getElementById('page-menu');
+    if (menuPage && menuPage.classList.contains('active')) {
+      renderMenu();
+    }
+  }, 10000); // Sync is every 3s, so 10s is reasonable for UI refresh
 });
 
 // ===== UTILITY =====

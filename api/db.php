@@ -12,7 +12,7 @@ if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['SERVER_ADDR'] === '127.0.
     $host = '127.0.0.1';
     $db_user = 'root';
     $db_pass = '';
-    $db_name = 'habeef';
+    $db_name = 'appvizac_habeefnoodle';
 } else {
     $host = 'localhost';
     $db_user = 'appvizac_habeefnoodle';

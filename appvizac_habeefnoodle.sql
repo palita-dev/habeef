@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Mar 06, 2026 at 02:30 AM
+-- Generation Time: Mar 09, 2026 at 12:41 AM
 -- Server version: 10.6.17-MariaDB
 -- PHP Version: 7.4.30
 
@@ -91,10 +91,10 @@ CREATE TABLE `menus` (
 --
 
 INSERT INTO `menus` (`menu_id`, `menu_name`, `description`, `base_price`, `emoji`, `has_noodle`, `has_meat`, `is_seafood`) VALUES
-('haeng', 'ก๋วยเตี๋ยวแห้ง', '(เนื้อวัว / น่องไก่) +ลูกชิ้น', 50.00, '🥢', 1, 1, 0),
-('kao-lao', 'เกาเหลา', '(เนื้อวัว / น่องไก่) +ลูกชิ้น', 50.00, '🥣', 0, 1, 0),
-('nam-khon', 'ก๋วยเตี๋ยวน้ำข้น', '(เนื้อวัว / น่องไก่) +ลูกชิ้น', 50.00, '🍜', 1, 1, 0),
-('tom-yam', 'ก๋วยเตี๋ยวต้มยำ', '(เนื้อวัว / น่องไก่) +ลูกชิ้น', 60.00, '🌶️', 1, 1, 0),
+('haeng', 'ก๋วยเตี๋ยวแห้ง', 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น', 50.00, '🥢', 1, 1, 0),
+('kao-lao', 'เกาเหลา', 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น', 50.00, '🥣', 0, 1, 0),
+('nam-khon', 'ก๋วยเตี๋ยวน้ำข้น', 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น', 50.00, '🍜', 1, 1, 0),
+('tom-yam', 'ก๋วยเตี๋ยวต้มยำ', 'เนื้อสด <br> เนื้อเปื่อย <br> น่องไก่', 60.00, '🌶️', 1, 1, 0),
 ('tom-yam-seafood', 'ก๋วยเตี๋ยวต้มยำ ทะเล', 'กุ้ง + หมึก + ลูกชิ้น', 95.00, '🦐', 1, 0, 1);
 
 -- --------------------------------------------------------
@@ -132,29 +132,9 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`order_id`, `guest_id`, `table_id`, `total_price`, `status`, `created_at`, `completed_at`) VALUES
-('ord_69a3f447a0ce4', 'GMM7GXTVDOHT', '', 140.00, 'cancelled', '2026-03-01 15:09:43', NULL),
-('ord_69a3f50d174e6', 'GMM7H1P6SX3H', '', 185.00, 'cancelled', '2026-03-01 15:13:01', NULL),
-('ord_69a3f53da561d', 'GMM7GY13ZM5O', '', 220.00, 'cancelled', '2026-03-01 15:13:49', NULL),
-('ord_69a3f5d757874', 'GMM7GY13ZM5O', '', 100.00, 'cancelled', '2026-03-01 15:16:23', NULL),
-('ord_69a3f5f10aa8c', 'GMM7H0EY9RWK', '', 330.00, 'cancelled', '2026-03-01 15:16:49', NULL),
-('ord_69a3f692c0935', 'GMM7H1P6SX3H', '', 140.00, 'cancelled', '2026-03-01 15:19:30', NULL),
-('ord_69a3f6ff6b1cf', 'GMM7H1P6SX3H', '', 730.00, 'cancelled', '2026-03-01 15:21:19', NULL),
-('ord_69a3fcb2d24a3', 'GMM7GZH0OPCW', '', 90.00, 'cancelled', '2026-03-01 15:45:38', NULL),
-('ord_69a5910e9b901', 'GMM7SJO1QEQV', '', 60.00, 'cancelled', '2026-03-02 20:30:54', NULL),
-('ORD-MMBOKIT5', 'GMM7GWBDNVQ9', '1', 60.00, 'paid', '2026-03-04 13:53:37', NULL),
-('ORD-MMBOQ6J5', 'GMM7GWBDNVQ9', '1', 60.00, 'paid', '2026-03-04 13:58:01', NULL),
-('ORD-MMBPDEXJ', 'GMMBPCCFOKXA', '1', 170.00, 'paid', '2026-03-04 14:16:05', NULL),
-('ORD-MMBPFTIX', 'GMM7GY13ZM5O', '1', 15680.00, 'cancelled', '2026-03-04 14:17:57', NULL),
-('ORD-MMBPGUCL', 'GMMBPAUA95SS', '2', 60.00, 'served', '2026-03-04 14:18:45', NULL),
-('ORD-MMBPID4E', 'GMMBPFYBH8TA', '1', 80.00, 'cancelled', '2026-03-04 14:19:56', NULL),
-('ORD-MMBPK3ZG', 'GMMBPCE2P4Q5', '1', 29970.00, 'served', '2026-03-04 14:21:18', NULL),
-('ORD-MMBPO11I', 'GMMBPCE2P4Q5', '8', 1500.00, 'paid', '2026-03-04 14:24:20', NULL),
-('ORD-MMBPPGG0', 'GMMBPCE2P4Q5', 'กลับบ้านคิว 1', 50.00, 'paid', '2026-03-04 14:25:27', NULL),
-('ORD-MMBPQM2W', 'GMMBPCE2P4Q5', 'กลับบ้านคิว 2', 95.00, 'served', '2026-03-04 14:26:21', NULL),
-('ORD-MMBQ2EZT', 'GMMBPCE2P4Q5', 'กลับบ้านคิว 3', 115.00, 'cancelled', '2026-03-04 14:35:32', NULL),
-('ORD-MMBQ2GPP', 'GMM7GWBDNVQ9', 'กลับบ้านคิว 4', 50.00, 'cancelled', '2026-03-04 14:35:34', NULL),
-('ORD-MMBTU8M0', 'GMM7GWHXVPAQ', '8', 210.00, 'paid', '2026-03-04 16:21:09', NULL),
-('ORD-MMBU977I', 'GMM7GWHXVPAQ', '8', 1400.00, 'paid', '2026-03-04 16:32:47', NULL);
+('ORD-MMGHY9QA', 'GMMGG1M94RPA', '1', 130.00, 'pending', '2026-03-07 22:47:12', NULL),
+('ORD-MMGHZW32', 'GMMGG1M94RPA', '1', 1300.00, 'pending', '2026-03-07 22:48:28', NULL),
+('ORD-MMGI4100', 'GMMGG1M94RPA', '1', 630.00, 'pending', '2026-03-07 22:51:41', NULL);
 
 -- --------------------------------------------------------
 
@@ -178,23 +158,9 @@ CREATE TABLE `order_details` (
 --
 
 INSERT INTO `order_details` (`order_detail_id`, `order_id`, `menu_id`, `quantity`, `unit_price`, `total_price`, `options_text`, `options_json`) VALUES
-(20, 'ORD-MMBOKIT5', 'nam-khon', 1, 50.00, 60.00, 'เส้นใหญ่, เนื้อสด, ไม่ใส่ผัก, ไข่ +10฿', '{\"เส้นใหญ่\":0.05,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.022222222222222,\"ไข่\":0.033333333333333}'),
-(21, 'ORD-MMBOQ6J5', 'nam-khon', 1, 50.00, 60.00, 'เส้นหมี่หยก, เนื้อเปื่อย, ไม่ใส่ผัก, เกี๊ยว +10฿', '{\"เส้นหมี่หยก\":0.25,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.022222222222222}'),
-(22, 'ORD-MMBPDEXJ', 'haeng', 1, 50.00, 100.00, 'เส้นหมี่ขาว, เนื้อเปื่อย, ไข่ +10฿, เกี๊ยว +10฿, ลูกชิ้น +10฿, เนื้อสด +20฿', '{\"เส้นหมี่ขาว\":0.05,\"เนื้อวัว\":0.12,\"ลูกชิ้น\":0.044444444444444,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333}'),
-(23, 'ORD-MMBPDEXJ', 'haeng', 1, 50.00, 70.00, 'เส้นหมี่ขาว, ผสมเส้นหมี่หยก, เนื้อสด, เกี๊ยว +10฿, ลูกชิ้น +10฿', '{\"เส้นหมี่ขาว\":0.05,\"เส้นหมี่หยก\":0.25,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.044444444444444,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035}'),
-(24, 'ORD-MMBPFTIX', 'kao-lao', 112, 50.00, 140.00, 'เนื้อสด, ไข่ +10฿, เกี๊ยว +10฿, ลูกชิ้น +10฿, น่องไก่ +20฿, เนื้อสด +20฿, เนื้อเปื่อย +20฿', '{\"เนื้อวัว\":0.18,\"ลูกชิ้น\":0.044444444444444,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"น่องไก่\":0.08}'),
-(25, 'ORD-MMBPGUCL', 'nam-khon', 1, 50.00, 60.00, 'เส้นเล็ก, เนื้อสด, ไข่ +10฿', '{\"เส้นเล็ก\":0.055,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333}'),
-(26, 'ORD-MMBPID4E', 'nam-khon', 1, 50.00, 80.00, 'เส้นเล็ก, ผสมเส้นหมี่ขาว, เนื้อเปื่อย, ไม่ใส่ผัก, ไข่ +10฿, เกี๊ยว +10฿, ลูกชิ้น +10฿', '{\"เส้นเล็ก\":0.055,\"เส้นหมี่ขาว\":0.05,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.044444444444444,\"ไข่\":0.033333333333333}'),
-(27, 'ORD-MMBPK3ZG', 'tom-yam-seafood', 162, 95.00, 185.00, 'เส้นเล็ก, ผสมเส้นหมี่เหลือง, ไข่ +10฿, เกี๊ยว +10฿, ลูกชิ้น +10฿, น่องไก่ +20฿, เนื้อสด +20฿, เนื้อเปื่อย +20฿', '{\"เส้นเล็ก\":0.055,\"เส้นหมี่เหลือง\":0.25,\"กุ้ง\":0.08,\"หมึก\":0.045,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"ลูกชิ้น\":0.022222222222222,\"น่องไก่\":0.08,\"เนื้อวัว\":0.12}'),
-(28, 'ORD-MMBPO11I', 'tom-yam', 10, 60.00, 150.00, 'เส้นเล็ก, เนื้อสด, ไข่ +10฿, เกี๊ยว +10฿, ลูกชิ้น +10฿, น่องไก่ +20฿, เนื้อสด +20฿, เนื้อเปื่อย +20฿', '{\"เส้นเล็ก\":0.055,\"เนื้อวัว\":0.18,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"ลูกชิ้น\":0.022222222222222,\"น่องไก่\":0.08}'),
-(29, 'ORD-MMBPPGG0', 'kao-lao', 1, 50.00, 50.00, 'เนื้อสด', '{\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035}'),
-(30, 'ORD-MMBPQM2W', 'tom-yam-seafood', 1, 95.00, 95.00, 'เส้นเล็ก', '{\"เส้นเล็ก\":0.055,\"กุ้ง\":0.08,\"หมึก\":0.045,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035}'),
-(31, 'ORD-MMBQ2EZT', 'tom-yam-seafood', 1, 95.00, 115.00, 'เส้นเล็ก, ไม่ใส่ผัก, เกี๊ยว +10฿, ลูกชิ้น +10฿', '{\"เส้นเล็ก\":0.055,\"กุ้ง\":0.08,\"หมึก\":0.045,\"ลูกชิ้น\":0.022222222222222}'),
-(32, 'ORD-MMBQ2GPP', 'nam-khon', 1, 50.00, 50.00, 'เส้นใหญ่, น่องไก่', '{\"เส้นใหญ่\":0.05,\"น่องไก่\":0.08,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035}'),
-(33, 'ORD-MMBTU8M0', 'haeng', 1, 50.00, 80.00, 'เส้นใหญ่, ผสมเส้นหมี่หยก, เนื้อเปื่อย, ไข่ +10฿, น่องไก่ +20฿', '{\"เส้นใหญ่\":0.05,\"เส้นหมี่หยก\":0.25,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"น่องไก่\":0.08}'),
-(34, 'ORD-MMBTU8M0', 'tom-yam', 1, 60.00, 70.00, 'เส้นหมี่ขาว, เนื้อสด, ไม่ใส่ผัก, ลูกชิ้น +10฿', '{\"เส้นหมี่ขาว\":0.05,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.022222222222222}'),
-(35, 'ORD-MMBTU8M0', 'nam-khon', 1, 50.00, 60.00, 'เส้นใหญ่, เนื้อเปื่อย, ไม่ใส่ผัก, ลูกชิ้น +10฿', '{\"เส้นใหญ่\":0.05,\"เนื้อวัว\":0.06,\"ลูกชิ้น\":0.044444444444444}'),
-(36, 'ORD-MMBU977I', 'nam-khon', 10, 50.00, 140.00, 'เส้นเล็ก, เนื้อสด, ไข่ +10฿, เกี๊ยว +10฿, ลูกชิ้น +10฿, น่องไก่ +20฿, เนื้อสด +20฿, เนื้อเปื่อย +20฿', '{\"เส้นเล็ก\":0.055,\"เนื้อวัว\":0.18,\"ลูกชิ้น\":0.044444444444444,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"น่องไก่\":0.08}');
+(1, 'ORD-MMGHY9QA', 'nam-khon', 1, 50.00, 130.00, 'เส้นหมี่เหลือง, เนื้อสด, ไข่ +10฿, เกี๊ยว +10฿, น่องไก่ +20฿, เนื้อสด +20฿, เนื้อเปื่อย +20฿', '{\"เส้นหมี่เหลือง\":0.25,\"เนื้อวัว\":0.18,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"น่องไก่\":0.08}'),
+(2, 'ORD-MMGHZW32', 'haeng', 10, 50.00, 130.00, 'เส้นเล็ก, เนื้อสด, ไข่ +10฿, เกี๊ยว +10฿, น่องไก่ +20฿, เนื้อสด +20฿, เนื้อเปื่อย +20฿', '{\"เส้นเล็ก\":0.055,\"เนื้อวัว\":0.18,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333,\"น่องไก่\":0.08}'),
+(3, 'ORD-MMGI4100', 'nam-khon', 7, 50.00, 90.00, 'เส้นใหญ่, น่องไก่, ไข่ +10฿, เกี๊ยว +10฿, น่องไก่ +20฿', '{\"เส้นใหญ่\":0.05,\"น่องไก่\":0.16,\"ลูกชิ้น\":0.022222222222222,\"ผักบุ้ง\":0.015,\"ถั่วงอก\":0.035,\"ไข่\":0.033333333333333}');
 
 -- --------------------------------------------------------
 
@@ -224,6 +190,25 @@ CREATE TABLE `stock_in` (
   `user_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `stock_in`
+--
+
+INSERT INTO `stock_in` (`stock_in_id`, `ingredient_name`, `quantity`, `unit`, `stock_in_date`, `user_id`) VALUES
+(1, 'เส้นเล็ก', 2.00, 'ถุง', '2026-03-07 03:43:43', NULL),
+(2, 'เส้นใหญ่', 2.00, 'ถุง', '2026-03-07 21:34:56', NULL),
+(3, 'เส้นหมี่ขาว', 2.00, 'ถุง', '2026-03-07 21:35:00', NULL),
+(4, 'เส้นหมี่หยก', 2.00, 'ถุง', '2026-03-07 21:35:04', NULL),
+(5, 'เส้นหมี่เหลือง', 2.00, 'ถุง', '2026-03-07 21:35:42', NULL),
+(6, 'ผักบุ้ง', 2.00, 'กิโลกรัม', '2026-03-07 21:35:46', NULL),
+(7, 'ถั่วงอก', 2.00, 'กิโลกรัม', '2026-03-07 21:35:52', NULL),
+(8, 'ลูกชิ้น', 2.00, 'ถุง', '2026-03-07 21:35:59', NULL),
+(9, 'เนื้อวัว', 2.00, 'กิโลกรัม', '2026-03-07 21:36:06', NULL),
+(10, 'กุ้ง', 2.00, 'กิโลกรัม', '2026-03-07 21:36:10', NULL),
+(11, 'หมึก', 2.00, 'กิโลกรัม', '2026-03-07 21:36:15', NULL),
+(12, 'ไข่', 2.00, 'แผง', '2026-03-07 21:36:31', NULL),
+(13, 'น่องไก่', 2.00, 'กิโลกรัม', '2026-03-07 21:36:39', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -238,6 +223,14 @@ CREATE TABLE `stock_out` (
   `stock_out_date` datetime DEFAULT current_timestamp(),
   `user_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `stock_out`
+--
+
+INSERT INTO `stock_out` (`stock_out_id`, `ingredient_name`, `quantity`, `unit`, `stock_out_date`, `user_id`) VALUES
+(1, 'เส้นเล็ก', 1.00, 'ถุง', '2026-03-07 03:54:02', NULL),
+(2, 'ผักบุ้ง', 1.00, 'กิโลกรัม', '2026-03-08 02:13:17', NULL);
 
 -- --------------------------------------------------------
 
@@ -262,18 +255,22 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `full_name` varchar(100) NOT NULL,
   `role` enum('admin','owner','staff') NOT NULL DEFAULT 'staff',
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `email` varchar(255) DEFAULT NULL,
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL,
+  `security_question` varchar(255) DEFAULT NULL,
+  `security_answer` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `created_at`) VALUES
-(1, 'admin', '123', 'Admin ผู้ดูแลระบบ', 'admin', '2026-03-02 17:25:36'),
-(2, 'Nana', '1234', 'Nana', 'staff', '2026-03-02 17:25:36'),
-(5, 'palita', '123', 'palita', 'owner', '2026-03-02 20:13:02'),
-(18, 'tata', 'abc456', 'tata', 'staff', '2026-03-04 16:44:17');
+INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `created_at`, `email`, `reset_token`, `reset_expires`, `security_question`, `security_answer`) VALUES
+(1, 'admin', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'Admin ผู้ดูแลระบบ', 'admin', '2026-03-02 17:25:36', 'palita.ja@rmutsvmail.com', NULL, NULL, 'เบอร์โทรศัพท์ร้านคือเบอร์อะไร?', '000000'),
+(249, 'nana', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'nana', 'staff', '2026-03-08 18:25:57', NULL, NULL, NULL, NULL, NULL),
+(258, 'palita', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'palita', 'owner', '2026-03-08 19:15:47', NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -364,19 +361,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `cart_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `cart_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `order_detail_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `order_detail_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `order_ingredient_usages`
@@ -388,19 +385,19 @@ ALTER TABLE `order_ingredient_usages`
 -- AUTO_INCREMENT for table `stock_in`
 --
 ALTER TABLE `stock_in`
-  MODIFY `stock_in_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `stock_in_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `stock_out`
 --
 ALTER TABLE `stock_out`
-  MODIFY `stock_out_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `stock_out_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=278;
 
 --
 -- Constraints for dumped tables

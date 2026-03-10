@@ -9,8 +9,8 @@ var SERVER_BASE = (function () {
 // ===== DISABLED INGREDIENTS — stored in MySQL via ingredients.php =====
 window._disabledIngredientsCache = null;
 
-function getDisabledIngredients(callback) {
-    if (window._disabledIngredientsCache !== null) {
+function getDisabledIngredients(callback, force) {
+    if (window._disabledIngredientsCache !== null && !force) {
         if (callback) callback(window._disabledIngredientsCache);
         return window._disabledIngredientsCache;
     }
@@ -95,7 +95,11 @@ function syncFromServer() {
         }
     });
 
-    return Promise.all([p1, p2, p3, p4]);
+    var p5 = new Promise(function (resolve) {
+        getDisabledIngredients(resolve, true);
+    });
+
+    return Promise.all([p1, p2, p3, p4, p5]);
 }
 
 // ----- SHA-256 Hashing Function -----
@@ -252,7 +256,10 @@ function requireAuth(allowedRoles) {
 function addUser(username, password, role, name) {
     var users = getUsers();
     if (users.find(function (u) { return u.username === username; })) return false;
-    var hashedPassword = sha256(password);
+    // Only hash if not already a 64-char hex hash
+    var hashedPassword = (password.length === 64 && /^[0-9a-f]+$/i.test(password))
+        ? password
+        : sha256(password);
     users.push({ username: username, password: hashedPassword, role: role, name: name || username });
     saveUsers(users);
     return true;
@@ -267,8 +274,11 @@ function updateUser(oldUsername, newData) {
     var updatedUser = Object.assign({}, users[idx]);
     
     // Hash new password if provided, otherwise keep existing
+    // Only hash if not already a 64-char hex hash
     if (newData.password) {
-        updatedUser.password = sha256(newData.password);
+        updatedUser.password = (newData.password.length === 64 && /^[0-9a-f]+$/i.test(newData.password))
+            ? newData.password
+            : sha256(newData.password);
     }
     
     // Apply other role/username/name updates
@@ -534,6 +544,9 @@ function getIngredientUsage() {
     // Derive ingredient usage from cached orders
     var usage = [];
     _ordersCache.forEach(function (order) {
+        // ONLY deduct if order is served or completed
+        if (order.status !== 'served' && order.status !== 'completed') return;
+
         if (order.items) {
             var ingMap = {};
             order.items.forEach(function (item) {

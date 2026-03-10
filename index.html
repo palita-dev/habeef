@@ -2,8 +2,14 @@
 <html lang="th">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        // If not a table-specific QR link (no 'q' param), redirect to staff login
+        if (!window.location.search.includes('q=')) {
+            window.location.href = "login.html?s=c3RhZmZfbG9naW4lN0NoYWJlZWZfc2VjcmV0XzIwMjQ%3D";
+        }
+    </script>
   <title>ก๋วยเตี๋ยวฮาบีฟ - สั่งอาหาร</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,7 +59,7 @@
       </button>
 
       <div class="landing-footer">
-        เปิดบริการ 10:00 - 20:00 น.
+        เปิดบริการ 12:00 - 04:00 น.
       </div>
 
     </div>
@@ -280,11 +286,11 @@
     </div>
   </div>
 
-  <script src="js/auth.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/navigation.js"></script>
-  <script src="js/cart.js"></script>
-  <script src="js/order.js"></script>
+  <script src="js/auth.js?v=202603081850"></script>
+  <script src="js/app.js?v=202603081850"></script>
+  <script src="js/navigation.js?v=202603081850"></script>
+  <script src="js/cart.js?v=202603081850"></script>
+  <script src="js/order.js?v=202603081850"></script>
 </body>
 
 </html>
