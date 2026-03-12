@@ -18,42 +18,7 @@ const FORMULA = {
 
 var editingCartIndex = -1;
 
-function editCartItem(index) {
-    editingCartIndex = index;
-    var item = cart[index];
-    goToCustomize(item.menuId);
-
-    // Attempt to pre-fill the form
-    setTimeout(function () {
-        var form = document.getElementById('customize-form');
-        if (!form) return;
-
-        var inputs = form.querySelectorAll('input[type="radio"], input[type="checkbox"]');
-        inputs.forEach(function (input) {
-            var labelSpan = input.closest('.option-item').querySelector('.option-label');
-            var labelText = labelSpan ? labelSpan.textContent.replace(' (หมด)', '').trim() : '';
-            var priceSpan = input.closest('.option-item').querySelector('.option-price');
-            var fullText = labelText;
-            if (priceSpan) fullText += ' ' + priceSpan.textContent.trim();
-
-            // special cases
-            if (input.name === 'mixed-noodle') {
-                fullText = 'ผสม' + labelText;
-            }
-            if (input.name === 'veggie' && input.value === 'veg-no') {
-                fullText = 'ไม่ใส่ผัก';
-            }
-
-            if (item.details.indexOf(fullText) > -1 || (item.details.length === 0 && input.value === 'extra-none')) {
-                input.checked = true;
-                if (input.type === 'radio') input.dataset.wasChecked = "true";
-                if (typeof updateMixedNoodleState === 'function' && input.name === 'noodle') updateMixedNoodleState();
-            }
-        });
-
-        if (typeof validateCustomizeForm === 'function') validateCustomizeForm();
-    }, 100);
-}
+// function editCartItem(index) { removed - now in app.js
 
 function addToCart() {
     if (!currentMenuItem) return;
@@ -166,22 +131,32 @@ function addToCart() {
     });
 
     if (editingCartIndex > -1) {
-        if (existingIndex > -1) {
-            cart[existingIndex].qty += cart[editingCartIndex].qty;
-            cart.splice(editingCartIndex, 1);
+        // Edit existing item
+        var editItem = cart[editingCartIndex];
+        var itemIdx = editingCartIndex; // Store for toast and highlight
+        if (editItem && editItem.cartId) {
+            // Update on server using cart_id
+            serverCartAction('update_item', { cart_id: editItem.cartId, item: { totalPrice: totalPrice, details: details, ingredients: ingredients } });
         } else {
+            // Fallback: full sync
             cart[editingCartIndex].totalPrice = totalPrice;
             cart[editingCartIndex].details = details;
             cart[editingCartIndex].ingredients = ingredients;
+            saveCart();
         }
+
+        // Setup highlight and toast before clearing index
+        highlightCartIndex = itemIdx;
+        setTimeout(function () {
+            highlightCartIndex = -1;
+            renderCart();
+        }, 3000);
+
+        showToast('แก้ไขรายการที่ ' + (itemIdx + 1) + ' ' + menu.name + ' แล้ว');
         editingCartIndex = -1;
-        
         if (typeof resetCustomizeButtons === 'function') resetCustomizeButtons();
-        updateCartBadge();
-        saveCart();
-        showToast('แก้ไข ' + menu.name + ' เรียบร้อย');
         window.scrollTo(0, 0);
-        goToMenu();
+        showPage('page-cart');
         return;
     } else {
         if (existingIndex > -1) {
@@ -207,15 +182,19 @@ function addToCart() {
             }
 
             if (!canAdd) {
-                if (typeof showToast === 'function') {
-                    showToast('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
-                } else {
-                    console.log('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
-                }
+                var msg = exceededIngredient ? exceededIngredient + ' เหลือน้อย' : 'วัตถุดิบเหลือน้อย';
+                showToast(msg);
                 return;
             }
 
-            cart[existingIndex].qty += 1;
+            // Increment qty on server
+            var eItem = cart[existingIndex];
+            if (eItem.cartId) {
+                serverCartAction('update_qty', { cart_id: eItem.cartId, qty: eItem.qty + 1 });
+            } else {
+                cart[existingIndex].qty += 1;
+                saveCart();
+            }
         } else {
             var remaining = typeof getAllRemainingStock === 'function' ? getAllRemainingStock() : {};
             var currentCartUsage = {};
@@ -239,16 +218,13 @@ function addToCart() {
             }
 
             if (!canAdd) {
-                if (typeof showToast === 'function') {
-                    showToast('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
-                } else {
-                    console.log('วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้');
-                }
+                var msg = exceededIngredient ? exceededIngredient + ' เหลือน้อย' : 'วัตถุดิบเหลือน้อย';
+                showToast(msg);
                 return;
             }
 
-            var cartItem = {
-                id: Date.now().toString(),
+            // Add new item to server
+            var newItem = {
                 menuId: menu.id,
                 name: menu.name,
                 basePrice: menu.price,
@@ -257,13 +233,11 @@ function addToCart() {
                 ingredients: ingredients,
                 qty: 1
             };
-            cart.push(cartItem);
+            serverCartAction('add_item', { table_id: currentTable, item: newItem });
         }
     }
 
     if (typeof resetCustomizeButtons === 'function') resetCustomizeButtons();
-    saveCart();
-    updateCartBadge();
     showToast('บันทึก ' + menu.name + ' สำเร็จ ✓');
     window.scrollTo(0, 0);
     goToMenu();
@@ -290,21 +264,28 @@ function renderCart() {
     if (timeInfo) timeInfo.textContent = 'เวลา ' + now.toLocaleTimeString('th-TH');
 
     var orderBtn = document.getElementById('btn-place-order');
+    var addMoreBtn = document.getElementById('btn-add-more');
 
     // Empty State Handling
     if (cart.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#999; font-weight:500;">ยังไม่มีรายการสินค้า</td></tr>';
-        if (orderBtn) {
-            orderBtn.textContent = 'เลือกรายการอาหาร';
-            orderBtn.onclick = goToMenu;
+        if (orderBtn) orderBtn.style.display = 'none';
+        if (addMoreBtn) {
+            addMoreBtn.style.display = 'block';
+            addMoreBtn.textContent = 'เลือกเมนู';
         }
         updateCartTotal();
         return;
     }
 
     if (orderBtn) {
+        orderBtn.style.display = 'block';
         orderBtn.textContent = 'สั่งรายการ';
         orderBtn.onclick = placeOrder;
+    }
+    if (addMoreBtn) {
+        addMoreBtn.style.display = 'block';
+        addMoreBtn.textContent = 'เลือกเมนูเพิ่ม';
     }
 
     // Render Rows
@@ -331,7 +312,12 @@ function renderCart() {
         }
         var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + item.qty + '</span>' : '';
 
-        return '<tr class="cart-table-row">' +
+        var rowClass = 'cart-table-row';
+        if (index === highlightCartIndex) {
+            rowClass += ' highlight-item';
+        }
+
+        return '<tr class="' + rowClass + '" style="' + (index === highlightCartIndex ? 'animation: highlightRow 3s ease-out;' : '') + '">' +
             '<td class="td-item" style="padding-top:16px; padding-bottom:16px;">' +
             '<div class="item-wrapper">' +
             '<span class="item-index">' + (index + 1) + '</span>' +
@@ -429,7 +415,7 @@ function changeQty(index, delta, event) {
         }
 
         if (!canAdd) {
-            var msg = 'วัตถุดิบเหลือน้อย โปรดสั่งจำนวนต่ำกว่านี้';
+            var msg = exceededIngredient ? exceededIngredient + ' เหลือน้อย' : 'วัตถุดิบไม่พอ';
             if (event && event.target) {
                 showInlineError(event.target, msg);
             } else if (typeof showToast === 'function') {
@@ -441,13 +427,18 @@ function changeQty(index, delta, event) {
         }
     }
 
-    cart[index].qty += delta;
-    if (cart[index].qty <= 0) {
-        cart[index].qty = 1;
+    var newQty = cart[index].qty + delta;
+    if (newQty <= 0) newQty = 1;
+
+    // Update on server using cart_id
+    if (cart[index].cartId) {
+        serverCartAction('update_qty', { cart_id: cart[index].cartId, qty: newQty });
+    } else {
+        cart[index].qty = newQty;
+        saveCart();
+        updateCartBadge();
+        renderCart();
     }
-    saveCart();
-    updateCartBadge();
-    renderCart(); // Re-render table
 }
 
 // ===== ลบรายการ (Trigger Modal) =====
@@ -466,11 +457,17 @@ function closeConfirmDelete() {
 
 function executeDeleteItem() {
     if (itemToDeleteIndex === -1) return;
-    var name = cart[itemToDeleteIndex].name;
-    cart.splice(itemToDeleteIndex, 1);
-    saveCart();
-    updateCartBadge();
-    renderCart(); // Re-render table
+    var item = cart[itemToDeleteIndex];
+    var name = item.name;
+
+    if (item.cartId) {
+        serverCartAction('remove_item', { cart_id: item.cartId });
+    } else {
+        cart.splice(itemToDeleteIndex, 1);
+        saveCart();
+        updateCartBadge();
+        renderCart();
+    }
     closeConfirmDelete();
     showToast('ลบ ' + name + ' แล้ว');
 }
@@ -560,5 +557,26 @@ function saveCart() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'sync', table_id: currentTable, cart: cart })
-    }).catch(function () { });
+    })
+        .then(function () { loadCartForTable(); })
+        .catch(function () { });
+}
+
+// Send a specific cart action to server, then re-fetch cart
+function serverCartAction(action, data) {
+    if (!currentTable) return;
+    var payload = Object.assign({ action: action }, data);
+    if (!payload.table_id) payload.table_id = currentTable;
+
+    fetch(SERVER_BASE + '/api/cart.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            // Re-fetch the full cart from server to stay in sync
+            loadCartForTable();
+        })
+        .catch(function () { });
 }

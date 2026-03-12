@@ -10,6 +10,23 @@ function showPage(pageId) {
     page.offsetHeight;
     page.style.animation = '';
     window.scrollTo(0, 0);
+    // Save active page for refresh persistence
+    sessionStorage.setItem('habeef_active_page', pageId);
+  }
+}
+
+// ===== Restore page after refresh =====
+function restorePage() {
+  var savedPage = sessionStorage.getItem('habeef_active_page');
+  if (savedPage && savedPage !== 'page-landing' && savedPage !== 'page-menu') {
+    if (savedPage === 'page-cart') {
+      if (typeof renderCart === 'function') renderCart();
+    }
+    if (savedPage === 'page-receipt') {
+      if (typeof checkActiveOrder === 'function') checkActiveOrder();
+      return; // checkActiveOrder will call showPage itself
+    }
+    showPage(savedPage);
   }
 }
 

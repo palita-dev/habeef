@@ -101,6 +101,7 @@ var currentTable = null;
 var guestId = null;
 var currentMenuItem = null;
 var cart = [];
+var highlightCartIndex = -1; // To track which item to highlight
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -117,7 +118,6 @@ document.addEventListener('DOMContentLoaded', function () {
   loadCartForTable();
   
   // Wait for initial sync from server before first render
-  // This prevents ingredients showing as "Sold Out" (หมด) incorrectly due to empty cache
   syncFromServer().then(function() {
     renderMenu();
   });
@@ -164,7 +164,6 @@ function loadCartForTable() {
 }
 
 function generateGuestId() {
-  // Use session storage so guest ID is per-session, not persistent across browsers
   let storedGuest = sessionStorage.getItem('habeef_guest_id');
   if (storedGuest) {
     return storedGuest;
@@ -233,7 +232,7 @@ function selectLandingTable(tableId, lockTable = false) {
   document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
   document.getElementById('page-menu').classList.add('active');
 
-  // Only show toast if not auto-locked on intial load
+  // Only show toast if not auto-locked on initial load
   if (!lockTable) {
     showToast('ยินดีต้อนรับ โต๊ะ ' + tableId);
   }
@@ -252,15 +251,58 @@ function encodeTableId(tableId) {
 
 function decodeTableId(encodedStr) {
   try {
-    const decoded = decodeURIComponent(atob(encodedStr));
-    const parts = decoded.split('|');
+    var decoded = decodeURIComponent(atob(encodedStr));
+    var parts = decoded.split('|');
     if (parts.length === 2 && parts[1] === SECRET_SALT) {
       return parts[0];
     }
   } catch (e) {
+    return null;
+  }
+  return null;
+}
+
+// ===== AUTO SELECT TABLE FROM URL =====
+window.addEventListener('DOMContentLoaded', function () {
+  var urlParams = new URLSearchParams(window.location.search);
+  var q = urlParams.get('q');
+
+  // Fallback to localStorage if URL has no q param (e.g. page refresh)
+  if (!q) {
+    q = localStorage.getItem('habeef_q_param');
+  }
+
+  if (q) {
+    // Save q param to localStorage for future refreshes
+    localStorage.setItem('habeef_q_param', q);
+
+    var decodedTableId = decodeTableId(q);
+    if (decodedTableId) {
+      var tableId = decodedTableId;
+      if (decodedTableId === 'takeaway' || decodedTableId === 'กลับบ้าน') {
+        tableId = 'กลับบ้าน';
+      }
+      setTimeout(function () {
+        selectLandingTable(tableId, true);
+        // After selecting table, restore user's last active page
+        if (typeof restorePage === 'function') {
+          setTimeout(restorePage, 100);
+        }
+      }, 50);
+    } else {
+      console.error("Invalid QR Code");
+      if (urlParams.get('q')) showToast("QR Code ไม่ถูกต้อง หรือล้าสมัย");
+      localStorage.removeItem('habeef_q_param');
+    }
+  }
+});
+
+// ===== ALERT MODAL =====
+function showAlert() {
+  var modal = document.getElementById('alert-modal');
+  if (modal) {
     modal.classList.add('show');
-    goToMenu(); // Navigate back to menu
-    // Highlight table selector
+    goToMenu();
     setTimeout(function () {
       var sel = document.getElementById('table-select');
       if (sel) {
@@ -276,7 +318,6 @@ function closeAlert() {
   var modal = document.getElementById('alert-modal');
   if (modal) {
     modal.classList.remove('show');
-    // Reset table selector highlight
     var sel = document.getElementById('table-select');
     if (sel) {
       sel.style.borderColor = '';
@@ -284,6 +325,8 @@ function closeAlert() {
     }
   }
 }
+
+// ===== EDIT CART ITEM =====
 function editCartItem(index) {
   var item = cart[index];
   if (!item) return;
@@ -294,61 +337,122 @@ function editCartItem(index) {
 
   renderCustomizeForm(currentMenuItem);
 
-  // Pre-fill options
   setTimeout(function () {
-    // Select noodles
-    var noodles = document.querySelectorAll('input[name="noodle"]');
-    var mixedNoodles = document.querySelectorAll('input[name="mixed-noodle"]');
+    var form = document.getElementById('customize-form');
+    if (!form) return;
     
-    // We need to parse details to match back to radio values if possible
-    // simplified: assume name match in details
+    var noodles = form.querySelectorAll('input[name="noodle"]');
+    var mixedNoodles = form.querySelectorAll('input[name="mixed-noodle"]');
+
     if (item.details) {
       item.details.forEach(function(d) {
-        var n = NOODLE_OPTIONS.find(function(o) { return o.name === d; });
-        if (n) {
-           var r = Array.from(noodles).find(function(i) { return i.value === n.id; });
-           if (r) r.checked = true;
-           updateMixedNoodleState();
-        }
-        
-        var m = MEAT_OPTIONS.find(function(o) { return o.name === d; });
-        if (m) {
-           var r = document.querySelector('input[name="meat"][value="' + m.id + '"]');
-           if (r) r.checked = true;
-        }
-
-        VEGGIE_OPTIONS.forEach(function(v) {
-          if (v.name === d) {
-             var r = document.querySelector('input[name="veggie"][value="' + v.id + '"]');
-             if (r) r.checked = true;
+        // Noodle logic
+        NOODLE_OPTIONS.forEach(function(o) {
+          if (d === o.ingredient) {
+            var r = Array.from(noodles).find(function(i) { return i.value === o.id; });
+            if (r) r.checked = true;
           }
         });
+        
+        // Mixed Noodle logic (Mixed noodle starts with "ผสม")
+        if (d.startsWith('ผสม')) {
+            var mixIng = d.replace('ผสม', '').trim();
+            NOODLE_OPTIONS.forEach(function(o) {
+              if (mixIng === o.ingredient) {
+                var rM = Array.from(mixedNoodles).find(function(i) { return i.value === o.id; });
+                if (rM) rM.checked = true;
+              }
+            });
+        }
 
-        EXTRA_OPTIONS.forEach(function(e) {
-           if (e.name === d || d.startsWith(e.name)) {
-              var cb = document.querySelector('input[name="extras"][value="' + e.id + '"]');
-              if (cb) cb.checked = true;
-           }
+        // Meat logic
+        var mt = MEAT_OPTIONS.find(function(o) { return o.name === d; });
+        if (mt) {
+          var r2 = form.querySelector('input[name="meat"][value="' + mt.id + '"]');
+          if (r2) r2.checked = true;
+        }
+
+        // Veggie logic
+        if (d === 'ไม่ใส่ผัก') {
+            var r3 = form.querySelector('input[name="veggie"][value="veg-no"]');
+            if (r3) r3.checked = true;
+        } else {
+             // If not "ไม่ใส่ผัก", assume "ใส่" (default)
+             var r3 = form.querySelector('input[name="veggie"][value="veg-yes"]');
+             if (r3) r3.checked = true;
+        }
+
+        // Extras logic
+        EXTRA_OPTIONS.forEach(function(ex) {
+          if (d.indexOf(ex.name) > -1 && !ex.isNone) {
+            var cb = form.querySelector('input[name="extras"][value="' + ex.id + '"]');
+            if (cb) cb.checked = true;
+          }
         });
       });
+      
+      // Handle the case where no extras were selected (select "ไม่สั่งเพิ่ม")
+      var hasExtras = item.details.some(function(d) {
+          return EXTRA_OPTIONS.some(function(ex) { return !ex.isNone && d.indexOf(ex.name) > -1; });
+      });
+      if (!hasExtras) {
+          var noneCb = form.querySelector('input[name="extras"][value="extra-none"]');
+          if (noneCb) noneCb.checked = true;
+      }
     }
-    
-    // UI Update for Edit Mode
-    var btnAdd = document.querySelector('.btn-add');
+
+    if (typeof updateMixedNoodleState === 'function') updateMixedNoodleState();
+
+    // Customize header/popup for Edit Mode
+    var pageCust = document.getElementById('page-customize');
+    if (pageCust) {
+        pageCust.classList.add('modal-mode');
+        pageCust.classList.add('active');
+    }
+
+    // Show "Edit Item" Title in Hero
+    var editTitle = document.getElementById('edit-mode-title');
+    if (editTitle) editTitle.style.display = 'block';
+
+    // Customize buttons for Edit Mode (Yellow style)
+    var btnAdd = document.getElementById('btn-add-cust');
     if (btnAdd) {
       btnAdd.textContent = 'บันทึกการแก้ไข';
-      btnAdd.style.background = '#4CAF50'; // Green for save
+      btnAdd.classList.add('btn-yellow-edit');
     }
     
-    validateCustomizeForm();
-    showPage('page-customize');
+    var btnCancel = document.getElementById('btn-cancel-cust');
+    if (btnCancel) {
+      btnCancel.textContent = 'ยกเลิก';
+      btnCancel.classList.add('btn-yellow-edit');
+      btnCancel.onclick = function() { 
+          if (pageCust) {
+              pageCust.classList.remove('active', 'modal-mode');
+          }
+          resetCustomizeButtons();
+      };
+    }
+
+    if (typeof validateCustomizeForm === 'function') validateCustomizeForm();
   }, 100);
 }
 
 function resetCustomizeButtons() {
-    var btnAdd = document.querySelector('.btn-add');
-    if (btnAdd) {
-      btnAdd.textContent = 'เพิ่มลงตะกร้า';
-      btnAdd.style.background = '';
-    }
+  var pageCust = document.getElementById('page-customize');
+  if (pageCust) pageCust.classList.remove('modal-mode');
+
+  var editTitle = document.getElementById('edit-mode-title');
+  if (editTitle) editTitle.style.display = 'none';
+
+  var btnAdd = document.getElementById('btn-add-cust');
+  if (btnAdd) {
+    btnAdd.textContent = 'เพิ่มลงตะกร้า';
+    btnAdd.classList.remove('btn-yellow-edit');
+  }
+  var btnCancel = document.getElementById('btn-cancel-cust');
+  if (btnCancel) {
+    btnCancel.textContent = 'ยกเลิก';
+    btnCancel.classList.remove('btn-yellow-edit');
+    btnCancel.onclick = function() { goToMenu(); };
+  }
 }

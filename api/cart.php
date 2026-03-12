@@ -59,10 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $cartItems = isset($data['cart']) ? $data['cart'] : [];
 
         if (!empty($table_id)) {
-            // Ensure the table_id exists in `tables` (FK requirement)
             ensureTableExists($conn, $table_id);
-
-            // Delete existing cart for this table
             $conn->query("DELETE FROM cart WHERE table_id = '$table_id'");
 
             $errors = [];
@@ -77,10 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $menuId = $item['menuId'];
                     $qty = (int)$item['qty'];
                     $totalPrice = (float)$item['totalPrice'];
-                    
                     $optionsText = isset($item['details']) && is_array($item['details']) ? implode(',', $item['details']) : '';
                     $optionsJson = isset($item['ingredients']) ? json_encode($item['ingredients'], JSON_UNESCAPED_UNICODE) : '{}';
-
                     $stmt->bind_param("ssidss", $table_id, $menuId, $qty, $totalPrice, $optionsText, $optionsJson);
                     if (!$stmt->execute()) {
                         $errors[] = "Insert failed for menu $menuId: " . $stmt->error;
@@ -88,15 +83,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
                 $stmt->close();
             }
-
-            if (empty($errors)) {
-                echo json_encode(["success" => true]);
-            } else {
-                echo json_encode(["success" => false, "errors" => $errors]);
-            }
+            echo json_encode(empty($errors) ? ["success" => true] : ["success" => false, "errors" => $errors]);
         } else {
             echo json_encode(["success" => false, "error" => "Empty table_id"]);
         }
+
+    } elseif ($action === 'add_item') {
+        // Add a single item to the cart (does NOT delete other items)
+        $table_id = isset($data['table_id']) ? $conn->real_escape_string($data['table_id']) : '';
+        $item = isset($data['item']) ? $data['item'] : null;
+
+        if (!empty($table_id) && $item) {
+            ensureTableExists($conn, $table_id);
+            $menuId = $item['menuId'];
+            $qty = (int)$item['qty'];
+            $totalPrice = (float)$item['totalPrice'];
+            $optionsText = isset($item['details']) && is_array($item['details']) ? implode(',', $item['details']) : '';
+            $optionsJson = isset($item['ingredients']) ? json_encode($item['ingredients'], JSON_UNESCAPED_UNICODE) : '{}';
+
+            // Check if same menu+options already exists → increment qty
+            $checkStmt = $conn->prepare("SELECT cart_id, quantity FROM cart WHERE table_id = ? AND menu_id = ? AND options_text = ?");
+            $checkStmt->bind_param("sss", $table_id, $menuId, $optionsText);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
+
+            if ($checkResult && $checkResult->num_rows > 0) {
+                $row = $checkResult->fetch_assoc();
+                $newQty = (int)$row['quantity'] + $qty;
+                $updateStmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ?");
+                $updateStmt->bind_param("ii", $newQty, $row['cart_id']);
+                $updateStmt->execute();
+                $updateStmt->close();
+            } else {
+                $stmt = $conn->prepare("INSERT INTO cart (table_id, menu_id, quantity, total_price, options_text, options_json) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssidss", $table_id, $menuId, $qty, $totalPrice, $optionsText, $optionsJson);
+                $stmt->execute();
+                $stmt->close();
+            }
+            $checkStmt->close();
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Missing table_id or item"]);
+        }
+
+    } elseif ($action === 'remove_item') {
+        // Remove a specific cart entry by cart_id
+        $cart_id = isset($data['cart_id']) ? (int)$data['cart_id'] : 0;
+        if ($cart_id > 0) {
+            $stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ?");
+            $stmt->bind_param("i", $cart_id);
+            $stmt->execute();
+            $stmt->close();
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Missing cart_id"]);
+        }
+
+    } elseif ($action === 'update_qty') {
+        // Update quantity of a specific cart entry
+        $cart_id = isset($data['cart_id']) ? (int)$data['cart_id'] : 0;
+        $qty = isset($data['qty']) ? (int)$data['qty'] : 0;
+        if ($cart_id > 0 && $qty > 0) {
+            $stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ?");
+            $stmt->bind_param("ii", $qty, $cart_id);
+            $stmt->execute();
+            $stmt->close();
+            echo json_encode(["success" => true]);
+        } elseif ($cart_id > 0 && $qty <= 0) {
+            // qty 0 or less means remove
+            $stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ?");
+            $stmt->bind_param("i", $cart_id);
+            $stmt->execute();
+            $stmt->close();
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Missing cart_id or qty"]);
+        }
+
+    } elseif ($action === 'update_item') {
+        // Update an existing cart item's details (for edit flow)
+        $cart_id = isset($data['cart_id']) ? (int)$data['cart_id'] : 0;
+        $item = isset($data['item']) ? $data['item'] : null;
+        if ($cart_id > 0 && $item) {
+            $totalPrice = (float)$item['totalPrice'];
+            $optionsText = isset($item['details']) && is_array($item['details']) ? implode(',', $item['details']) : '';
+            $optionsJson = isset($item['ingredients']) ? json_encode($item['ingredients'], JSON_UNESCAPED_UNICODE) : '{}';
+            $stmt = $conn->prepare("UPDATE cart SET total_price = ?, options_text = ?, options_json = ? WHERE cart_id = ?");
+            $stmt->bind_param("dssi", $totalPrice, $optionsText, $optionsJson, $cart_id);
+            $stmt->execute();
+            $stmt->close();
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Missing cart_id or item"]);
+        }
+
     } else {
         echo json_encode(["success" => false, "error" => "Invalid action"]);
     }

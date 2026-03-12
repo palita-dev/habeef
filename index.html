@@ -2,24 +2,23 @@
 <html lang="th">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script>
-        // Check URL for 'q' param, OR fallback to localStorage
-        var urlParams = new URLSearchParams(window.location.search);
-        var urlQ = urlParams.get('q');
-        var localQ = localStorage.getItem('habeef_q_param');
-        
-        // If neither exists, redirect to staff login
-        if (!urlQ && !localQ) {
-            window.location.href = "login.html?s=c3RhZmZfbG9naW4lN0NoYWJlZWZfc2VjcmV0XzIwMjQ%3D";
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script>
+    // Check URL for 'q' param
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlQ = urlParams.get('q');
+
+    // If no q param in URL, redirect to staff login immediately
+    if (!urlQ) {
+      window.location.href = "login.html?s=c3RhZmZfbG9naW4lN0NoYWJlZWZfc2VjcmV0XzIwMjQ%3D";
+    }
+  </script>
   <title>ก๋วยเตี๋ยวฮาบีฟ - สั่งอาหาร</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=202603101530">
+  <link rel="stylesheet" href="css/style.css?v=202603122010">
 </head>
 
 <body>
@@ -122,7 +121,9 @@
   <!-- ===== หน้าเลือกวัตถุดิบ ===== -->
   <div id="page-customize" class="page">
     <div class="page-body page-body-with-bottom" style="padding: 0; padding-bottom: 90px;">
-      <div class="customize-hero" style="position: relative; z-index: 1;"></div>
+      <div class="customize-hero" style="position: relative; z-index: 1;">
+        <div id="edit-mode-title" style="display:none;">แก้ไขรายการ</div>
+      </div>
 
       <div style="padding: 0 14px; position: relative; z-index: 10;">
         <!-- Floating Card Header -->
@@ -145,8 +146,8 @@
         <span id="customize-total-price">0 ฿</span>
       </div>
       <div style="display: flex; gap: 12px; width: 100%;">
-        <button class="btn btn-cancel" onclick="goToMenu()">ยกเลิก</button>
-        <button class="btn btn-add" onclick="addToCart()">เพิ่มลงตะกร้า</button>
+        <button id="btn-cancel-cust" class="btn btn-cancel" onclick="goToMenu()">ยกเลิก</button>
+        <button id="btn-add-cust" class="btn btn-add" onclick="addToCart()">เพิ่มลงตะกร้า</button>
       </div>
     </div>
   </div>
@@ -154,26 +155,29 @@
   <!-- ===== หน้าตะกร้า ===== -->
   <!-- ===== หน้าตะกร้า ===== -->
   <div id="page-cart" class="page">
-    <!-- Red Hero Header -->
-    <div class="hero-section">
-      <h1 class="shop-title">ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-    </div>
+    <div class="cart-header-sticky" style="position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; z-index: 900; background: #FFF; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding-bottom: 5px;">
+      <!-- Red Hero Header -->
+      <div class="hero-section">
+        <h1 class="shop-title">ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+      </div>
 
-    <!-- Yellow Sub-header -->
-    <div class="section-bar"
-      style="background:#FFE082; justify-content: space-between; padding: 10px 16px; display:flex; align-items:center;">
-      <span style="font-weight:700; color:#333; font-size:1.1rem;">รายการที่สั่งซื้อ</span>
-      <button class="btn-back-circle-red" onclick="goToMenu()">←</button>
-    </div>
+      <!-- Yellow Sub-header -->
+      <div class="section-bar"
+        style="background:#FFE082; justify-content: space-between; padding: 10px 16px; display:flex; align-items:center;">
+        <span style="font-weight:700; color:#333; font-size:1.1rem;">รายการที่สั่งซื้อ</span>
+        <button class="btn-back-circle-red" onclick="goToMenu()">←</button>
+      </div>
 
-    <div class="page-body" style="padding-bottom: 250px; background:#F9F9F9;">
       <!-- Info Section -->
       <div class="cart-info-section"
-        style="padding: 10px 4px; margin-bottom:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        style="padding: 10px 14px 5px; margin-bottom:0; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <div id="cart-table-info" style="font-size:1.1rem; font-weight:700;">โต๊ะ 1</div>
         <div id="cart-date-info" style="color:#666;">วันที่ --/--/----</div>
         <div id="cart-time-info" style="color:#666;">เวลา --:--:--</div>
       </div>
+    </div>
+
+    <div class="page-body" style="padding-bottom: 250px; background:#F9F9F9; padding-top: 180px;">
 
 
       <!-- Cart Table -->
@@ -193,6 +197,8 @@
         <span>รวมทั้งหมด</span>
         <span id="cart-total">0 บาท</span>
       </div>
+      <button id="btn-add-more" onclick="goToMenu()"
+        style="display:none; width:100%; padding:12px; font-size:1.05rem; font-weight:700; border:none; border-radius:14px; background:#FFC107; color:#333; cursor:pointer; margin-bottom:8px;">เลือกเมนูเพิ่ม</button>
       <button id="btn-place-order" class="btn-green-full" onclick="placeOrder()">สั่งรายการ</button>
     </div>
 
@@ -291,11 +297,11 @@
     </div>
   </div>
 
-  <script src="js/auth.js?v=202603101655"></script>
-  <script src="js/app.js?v=202603101655"></script>
-  <script src="js/navigation.js?v=202603101655"></script>
-  <script src="js/cart.js?v=202603101655"></script>
-  <script src="js/order.js?v=202603101655"></script>
+  <script src="js/auth.js?v=202603121955"></script>
+  <script src="js/app.js?v=202603121955"></script>
+  <script src="js/navigation.js?v=202603121955"></script>
+  <script src="js/cart.js?v=202603121955"></script>
+  <script src="js/order.js?v=202603121955"></script>
 </body>
 
 </html>
