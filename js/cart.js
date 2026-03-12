@@ -348,14 +348,14 @@ function renderCart() {
             '</div>' +
             '</div>' +
             '</td>' +
-            '<td class="td-price" style="text-align:right; vertical-align:top; border-bottom:1px dashed #eee; padding:10px 15px 10px 0;">' +
-            '<div style="display:flex; flex-direction:column; justify-content:space-between; height:100%; min-height:80px;">' +
+            '<td class="td-price" style="text-align:right; vertical-align:top; border-bottom:1px dashed #eee; padding:10px 10px 10px 0;">' +
+            '<div style="display:flex; flex-direction:column; justify-content:space-between; height:100%; min-height:85px;">' +
             '<div style="text-align:right; margin-bottom:10px;">' +
-            '<button onclick="removeFromCart(' + index + ')" style="background:transparent; border:none; font-size:1.8rem; color:#C62828; cursor:pointer; line-height:1; padding:0; font-weight:bold;">&times;</button>' +
+            '<button onclick="removeFromCart(' + index + ')" style="background:transparent; border:none; font-size:1.6rem; color:#C62828; cursor:pointer; line-height:1; padding:0; font-weight:bold;">&times;</button>' +
             '</div>' +
-            '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
-            '<div class="price-val" style="font-size:1.25rem; font-weight:700; color:#333; white-space:nowrap;">' + (item.totalPrice * item.qty) + ' ฿</div>' +
-            '<div class="qty-control-pill" style="margin:0; transform:scale(1.1); transform-origin:right center;">' +
+            '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">' +
+            '<div class="price-val" style="font-size:1.15rem; font-weight:700; color:#333; white-space:nowrap;">' + (item.totalPrice * item.qty) + ' ฿</div>' +
+            '<div class="qty-control-pill" style="margin:0;">' +
             '<button onclick="changeQty(' + index + ', -1, event)">−</button>' +
             '<span>' + item.qty + '</span>' +
             '<button onclick="changeQty(' + index + ', 1, event)">+</button>' +

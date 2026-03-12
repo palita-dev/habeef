@@ -776,7 +776,7 @@ body {
 }
 
 .td-item {
-  width: 62%;
+  width: 72%;
 }
 
 .item-wrapper {
@@ -849,10 +849,9 @@ body {
 
 .td-price {
   text-align: right;
-  width: 38%;
+  width: 28%;
   font-weight: 600;
   font-size: 0.9rem;
-
 }
 
 .td-qty {
