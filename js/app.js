@@ -3,7 +3,7 @@ const MENU_ITEMS = [
   {
     id: 'nam-khon',
     name: 'ก๋วยเตี๋ยวน้ำข้น',
-    desc: 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น',
+    desc: 'เนื้อสด + ลูกชิ้น <br> เนื้อเปื่อย + ลูกชิ้น <br> น่องไก่ + ลูกชิ้น',
     price: 50,
     emoji: '🍜',
     image: 'images/ก๋วยเตี๋ยวน้ำข้น.jpg',
@@ -14,7 +14,7 @@ const MENU_ITEMS = [
   {
     id: 'haeng',
     name: 'ก๋วยเตี๋ยวแห้ง',
-    desc: 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น',
+    desc: 'เนื้อสด + ลูกชิ้น <br> เนื้อเปื่อย + ลูกชิ้น <br> น่องไก่ + ลูกชิ้น',
     price: 50,
     emoji: '🥢',
     image: 'images/ก๋วยเตี๋ยวแห้ง.jpg',
@@ -47,7 +47,7 @@ const MENU_ITEMS = [
   {
     id: 'kao-lao',
     name: 'เกาเหลา',
-    desc: 'เนื้อสด+ลูกชิ้น <br> เนื้อเปื่อย+ลูกชิ้น <br> น่องไก่+ลูกชิ้น',
+    desc: 'เนื้อสด + ลูกชิ้น <br> เนื้อเปื่อย + ลูกชิ้น <br> น่องไก่ + ลูกชิ้น',
     price: 50,
     emoji: '🥣',
     image: 'images/เกาเหลา.jpg',
@@ -419,12 +419,23 @@ function editCartItem(index) {
     if (btnAdd) {
       btnAdd.textContent = 'บันทึกการแก้ไข';
       btnAdd.classList.add('btn-yellow-edit');
+      // Direct style fallback for cache issues
+      btnAdd.style.background = '#FFC107';
+      btnAdd.style.color = '#333';
+      btnAdd.style.boxShadow = 'none';
+      btnAdd.style.borderRadius = '25px';
     }
     
     var btnCancel = document.getElementById('btn-cancel-cust');
     if (btnCancel) {
       btnCancel.textContent = 'ยกเลิก';
       btnCancel.classList.add('btn-gray-edit');
+      // Direct style fallback for cache issues
+      btnCancel.style.background = '#E0E0E0';
+      btnCancel.style.color = '#666';
+      btnCancel.style.boxShadow = 'none';
+      btnCancel.style.borderRadius = '25px';
+      
       btnCancel.onclick = function() { 
           if (pageCust) {
               pageCust.classList.remove('active', 'modal-mode');
@@ -448,11 +459,19 @@ function resetCustomizeButtons() {
   if (btnAdd) {
     btnAdd.textContent = 'เพิ่มลงตะกร้า';
     btnAdd.classList.remove('btn-yellow-edit');
+    btnAdd.style.background = '';
+    btnAdd.style.color = '';
+    btnAdd.style.boxShadow = '';
+    btnAdd.style.borderRadius = '';
   }
   var btnCancel = document.getElementById('btn-cancel-cust');
   if (btnCancel) {
     btnCancel.textContent = 'ยกเลิก';
     btnCancel.classList.remove('btn-yellow-edit', 'btn-gray-edit');
+    btnCancel.style.background = '';
+    btnCancel.style.color = '';
+    btnCancel.style.boxShadow = '';
+    btnCancel.style.borderRadius = '';
     btnCancel.onclick = function() { goToMenu(); };
   }
 }

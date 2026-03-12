@@ -84,13 +84,25 @@ function renderMenu() {
 
     var cardStyle = isOutOfStock ? ' opacity: 0.5; pointer-events: none; filter: grayscale(1); ' : ' cursor: pointer; ';
 
+    var descHtml = item.desc.split('<br>').map(function (line) {
+      if (line.indexOf('+') !== -1) {
+        var parts = line.split('+');
+        // Exception for Seafood to keep it compact
+        if (item.id === 'tom-yam-seafood') {
+           return '<div class="desc-line">' + line + '</div>';
+        }
+        return '<div class="desc-line"><span class="desc-main">' + parts[0].trim() + '</span><span class="desc-plus">+</span><span class="desc-extra">' + parts[1].trim() + '</span></div>';
+      }
+      return '<div class="desc-line">' + line + '</div>';
+    }).join('');
+
     return '<div class="menu-card" style="' + cardStyle + '" onclick="goToCustomize(\'' + item.id + '\')">' +
       '<div class="menu-img-wrap">' + imgHtml + '</div>' +
       '<div class="menu-info">' +
       '<div class="menu-name">' + item.name + nameSuffix + '</div>' +
       '<div class="menu-price-text">' + item.price + ' บาท</div>' +
       '</div>' +
-      '<div class="menu-desc">' + item.desc + '</div>' +
+      '<div class="menu-desc">' + descHtml + '</div>' +
       '</div>';
   }).join('');
 }
