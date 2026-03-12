@@ -47,11 +47,18 @@ body {
   max-height: 85vh;
   position: relative;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   margin-bottom: 0;
-  padding: 20px !important;
+  padding: 0 !important;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+#page-customize.modal-mode .page-body > div:nth-child(2) {
+  padding: 20px 20px 10px 20px !important;
+  overflow-y: auto;
+  flex: 1;
 }
 
 #page-customize.modal-mode > div:nth-child(2) {
@@ -90,26 +97,46 @@ body {
 }
 
 #page-customize.modal-mode .bottom-actions {
-  position: static;
-  background: transparent;
-  border-radius: 0;
-  padding: 10px 0 0 0;
-  box-shadow: none;
-  margin-top: auto;
+  position: static !important;
+  background: #FFF !important; /* Force white background for buttons */
+  display: flex !important;
+  width: 100% !important;
+  gap: 12px !important;
+  padding: 10px 20px 20px 20px !important;
+  box-shadow: 0 -10px 20px rgba(0,0,0,0.03) !important;
+  margin-top: auto !important;
+  border-radius: 0 0 20px 20px !important;
 }
 
 #page-customize.modal-mode .btn-yellow-edit {
   background: #FFC107 !important;
   color: #333 !important;
-  font-weight: 700 !important;
-  box-shadow: 0 6px 15px rgba(255, 193, 7, 0.45) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+  font-weight: 800 !important;
+  font-size: 1.1rem !important;
+  border-radius: 25px !important;
+  padding: 16px !important;
+  box-shadow: none !important; /* Remove glow */
+  border: 2px solid rgba(0, 0, 0, 0.05) !important;
+  flex: 1 !important;
   transform: translateY(0);
 }
 
-#page-customize.modal-mode .btn-yellow-edit:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4) !important;
+#page-customize.modal-mode .btn-gray-edit {
+  background: #E0E0E0 !important;
+  color: #666 !important;
+  font-weight: 800 !important;
+  font-size: 1.1rem !important;
+  border-radius: 25px !important;
+  padding: 16px !important;
+  box-shadow: none !important; /* Remove glow */
+  border: 2px solid rgba(0, 0, 0, 0.05) !important;
+  flex: 1 !important;
+  transform: translateY(0);
+}
+
+#page-customize.modal-mode .btn-yellow-edit:active,
+#page-customize.modal-mode .btn-gray-edit:active {
+  transform: scale(0.98);
 }
 
 /* Hide cart summary when edit modal is active to prevent overlap */

@@ -424,7 +424,7 @@ function editCartItem(index) {
     var btnCancel = document.getElementById('btn-cancel-cust');
     if (btnCancel) {
       btnCancel.textContent = 'ยกเลิก';
-      btnCancel.classList.add('btn-yellow-edit');
+      btnCancel.classList.add('btn-gray-edit');
       btnCancel.onclick = function() { 
           if (pageCust) {
               pageCust.classList.remove('active', 'modal-mode');
@@ -452,7 +452,7 @@ function resetCustomizeButtons() {
   var btnCancel = document.getElementById('btn-cancel-cust');
   if (btnCancel) {
     btnCancel.textContent = 'ยกเลิก';
-    btnCancel.classList.remove('btn-yellow-edit');
+    btnCancel.classList.remove('btn-yellow-edit', 'btn-gray-edit');
     btnCancel.onclick = function() { goToMenu(); };
   }
 }
