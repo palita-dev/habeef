@@ -265,10 +265,19 @@ function renderCart() {
 
     var orderBtn = document.getElementById('btn-place-order');
     var addMoreBtn = document.getElementById('btn-add-more');
+    var infoSection = document.querySelector('.cart-info-section');
+    var tableWrapper = document.querySelector('.cart-table-wrapper');
+    var emptyDisplay = document.getElementById('cart-empty-display');
+    var summaryBox = document.querySelector('.summary-box-white');
 
     // Empty State Handling
     if (cart.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#999; font-weight:500;">ยังไม่มีรายการสินค้า</td></tr>';
+        if (tbody) tbody.innerHTML = '';
+        if (infoSection) infoSection.style.display = 'none';
+        if (tableWrapper) tableWrapper.style.display = 'none';
+        if (summaryBox) summaryBox.style.display = 'none';
+        if (emptyDisplay) emptyDisplay.style.display = 'block';
+
         if (orderBtn) orderBtn.style.display = 'none';
         if (addMoreBtn) {
             addMoreBtn.style.display = 'block';
@@ -277,6 +286,12 @@ function renderCart() {
         updateCartTotal();
         return;
     }
+
+    // Items exist
+    if (infoSection) infoSection.style.display = 'flex';
+    if (tableWrapper) tableWrapper.style.display = 'block';
+    if (summaryBox) summaryBox.style.display = 'flex';
+    if (emptyDisplay) emptyDisplay.style.display = 'none';
 
     if (orderBtn) {
         orderBtn.style.display = 'block';
