@@ -345,6 +345,11 @@ function editCartItem(index) {
     var mixedNoodles = form.querySelectorAll('input[name="mixed-noodle"]');
 
     if (item.details) {
+      // Veggie logic - check once instead of inside forEach to avoid overwriting
+      var isNoVeg = item.details.indexOf('ไม่ใส่ผัก') !== -1;
+      var r3 = form.querySelector('input[name="veggie"][value="' + (isNoVeg ? 'veg-no' : 'veg-yes') + '"]');
+      if (r3) r3.checked = true;
+
       item.details.forEach(function(d) {
         // Noodle logic
         NOODLE_OPTIONS.forEach(function(o) {
@@ -370,16 +375,6 @@ function editCartItem(index) {
         if (mt) {
           var r2 = form.querySelector('input[name="meat"][value="' + mt.id + '"]');
           if (r2) r2.checked = true;
-        }
-
-        // Veggie logic
-        if (d === 'ไม่ใส่ผัก') {
-            var r3 = form.querySelector('input[name="veggie"][value="veg-no"]');
-            if (r3) r3.checked = true;
-        } else {
-             // If not "ไม่ใส่ผัก", assume "ใส่" (default)
-             var r3 = form.querySelector('input[name="veggie"][value="veg-yes"]');
-             if (r3) r3.checked = true;
         }
 
         // Extras logic

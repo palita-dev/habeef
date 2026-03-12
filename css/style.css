@@ -6,11 +6,18 @@
 }
 
 html,
-body {
+body,
+button,
+input,
+select,
+textarea {
   font-family: 'Prompt', sans-serif;
+}
+
+html,
+body {
   background: #F5F0EB;
   color: #333;
-  min-height: 100vh;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -960,18 +967,37 @@ body {
   /* Green */
   color: #fff;
   width: 100%;
-  padding: 12px;
-  border-radius: 25px;
+  padding: 15px;
+  border-radius: 50px;
   border: none;
-  font-size: 1.05rem;
-  font-weight: 700;
-  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+  font-size: 1.1rem;
+  font-weight: 800 !important; /* Force extra bold */
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.35);
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: all 0.2s;
+  display: block;
+  text-align: center;
 }
 
-.btn-green-full:active {
-  transform: scale(0.98);
+.btn-yellow-cart-more {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.1rem;
+  font-weight: 800 !important; /* Force extra bold */
+  border: none;
+  border-radius: 50px;
+  background: #FFC107;
+  color: #333;
+  cursor: pointer;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.25);
+  transition: all 0.2s;
+  display: block;
+  text-align: center;
+}
+
+.btn-green-full:active, .btn-yellow-cart-more:active {
+  transform: scale(0.97);
 }
 
 .red-footer-strip {
