@@ -168,7 +168,7 @@ function renderCustomizeForm(menu) {
       var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
       var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
       html += '<label class="option-item" style="margin-bottom: 8px;' + opacity + '">' +
-        '<input type="radio" name="mixed-noodle" value="' + opt.id + '" onclick="toggleRadio(this)"' + (isOos ? ' disabled' : '') + '>' +
+        '<input type="radio" name="mixed-noodle" value="' + opt.id + '" onclick="toggleRadio(this)"' + (isOos ? ' disabled data-oos="true"' : ' data-oos="false"') + '>' +
         '<span class="option-label" style="font-size: 1rem;">' + opt.name + oosLabel + '</span></label>';
     });
     html += '</div></div>'; // จบคอลัมน์ 2
@@ -347,18 +347,26 @@ function updateMixedNoodleState() {
 
   mixedRadios.forEach(function (radio) {
     var label = radio.closest('.option-item');
+    // Check if it's permanently disabled due to out of stock
+    var isOos = radio.getAttribute('data-oos') === 'true';
+
     if (radio.value === selectedValue) {
-      // ปิดการใช้งานและทำสีเทา
+      // ปิดการใช้งานและทำสีเทา (เพราะซ้ำกับเส้นหลัก)
       radio.disabled = true;
       if (radio.checked) {
         radio.checked = false;
         radio.dataset.wasChecked = "false";
       }
-      if (label) label.style.opacity = '0.4';
+      if (label && !isOos) label.style.opacity = '0.4';
     } else {
-      // เปิดการใช้งานปกติ
-      radio.disabled = false;
-      if (label) label.style.opacity = '1';
+      // เปิดการใช้งานปกติ (ยกเว้นของหมด)
+      if (!isOos) {
+        radio.disabled = false;
+        if (label) label.style.opacity = '1';
+      } else {
+        radio.disabled = true;
+        if (label) label.style.opacity = '0.5';
+      }
     }
   });
 }

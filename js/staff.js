@@ -141,7 +141,6 @@ function showLineNotification(title, message, tableId) {
         banner.style.top = '-100px';
         if (tableId) {
             openTableDetail(tableId);
-            toggleNotiPanel();
         }
     };
 
@@ -412,7 +411,7 @@ function renderOrderListPreserveChecks() {
         document.querySelectorAll('.list-check-' + orderId).forEach(function (cb) {
             cb.checked = true;
             var row = cb.closest('.ol-item');
-            if (row) row.style.opacity = '0.5';
+            if (row) row.style.boxShadow = '0 0 0 2px #FFC107';
         });
         validateListServeBtn(orderId, null);
     });
@@ -421,7 +420,10 @@ function renderOrderListPreserveChecks() {
 function validateListServeBtn(orderId, checkbox) {
     if (checkbox) {
         var row = checkbox.closest('.ol-item');
-        if (row) row.style.opacity = checkbox.checked ? '0.5' : '1';
+        if (row) {
+            row.style.boxShadow = checkbox.checked ? '0 0 0 2px #FFC107' : 'none';
+            row.style.opacity = '1';
+        }
     }
 
     var btn = document.getElementById('btn-serve-' + orderId);
@@ -461,7 +463,10 @@ function selectAllGroupItems(groupId, checked) {
     document.querySelectorAll('.list-check-' + groupId).forEach(function (cb) {
         cb.checked = checked;
         var row = cb.closest('.ol-item');
-        if (row) row.style.opacity = checked ? '0.5' : '1';
+        if (row) {
+            row.style.boxShadow = checked ? '0 0 0 2px #FFC107' : 'none';
+            row.style.opacity = '1';
+        }
     });
     validateListServeBtn(groupId, null);
 }
@@ -792,10 +797,19 @@ function validateServeBtn() {
     var allChecked = true;
     var hasChecked = false;
     for (var i = 0; i < checkboxes.length; i++) {
+        var row = checkboxes[i].closest('.ol-item');
         if (!checkboxes[i].checked) {
             allChecked = false;
+            if (row) {
+                row.style.boxShadow = 'none';
+                row.style.opacity = '1';
+            }
         } else {
             hasChecked = true;
+            if (row) {
+                row.style.boxShadow = '0 0 0 2px #FFC107';
+                row.style.opacity = '1';
+            }
         }
     }
 
@@ -819,7 +833,10 @@ function selectAllOrderItems(orderId, checked) {
     document.querySelectorAll('.modal-item-checkbox[data-orderid="' + orderId + '"]:not(:disabled)').forEach(function (cb) {
         cb.checked = checked;
         var row = cb.closest('.ol-item');
-        if (row) row.style.opacity = checked ? '0.5' : '1';
+        if (row) {
+            row.style.boxShadow = checked ? '0 0 0 2px #FFC107' : 'none';
+            row.style.opacity = '1';
+        }
     });
     validateServeBtn();
 }
@@ -872,12 +889,12 @@ function processPayment(tableId) {
     // Create custom confirmation modal for payment
     var modal = document.createElement('div');
     modal.className = 'modal';
-    modal.style.display = 'flex';
+    var displayTableLabel = tableId.startsWith('กลับบ้าน') ? tableId : 'โต๊ะ ' + tableId;
     modal.innerHTML = `
         <div class="modal-content" style="max-width:300px; text-align:center;">
             <div style="font-size:2rem; margin-bottom:10px;">💰</div>
             <h3 style="margin:0 0 10px 0;">ยืนยันรับชำระเงิน</h3>
-            <p style="margin:0 0 20px 0; color:#666;">โต๊ะ ` + tableId + ` ใช่หรือไม่?</p>
+            <p style="margin:0 0 20px 0; color:#666;">` + displayTableLabel + ` ใช่หรือไม่?</p>
             <div style="display:flex; gap:10px;">
                 <button id="btn-cancel-pay" style="flex:1; padding:10px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; font-family:'Prompt',sans-serif;">ยกเลิก</button>
                 <button id="btn-confirm-pay" style="flex:1; padding:10px; border-radius:10px; border:none; background:#4CAF50; color:white; cursor:pointer; font-family:'Prompt',sans-serif;">ยืนยัน</button>
@@ -1202,16 +1219,17 @@ function renderHistoryOrders() {
         // Table label logic
         var tLabel = order.table || '-';
         if (tLabel.startsWith('กลับบ้าน')) {
-            tLabel = 'กลับบ้านคิว ' + tLabel.replace('กลับบ้านคิว', '').trim();
+            tLabel = 'คิว ' + tLabel.replace('กลับบ้านคิว', '').trim();
         }
 
         html += '<div class="order-group" style="margin-bottom:10px; background:#fff; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.05); overflow:hidden;">';
         html += '<div class="order-group-header" onclick="toggleOrderGroup(\'order-items-' + order.orderId + '\', this)" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:10px 15px; background:#fff; position:relative;">';
-        html += '<div>';
-        html += '<span class="table-badge" style="background:#FFC107; color:#333; padding:5px 12px; border-radius:20px; font-weight:700; font-size:0.9rem; margin-right:10px;">โต๊ะ ' + tLabel + '</span>';
+        html += '<div style="flex:1; overflow:hidden;">';
+        var tablePrefix = (tLabel.startsWith('กลับบ้าน') || tLabel.startsWith('คิว')) ? '' : 'โต๊ะ ';
+        html += '<span class="table-badge" style="background:#FFC107; color:#333; padding:5px 12px; border-radius:20px; font-weight:700; font-size:0.9rem; margin-right:10px; white-space:nowrap; display:inline-block;">' + tablePrefix + tLabel + '</span>';
         html += '</div>';
         html += '<div style="display:flex; align-items:center;">';
-        html += '<div class="order-time" style="color:#666; font-size:0.85rem; margin-right:8px;">' + formatDateThai(order.createdAt) + '</div>';
+        html += '<div class="order-time" style="color:#666; font-size:0.85rem; margin-right:8px; white-space:nowrap;">' + formatDateThai(order.createdAt) + '</div>';
         html += '<span class="toggle-icon" style="transition: transform 0.2s; color:#888; font-size:1.2rem;">▼</span>';
         html += '</div>';
         html += '</div>';
