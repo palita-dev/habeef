@@ -544,8 +544,8 @@ function getIngredientUsage() {
     // Derive ingredient usage from cached orders
     var usage = [];
     _ordersCache.forEach(function (order) {
-        // ONLY deduct if order is served or completed
-        if (order.status !== 'served' && order.status !== 'completed') return;
+        // Deduct if order is served, completed, or paid
+        if (order.status !== 'served' && order.status !== 'completed' && order.status !== 'paid') return;
 
         if (order.items) {
             var ingMap = {};

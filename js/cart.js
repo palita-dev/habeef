@@ -43,21 +43,34 @@ function addToCart() {
     // === เส้น ===
     if (menu.hasNoodle) {
         var noodleSel = document.querySelector('input[name="noodle"]:checked');
+        var mixNoodleSel = document.querySelector('input[name="mixed-noodle"]:checked');
+        var hasMix = !!mixNoodleSel;
+
         if (noodleSel) {
             var noodle = NOODLE_OPTIONS.find(function (n) { return n.id === noodleSel.value; });
             if (noodle) {
-                details.push(noodle.ingredient);
-                addIng(noodle.ingredient);
+                var mainLabel = hasMix ? ('ผสม' + noodle.ingredient + '+') : noodle.ingredient;
+                details.push(mainLabel);
+                // หักครึ่งถ้ามีเส้นผสม
+                if (hasMix) {
+                    if (FORMULA[noodle.ingredient] !== undefined) {
+                        ingredients[noodle.ingredient] = (ingredients[noodle.ingredient] || 0) + FORMULA[noodle.ingredient] * 0.5;
+                    }
+                } else {
+                    addIng(noodle.ingredient);
+                }
             }
         }
 
         // === ผสมเส้น ===
-        var mixNoodleSel = document.querySelector('input[name="mixed-noodle"]:checked');
         if (mixNoodleSel) {
             var mn = NOODLE_OPTIONS.find(function (n) { return n.id === mixNoodleSel.value; });
             if (mn) {
                 details.push('ผสม' + mn.ingredient);
-                addIng(mn.ingredient);
+                // หักครึ่งสำหรับเส้นผสม
+                if (FORMULA[mn.ingredient] !== undefined) {
+                    ingredients[mn.ingredient] = (ingredients[mn.ingredient] || 0) + FORMULA[mn.ingredient] * 0.5;
+                }
             }
         }
     }
