@@ -97,6 +97,7 @@ const ALL_INGREDIENTS = [
 ];
 
 // ===== STATE =====
+window.FORMULA = {}; // Fetched from DB
 var currentTable = null;
 var guestId = null;
 var currentMenuItem = null;
@@ -116,14 +117,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   loadCartForTable();
-  
-  // Wait for initial sync from server before first render
-  syncFromServer().then(function() {
+
+  // Wait for initial sync and formula from server before first render
+  Promise.all([
+    syncFromServer(),
+    fetch(SERVER_BASE + '/api/ingredients.php?action=get_formula')
+      .then(function (res) { return res.json(); })
+      .then(function (data) { window.FORMULA = data || {}; })
+      .catch(function (err) { console.error('Failed to load formula', err); })
+  ]).then(function () {
     renderMenu();
   });
 
   // Auto-refresh menu periodically if on the menu page
-  setInterval(function() {
+  setInterval(function () {
     var menuPage = document.getElementById('page-menu');
     if (menuPage && menuPage.classList.contains('active')) {
       renderMenu();
@@ -131,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }, 10000);
 
   // Auto-refresh cart periodically if on the cart page
-  setInterval(function() {
+  setInterval(function () {
     var cartPage = document.getElementById('page-cart');
     if (cartPage && cartPage.classList.contains('active')) {
       loadCartForTable();
@@ -340,7 +347,7 @@ function editCartItem(index) {
   setTimeout(function () {
     var form = document.getElementById('customize-form');
     if (!form) return;
-    
+
     var noodles = form.querySelectorAll('input[name="noodle"]');
     var mixedNoodles = form.querySelectorAll('input[name="mixed-noodle"]');
 
@@ -350,49 +357,45 @@ function editCartItem(index) {
       var r3 = form.querySelector('input[name="veggie"][value="' + (isNoVeg ? 'veg-no' : 'veg-yes') + '"]');
       if (r3) r3.checked = true;
 
-      item.details.forEach(function(d) {
+      item.details.forEach(function (d) {
         // Noodle logic
-        NOODLE_OPTIONS.forEach(function(o) {
-          if (d === o.ingredient) {
-            var r = Array.from(noodles).find(function(i) { return i.value === o.id; });
+        NOODLE_OPTIONS.forEach(function (o) {
+          // Check for single noodle or main noodle when mixed
+          if (d === o.ingredient || d === 'ผสม' + o.ingredient + '+') {
+            var r = Array.from(noodles).find(function (i) { return i.value === o.id; });
             if (r) r.checked = true;
           }
+
+          // Check for mixed noodle (second noodle)
+          if (d === 'ผสม' + o.ingredient) {
+            var rM = Array.from(mixedNoodles).find(function (i) { return i.value === o.id; });
+            if (rM) rM.checked = true;
+          }
         });
-        
-        // Mixed Noodle logic (Mixed noodle starts with "ผสม")
-        if (d.startsWith('ผสม')) {
-            var mixIng = d.replace('ผสม', '').trim();
-            NOODLE_OPTIONS.forEach(function(o) {
-              if (mixIng === o.ingredient) {
-                var rM = Array.from(mixedNoodles).find(function(i) { return i.value === o.id; });
-                if (rM) rM.checked = true;
-              }
-            });
-        }
 
         // Meat logic
-        var mt = MEAT_OPTIONS.find(function(o) { return o.name === d; });
+        var mt = MEAT_OPTIONS.find(function (o) { return o.name === d; });
         if (mt) {
           var r2 = form.querySelector('input[name="meat"][value="' + mt.id + '"]');
           if (r2) r2.checked = true;
         }
 
         // Extras logic
-        EXTRA_OPTIONS.forEach(function(ex) {
+        EXTRA_OPTIONS.forEach(function (ex) {
           if (d.indexOf(ex.name) > -1 && !ex.isNone) {
             var cb = form.querySelector('input[name="extras"][value="' + ex.id + '"]');
             if (cb) cb.checked = true;
           }
         });
       });
-      
+
       // Handle the case where no extras were selected (select "ไม่สั่งเพิ่ม")
-      var hasExtras = item.details.some(function(d) {
-          return EXTRA_OPTIONS.some(function(ex) { return !ex.isNone && d.indexOf(ex.name) > -1; });
+      var hasExtras = item.details.some(function (d) {
+        return EXTRA_OPTIONS.some(function (ex) { return !ex.isNone && d.indexOf(ex.name) > -1; });
       });
       if (!hasExtras) {
-          var noneCb = form.querySelector('input[name="extras"][value="extra-none"]');
-          if (noneCb) noneCb.checked = true;
+        var noneCb = form.querySelector('input[name="extras"][value="extra-none"]');
+        if (noneCb) noneCb.checked = true;
       }
     }
 
@@ -401,8 +404,8 @@ function editCartItem(index) {
     // Customize header/popup for Edit Mode
     var pageCust = document.getElementById('page-customize');
     if (pageCust) {
-        pageCust.classList.add('modal-mode');
-        pageCust.classList.add('active');
+      pageCust.classList.add('modal-mode');
+      pageCust.classList.add('active');
     }
 
     // Show "Edit Item" Title in Hero
@@ -420,7 +423,7 @@ function editCartItem(index) {
       btnAdd.style.boxShadow = 'none';
       btnAdd.style.borderRadius = '25px';
     }
-    
+
     var btnCancel = document.getElementById('btn-cancel-cust');
     if (btnCancel) {
       btnCancel.textContent = 'ยกเลิก';
@@ -430,12 +433,12 @@ function editCartItem(index) {
       btnCancel.style.color = '#666';
       btnCancel.style.boxShadow = 'none';
       btnCancel.style.borderRadius = '25px';
-      
-      btnCancel.onclick = function() { 
-          if (pageCust) {
-              pageCust.classList.remove('active', 'modal-mode');
-          }
-          resetCustomizeButtons();
+
+      btnCancel.onclick = function () {
+        if (pageCust) {
+          pageCust.classList.remove('active', 'modal-mode');
+        }
+        resetCustomizeButtons();
       };
     }
 
@@ -467,6 +470,6 @@ function resetCustomizeButtons() {
     btnCancel.style.color = '';
     btnCancel.style.boxShadow = '';
     btnCancel.style.borderRadius = '';
-    btnCancel.onclick = function() { goToMenu(); };
+    btnCancel.onclick = function () { goToMenu(); };
   }
 }

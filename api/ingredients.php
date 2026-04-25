@@ -1,8 +1,10 @@
 <?php
 require_once 'db.php';
 
-// Ensure the ingredients table has a 'is_disabled' column
+// Ensure the ingredients table has required columns
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `is_disabled` tinyint(1) DEFAULT 0");
+$conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `usage_per_order` decimal(10,4) NOT NULL DEFAULT 0.0000");
+$conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `pieces_per_order` int(11) NOT NULL DEFAULT 1");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = isset($_GET['action']) ? $_GET['action'] : 'disabled_list';
@@ -17,9 +19,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
         echo json_encode($disabled);
+    } elseif ($action === 'get_formula') {
+        $result = $conn->query("SELECT ingredient_name, usage_per_order FROM ingredients");
+        $formula = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $formula[$row['ingredient_name']] = (float)$row['usage_per_order'];
+            }
+        }
+        echo json_encode($formula);
+    } elseif ($action === 'get_formula_detail') {
+        $result = $conn->query("SELECT ingredient_name, usage_per_order, pieces_per_order FROM ingredients");
+        $formula = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $formula[$row['ingredient_name']] = [
+                    'usage' => (float)$row['usage_per_order'],
+                    'pieces' => (int)$row['pieces_per_order']
+                ];
+            }
+        }
+        echo json_encode($formula);
     } else {
         // Return all ingredients
-        $result = $conn->query("SELECT ingredient_name, unit, is_disabled FROM ingredients ORDER BY ingredient_name");
+        $result = $conn->query("SELECT ingredient_name, unit, is_disabled, usage_per_order FROM ingredients ORDER BY ingredient_name");
         $list = [];
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
@@ -57,6 +80,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $is_disabled = isset($data['is_disabled']) ? (int)$data['is_disabled'] : 0;
         if (!empty($name)) {
             $conn->query("UPDATE ingredients SET is_disabled = $is_disabled WHERE ingredient_name = '$name'");
+        }
+        echo json_encode(["success" => true]);
+    } elseif ($action === 'update_formula') {
+        $formula = isset($data['formula']) && is_array($data['formula']) ? $data['formula'] : [];
+        $pieces = isset($data['pieces']) && is_array($data['pieces']) ? $data['pieces'] : [];
+        if (!empty($formula)) {
+            $stmt = $conn->prepare("UPDATE ingredients SET usage_per_order = ?, pieces_per_order = ? WHERE ingredient_name = ?");
+            if ($stmt) {
+                foreach ($formula as $name => $usage) {
+                    $p = isset($pieces[$name]) ? (int)$pieces[$name] : 1;
+                    $stmt->bind_param("dis", $usage, $p, $name);
+                    $stmt->execute();
+                }
+                $stmt->close();
+            }
         }
         echo json_encode(["success" => true]);
     } else {

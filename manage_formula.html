@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>จัดการปริมาณวัตถุดิบ - ก๋วยเตี๋ยวฮาบีฟ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/backoffice.css">
+    <style>
+        .formula-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .formula-item {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .formula-item-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .formula-input {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: right;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="page active">
+        <div class="top-bar">
+            <div style="width:40px;"></div>
+            <span class="top-bar-title">จัดการปริมาณวัตถุดิบ</span>
+            <div style="width:40px;"></div>
+        </div>
+        <div class="red-hero" style="position: relative;">
+            <button onclick="window.location.href='owner.html'" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.25); border:2px solid #fff; color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.15);">←</button>
+            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <p>ตั้งค่าปริมาณวัตถุดิบที่ใช้ต่อ 1 ชาม</p>
+        </div>
+        
+        <div class="page-body" style="padding-bottom: 80px;">
+            <div id="loading" style="text-align: center; padding: 20px;">กำลังโหลดข้อมูล...</div>
+            <div id="formula-container" class="formula-list" style="display: none;">
+                <!-- Formula items will be injected here -->
+            </div>
+            
+            <div id="btn-container" style="display: none; gap: 12px; margin-top: 24px;">
+                <button class="btn" style="flex: 1; background: #7A7A7A; color: white; padding: 14px; border-radius: 20px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer;" onclick="cancelEdit()">ยกเลิก</button>
+                <button class="btn" style="flex: 1; background: #34C759; color: white; padding: 14px; border-radius: 20px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer;" onclick="saveFormula()">บันทึกการเปลี่ยนแปลง</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            requireAuth(['owner', 'admin']);
+            loadFormula();
+        });
+
+        let currentFormula = {};
+
+        // Configuration for display units and their conversion divisors
+        const UNIT_CONFIG = {
+            'เส้นเล็ก': { unit: 'กรัม', divisor: 1000 },
+            'เส้นใหญ่': { unit: 'กรัม', divisor: 500 },
+            'เส้นหมี่ขาว': { unit: 'กรัม', divisor: 500 },
+            'เส้นหมี่หยก': { unit: 'ก้อน', divisor: 4 },
+            'เส้นหมี่เหลือง': { unit: 'ก้อน', divisor: 4 },
+            'ผักบุ้ง': { unit: 'กรัม', divisor: 1000 },
+            'ถั่วงอก': { unit: 'กรัม', divisor: 1000 },
+            'ลูกชิ้น': { unit: 'ชิ้น', divisor: 90 },
+            'เนื้อวัว': { unit: 'กรัม', divisor: 1000 },
+            'หมึก': { unit: 'กรัม', divisor: 1000 },
+            'ไข่': { unit: 'ฟอง', divisor: 30 },
+            // Dual-input items: show count × grams per piece
+            'น่องไก่': { unit: 'กรัม', divisor: 1000, dualInput: true, pieceLabel: 'น่อง' },
+            'กุ้ง': { unit: 'กรัม', divisor: 1000, dualInput: true, pieceLabel: 'ตัว' }
+        };
+
+        function loadFormula() {
+            var baseUrl = typeof SERVER_BASE !== 'undefined' ? SERVER_BASE : '';
+            fetch(baseUrl + '/api/ingredients.php?action=get_formula_detail')
+                .then(res => res.json())
+                .then(data => {
+                    currentFormula = data || {};
+                    renderFormula();
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+                });
+        }
+
+        function renderFormula() {
+            const container = document.getElementById('formula-container');
+            const loading = document.getElementById('loading');
+            
+            container.innerHTML = '';
+            
+            if (Object.keys(currentFormula).length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#888;">ไม่พบข้อมูลสูตรวัตถุดิบ</div>';
+            } else {
+                for (const [name, data] of Object.entries(currentFormula)) {
+                    const usage = data.usage || 0;
+                    const pieces = data.pieces || 1;
+                    const config = UNIT_CONFIG[name] || { unit: 'หน่วย', divisor: 1 };
+                    
+                    if (config.dualInput) {
+                        // Dual input: count + total grams
+                        // "2 ตัว 80 กรัม" means 2 shrimp = 80 grams total per bowl
+                        const totalGrams = Math.round(usage * 1000);
+                        
+                        container.innerHTML += `
+                            <div class="formula-item" style="flex-direction: column; align-items: stretch;">
+                                <div class="formula-item-name" style="margin-bottom: 10px;">${name}</div>
+                                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end;">
+                                    <input type="number" step="1" min="1" class="formula-input formula-dual-count" data-name="${name}" value="${pieces}" style="width:60px;">
+                                    <span style="color:#777; font-size:0.9rem; min-width:30px;">${config.pieceLabel}</span>
+                                    <span style="color:#555; font-size:1rem; font-weight:600; margin:0 4px;">=</span>
+                                    <input type="number" step="1" class="formula-input formula-dual-grams" data-name="${name}" value="${totalGrams}" style="width:70px;">
+                                    <span style="color:#777; font-size:0.9rem; min-width:30px;">กรัม</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Normal single input
+                        let displayValue = Math.round(usage * config.divisor);
+                        const val = displayValue.toString();
+                        
+                        container.innerHTML += `
+                            <div class="formula-item">
+                                <div class="formula-item-name">${name}</div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="number" step="1" class="formula-input" data-name="${name}" value="${val}">
+                                    <span style="color:#777; font-size:0.9rem; width: 35px; text-align: left;">${config.unit}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            loading.style.display = 'none';
+            container.style.display = 'flex';
+            
+            // Show buttons
+            const btnContainer = document.getElementById('btn-container');
+            if(btnContainer) btnContainer.style.display = 'flex';
+        }
+
+        function cancelEdit() {
+            window.location.href = 'owner.html';
+        }
+
+        function saveFormula() {
+            const newFormula = {};
+            const newPieces = {};
+            
+            // Collect normal (single) inputs
+            document.querySelectorAll('.formula-input:not(.formula-dual-count):not(.formula-dual-grams)').forEach(input => {
+                const name = input.getAttribute('data-name');
+                const displayVal = parseFloat(input.value) || 0;
+                const config = UNIT_CONFIG[name] || { divisor: 1 };
+                newFormula[name] = displayVal / config.divisor;
+                newPieces[name] = 1;
+            });
+            
+            // Collect dual inputs (น่องไก่, กุ้ง)
+            // Grams field = total weight per bowl (NOT per piece)
+            document.querySelectorAll('.formula-dual-count').forEach(countInput => {
+                const name = countInput.getAttribute('data-name');
+                const gramsInput = document.querySelector('.formula-dual-grams[data-name="' + name + '"]');
+                const count = parseInt(countInput.value) || 1;
+                const totalGrams = parseFloat(gramsInput.value) || 0;
+                // usage_per_order (kg) = totalGrams / 1000
+                newFormula[name] = totalGrams / 1000;
+                newPieces[name] = count;
+            });
+            
+            var baseUrl = typeof SERVER_BASE !== 'undefined' ? SERVER_BASE : '';
+            fetch(baseUrl + '/api/ingredients.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_formula',
+                    formula: newFormula,
+                    pieces: newPieces
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('บันทึกข้อมูลเรียบร้อย ✓');
+                    setTimeout(() => window.location.href = 'owner.html', 1500);
+                } else {
+                    showToast('เกิดข้อผิดพลาดในการบันทึก');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

@@ -161,7 +161,62 @@ function selectIngredient(name) {
     var unit = ING_UNITS[name] || '\u0e2b\u0e19\u0e48\u0e27\u0e22';
     document.getElementById('si-unit').value = unit;
     document.getElementById('si-unit-label').textContent = '\u0e08\u0e33\u0e19\u0e27\u0e19 (' + unit + ')';
+    var recommended = calculateRecommended(name, remainingData[name].remaining);
+    if (recommended.value > 0) {
+        document.getElementById('si-unit-label').innerHTML = 'จำนวน (' + unit + ') <span style="color:#D32F2F; font-size:0.8rem; font-weight:bold;">(ควรซื้ออีก ' + recommended.text + ')</span>';
+    } else {
+        document.getElementById('si-unit-label').textContent = 'จำนวน (' + unit + ')';
+    }
     document.getElementById('si-qty').focus();
+}
+
+function calculateRecommended(name, remaining) {
+    // Fixed daily purchase amounts (user-specified)
+    var FIXED_DAILY = {
+        'เนื้อวัว': 18,    // 18 กก.
+        'น่องไก่': 15,    // 15 กก.
+        'ผักบุ้ง': 10,    // 10 กก.
+        'ถั่วงอก': 10,    // 10 กก.
+        'กุ้ง': 3,        // 3 กก.
+        'หมึก': 1,        // 1 กก.
+        'ไข่': 3          // 3 แผง
+    };
+
+    // Formula-based amounts (200 bowls)
+    // Removed hardcoded FORMULA_200, using dynamic window.FORMULA
+    
+    var targetStock = 0;
+    if (FIXED_DAILY[name] !== undefined) {
+        targetStock = FIXED_DAILY[name];
+    } else if (window.FORMULA && window.FORMULA[name] !== undefined) {
+        targetStock = window.FORMULA[name] * 200;
+    }
+
+    var shouldBuy = 0;
+    if (targetStock > 0) {
+        shouldBuy = targetStock - remaining;
+        if (shouldBuy < 0) shouldBuy = 0;
+    }
+
+    var text = '-';
+    var unit = ING_UNITS[name];
+    var displayUnit = unit === 'กิโลกรัม' ? 'กก.' : unit;
+
+    if (shouldBuy > 0) {
+        if (name === 'ไข่') {
+            text = Math.ceil(shouldBuy) + ' แผง';
+        } else {
+            text = Math.ceil(shouldBuy) + ' ' + displayUnit;
+        }
+    } else if (targetStock > 0) {
+        text = '0 ' + (name === 'ไข่' ? 'แผง' : displayUnit);
+    }
+
+    return {
+        value: shouldBuy,
+        text: text,
+        target: targetStock
+    };
 }
 
 function showStockInForm() {
@@ -1038,7 +1093,7 @@ function renderReport() {
     if (!container) return;
 
     var html = '<table class="ing-table">';
-    html += '<tr><th>รายการ</th><th>รับเข้า</th><th>ที่ใช้ไป</th><th>คงเหลือ</th></tr>';
+    html += '<tr><th>รายการ</th><th>รับเข้า</th><th>ที่ใช้ไป</th><th>คงเหลือ</th><th>ควรซื้อเพิ่ม</th></tr>';
 
     var remainingData = getRemaining();
 
@@ -1070,11 +1125,14 @@ function renderReport() {
             inText = parseFloat(Number(inQty).toFixed(3)) + ' กก.';
         }
 
+        var recommended = calculateRecommended(name, remaining);
+
         html += '<tr>';
         html += '<td>' + name + '</td>';
         html += '<td>' + inText + '</td>';
         html += '<td>' + usedText + '</td>';
         html += '<td class="' + statusClass + '">' + remText + '</td>';
+        html += '<td style="font-weight:700; color:#333;">' + recommended.text + '</td>';
         html += '</tr>';
     });
 
@@ -1321,53 +1379,7 @@ function downloadReportForDate(dateStr) {
             fontWeight = 'bold';
         }
 
-        var shouldBuy = 0;
-
-        // Fixed daily purchase amounts (user-specified)
-        var FIXED_DAILY = {
-            'เนื้อวัว': 18,    // 18 กก.
-            'น่องไก่': 15,    // 15 กก.
-            'ผักบุ้ง': 10,    // 5-10 กก. (upper end)
-            'ถั่วงอก': 10,    // 5-10 กก. (upper end)
-            'กุ้ง': 3,        // 3 กก.
-            'หมึก': 1,        // 1 กก.
-            'ไข่': 3          // 3 แผง
-        };
-
-        // Formula-based amounts for noodles, ลูกชิ้น (200 bowls)
-        var FORMULA_200 = {
-            'เส้นเล็ก': (55 / 1000) * 200,
-            'เส้นใหญ่': (25 / 500) * 200,
-            'เส้นหมี่ขาว': (25 / 500) * 200,
-            'เส้นหมี่หยก': (2 / 4) * 200,
-            'เส้นหมี่เหลือง': (2 / 4) * 200,
-            'ลูกชิ้น': (2 / 90) * 200
-        };
-
-        var targetStock = 0;
-        if (FIXED_DAILY[name] !== undefined) {
-            targetStock = FIXED_DAILY[name];
-        } else if (FORMULA_200[name] !== undefined) {
-            targetStock = FORMULA_200[name];
-        }
-
-        if (targetStock > 0) {
-            shouldBuy = targetStock - rem;
-            if (shouldBuy < 0) shouldBuy = 0;
-        }
-
-        var shouldBuyText = '-';
-        if (shouldBuy > 0) {
-            // For ไข่, use แผง (whole number since unit is แผง)
-            if (name === 'ไข่') {
-                shouldBuyText = Math.ceil(shouldBuy) + ' แผง';
-            } else {
-                shouldBuyText = Math.ceil(shouldBuy) + ' ' + displayUnit;
-            }
-        } else if (targetStock > 0) {
-            // Has a target but stock is already enough
-            shouldBuyText = '0 ' + (name === 'ไข่' ? 'แผง' : displayUnit);
-        }
+        var recommended = calculateRecommended(name, rem);
 
         html += '<tr>';
         html += '<td style="padding:6px; border:1px solid #000000; font-weight:normal; color:#000000;">' + name + '</td>';
@@ -1378,7 +1390,7 @@ function downloadReportForDate(dateStr) {
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + inText + '</td>';
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:normal; color:#000000;">' + usedText + '</td>';
         html += '<td style="padding:6px; border:1px solid #000000; text-align:center; background:' + bgColor + '; font-weight:' + fontWeight + '; color:' + textColor + ';">' + remText + '</td>';
-        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:bold; color:#000000;">' + shouldBuyText + '</td>';
+        html += '<td style="padding:6px; border:1px solid #000000; text-align:center; font-weight:bold; color:#000000;">' + recommended.text + '</td>';
         html += '</tr>';
     });
     html += '</table>';

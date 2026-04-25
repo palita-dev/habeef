@@ -89,7 +89,7 @@ function renderMenu() {
         var parts = line.split('+');
         // Exception for Seafood to keep it compact
         if (item.id === 'tom-yam-seafood') {
-           return '<div class="desc-line">' + line + '</div>';
+          return '<div class="desc-line">' + line + '</div>';
         }
         return '<div class="desc-line"><span class="desc-main">' + parts[0].trim() + '</span><span class="desc-plus">+</span><span class="desc-extra">' + parts[1].trim() + '</span></div>';
       }
@@ -197,29 +197,31 @@ function renderCustomizeForm(menu) {
   // === ผัก ===
   html += '<div class="section-card" style="margin-bottom: 12px;">' +
     '<div class="section-header" style="background: #FBC02D; padding: 10px 15px; color: #333; font-weight: bold; font-size: 1.1rem;">ผัก</div>' +
-    '<div class="section-body" style="padding: 10px;">';
+    '<div class="section-body" style="padding: 10px; display: flex; gap: 10px;">';
   VEGGIE_OPTIONS.forEach(function (opt, i) {
     var isOos = false;
     if (opt.hasVeg) {
       // Check stock
       var pbQty = (typeof FORMULA !== 'undefined' && FORMULA['ผักบุ้ง']) ? FORMULA['ผักบุ้ง'] : 0;
       var tngQty = (typeof FORMULA !== 'undefined' && FORMULA['ถั่วงอก']) ? FORMULA['ถั่วงอก'] : 0;
-      
+
       var isPbDisabled = disabledIngredients.indexOf('ผักบุ้ง') !== -1;
       var isTngDisabled = disabledIngredients.indexOf('ถั่วงอก') !== -1;
 
       if (
-          ((remaining['ผักบุ้ง'] || 0) < pbQty) || ((remaining['ถั่วงอก'] || 0) < tngQty) ||
-          isPbDisabled || isTngDisabled
+        ((remaining['ผักบุ้ง'] || 0) < pbQty) || ((remaining['ถั่วงอก'] || 0) < tngQty) ||
+        isPbDisabled || isTngDisabled
       ) {
         isOos = true;
       }
     }
     var opacity = isOos ? ' opacity: 0.5; pointer-events: none;' : '';
     var oosLabel = isOos ? ' <span style="color:#D32F2F; font-size:0.85rem; font-weight:bold;">(หมด)</span>' : '';
-    html += '<label class="option-item" style="' + opacity + '">' +
+    html += '<div style="flex: 1;">' +
+      '<label class="option-item" style="' + opacity + '">' +
       '<input type="radio" name="veggie" value="' + opt.id + '"' + (isOos ? ' disabled' : '') + '>' +
-      '<span class="option-label">' + opt.name + oosLabel + '</span></label>';
+      '<span class="option-label">' + opt.name + oosLabel + '</span></label>' +
+      '</div>';
   });
   html += '</div></div>';
 
