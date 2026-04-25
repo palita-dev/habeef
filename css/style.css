@@ -1401,52 +1401,111 @@ body {
   margin-right: 18px;
 }
 
-/* ===== RESPONSIVE: จัดกึ่งกลางแบบมือถือบนจอใหญ่ ===== */
+/* ===== MODERN HYBRID RESPONSIVE SYSTEM ===== */
+@media (min-width: 768px) {
+  /* 1. Reset Body constraints from earlier versions if any */
+  body {
+    max-width: none;
+    box-shadow: none;
+  }
 
-/* ตัวเพจหลัก: จำกัดความกว้างเหมือนมือถือ จัดกึ่งกลาง */
-.page {
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: auto;
-}
+  /* 2. Header & Tab Bar (Full width background, centered content) */
+  .cart-header-sticky,
+  .customer-header-fixed {
+    width: 100% !important;
+    left: 0 !important;
+    transform: none !important;
+    max-width: none !important;
+  }
 
-/* ปุ่มตะกร้าด้านล่าง */
-.bottom-cart-bar {
-  max-width: 440px;
-}
+  .hero-section > *,
+  .section-bar,
+  .cart-info-section {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
-/* สรุปยอดตะกร้า */
-.cart-summary-fixed {
-  max-width: 480px;
-  left: 50%;
-  transform: translateX(-50%);
-}
+  /* Center tabs visually */
+  .tab-bar {
+    justify-content: center;
+  }
 
-/* ปุ่มด้านล่างหน้าปรับแต่ง */
-.bottom-actions {
-  max-width: 480px;
-  left: 50%;
-  transform: translateX(-50%);
-}
+  .table-selector-wrapper {
+    flex: 0 1 auto;
+    min-width: 200px;
+  }
 
-/* Header ตะกร้าที่ fixed อยู่ด้านบน */
-.cart-header-sticky {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  z-index: 900;
-  background: #FFF;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  padding-bottom: 5px;
-}
+  /* 3. Menu Grid Layout */
+  .menu-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 
-/* ปุ่มกลับหน้าใบเสร็จ */
-.receipt-footer-container {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 16px 20px 24px;
+  .menu-card {
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  
+  .menu-desc {
+    width: auto !important;
+    max-width: 180px;
+  }
+
+  /* 4. Page Body Restraints */
+  .page-body {
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* 5. Customize Form layout */
+  .customize-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* 6. Fixed Footers & Bars */
+  .bottom-cart-bar,
+  .cart-summary-fixed,
+  .bottom-actions,
+  .receipt-footer-container {
+    max-width: 500px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    border-radius: 20px 20px 0 0;
+  }
+
+  /* Reset bottom cart bar which might have transform issues */
+  .bottom-cart-bar {
+    bottom: 0;
+  }
+
+  .red-footer-strip {
+    width: 100% !important;
+    max-width: none !important;
+    left: 0 !important;
+    transform: none !important;
+  }
+
+  /* 7. Fix Cart Empty / Cart Table / Receipt */
+  .cart-table-wrapper,
+  #cart-empty-display,
+  .receipt-card {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* Adjust padding to prevent overlap with sticky headers */
+  #page-cart .page-body {
+    padding-top: 190px !important;
+  }
 }
 

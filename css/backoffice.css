@@ -1552,3 +1552,70 @@ input:checked + .toggle-slider:before {
     height: 100% !important;
     border-radius: 0 !important;
 }
+
+/* ===== MODERN HYBRID RESPONSIVE SYSTEM (Backoffice) ===== */
+@media (min-width: 768px) {
+    /* Full width headers and bars */
+    .top-bar,
+    .black-header,
+    .red-hero,
+    .section-bar {
+        width: 100% !important;
+        max-width: none !important;
+        left: 0 !important;
+        transform: none !important;
+    }
+
+    /* Constrain content inside headers if needed */
+    .top-bar {
+        justify-content: center;
+    }
+
+    .black-header > *,
+    .red-hero > *,
+    .section-bar > * {
+        max-width: 1000px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Constrain Page Body */
+    .page-body {
+        max-width: 1000px;
+        margin: 0 auto;
+        width: 100%;
+        padding-top: 20px;
+    }
+
+    /* Ensure tables and main elements don't stretch too thin */
+    .owner-card,
+    .order-card,
+    .history-card {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Grid for owner dashboard numbers */
+    .dashboard-numbers {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    /* Constrain bottom nav bar so it's not super long */
+    .bottom-nav {
+        max-width: 500px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 20px 20px 0 0;
+    }
+
+    /* Center Login Container beautifully */
+    .login-container {
+        max-width: 400px;
+        margin: 60px auto;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 1px solid #eee;
+    }
+}
