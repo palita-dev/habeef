@@ -1,100 +1,10 @@
-// ===== ข้อมูลเมนูอาหาร =====
-const MENU_ITEMS = [
-  {
-    id: 'nam-khon',
-    name: 'ก๋วยเตี๋ยวน้ำข้น',
-    desc: 'เนื้อสด + ลูกชิ้น <br> เนื้อเปื่อย + ลูกชิ้น <br> น่องไก่ + ลูกชิ้น',
-    price: 50,
-    emoji: '🍜',
-    image: 'images/ก๋วยเตี๋ยวน้ำข้น.jpg',
-    hasNoodle: true,
-    hasMeat: true,
-    isSeafood: false
-  },
-  {
-    id: 'haeng',
-    name: 'ก๋วยเตี๋ยวแห้ง',
-    desc: 'เนื้อสด + ลูกชิ้น <br> เนื้อเปื่อย + ลูกชิ้น <br> น่องไก่ + ลูกชิ้น',
-    price: 50,
-    emoji: '🥢',
-    image: 'images/ก๋วยเตี๋ยวแห้ง.jpg',
-    hasNoodle: true,
-    hasMeat: true,
-    isSeafood: false
-  },
-  {
-    id: 'tom-yam',
-    name: 'ก๋วยเตี๋ยวต้มยำ',
-    desc: 'เนื้อสด <br> เนื้อเปื่อย <br> น่องไก่',
-    price: 60,
-    emoji: '🌶️',
-    image: 'images/ก๋วยเตี๋ยวต้มยำ.jpg',
-    hasNoodle: true,
-    hasMeat: true,
-    isSeafood: false
-  },
-  {
-    id: 'tom-yam-seafood',
-    name: 'ก๋วยเตี๋ยวต้มยำ ทะเล',
-    desc: 'กุ้ง + หมึก',
-    price: 95,
-    emoji: '🦐',
-    image: 'images/ก๋วยเตี๋ยวต้มยำทะเล.png',
-    hasNoodle: true,
-    hasMeat: false,
-    isSeafood: true
-  },
-  {
-    id: 'kao-lao',
-    name: 'เกาเหลา',
-    desc: 'เนื้อสด + ลูกชิ้น <br> เนื้อเปื่อย + ลูกชิ้น <br> น่องไก่ + ลูกชิ้น',
-    price: 50,
-    emoji: '🥣',
-    image: 'images/เกาเหลา.jpg',
-    hasNoodle: false,
-    hasMeat: true,
-    isSeafood: false
-  }
-];
-
-// ===== ตัวเลือกเส้น =====
-const NOODLE_OPTIONS = [
-  { id: 'sen-lek', name: 'เล็ก', ingredient: 'เส้นเล็ก' },
-  { id: 'sen-yai', name: 'ใหญ่', ingredient: 'เส้นใหญ่' },
-  { id: 'mee-khao', name: 'หมี่ขาว', ingredient: 'เส้นหมี่ขาว' },
-  { id: 'mee-yok', name: 'หมี่หยก', ingredient: 'เส้นหมี่หยก' },
-  { id: 'mee-lueng', name: 'หมี่เหลือง', ingredient: 'เส้นหมี่เหลือง' }
-];
-
-// ===== ตัวเลือกเนื้อสัตว์ =====
-const MEAT_OPTIONS = [
-  { id: 'neua-sod', name: 'เนื้อสด', ingredient: 'เนื้อวัว' },
-  { id: 'neua-peuay', name: 'เนื้อเปื่อย', ingredient: 'เนื้อวัว' },
-  { id: 'nong-kai', name: 'น่องไก่', ingredient: 'น่องไก่' }
-];
-
-// ===== ตัวเลือกผัก =====
-const VEGGIE_OPTIONS = [
-  { id: 'veg-yes', name: 'ใส่', hasVeg: true },
-  { id: 'veg-no', name: 'ไม่ใส่', hasVeg: false }
-];
-
-// ===== ตัวเลือกสั่งเพิ่ม =====
-const EXTRA_OPTIONS = [
-  { id: 'extra-none', name: 'ไม่สั่งเพิ่ม', price: 0, ingredient: null, isNone: true },
-  { id: 'extra-egg', name: 'ไข่', price: 10, ingredient: 'ไข่' },
-
-  { id: 'extra-lc', name: 'ลูกชิ้น', price: 10, ingredient: 'ลูกชิ้น' },
-  { id: 'extra-nk', name: 'น่องไก่', price: 20, ingredient: 'น่องไก่' },
-  { id: 'extra-ns', name: 'เนื้อสด', price: 20, ingredient: 'เนื้อวัว' },
-  { id: 'extra-np', name: 'เนื้อเปื่อย', price: 20, ingredient: 'เนื้อวัว' }
-];
-
-// ===== วัตถุดิบ 13 รายการ =====
-const ALL_INGREDIENTS = [
-  'เส้นเล็ก', 'เส้นใหญ่', 'เส้นหมี่ขาว', 'เส้นหมี่หยก', 'เส้นหมี่เหลือง',
-  'ผักบุ้ง', 'ถั่วงอก', 'ลูกชิ้น', 'เนื้อวัว', 'น่องไก่', 'ไข่', 'กุ้ง', 'หมึก'
-];
+// ===== ข้อมูลที่ดึงจากฐานข้อมูล =====
+var MENU_ITEMS = [];
+var NOODLE_OPTIONS = [];
+var MEAT_OPTIONS = [];
+var VEGGIE_OPTIONS = [];
+var EXTRA_OPTIONS = [];
+var ALL_INGREDIENTS = [];
 
 // ===== STATE =====
 window.FORMULA = {}; // Fetched from DB
@@ -118,13 +28,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   loadCartForTable();
 
-  // Wait for initial sync and formula from server before first render
+  // Wait for initial sync and data from server before first render
   Promise.all([
     syncFromServer(),
     fetch(SERVER_BASE + '/api/ingredients.php?action=get_formula')
       .then(function (res) { return res.json(); })
-      .then(function (data) { window.FORMULA = data || {}; })
-      .catch(function (err) { console.error('Failed to load formula', err); })
+      .then(function (data) { window.FORMULA = data || {}; }),
+    fetch(SERVER_BASE + '/api/menus.php')
+      .then(function (res) { return res.json(); })
+      .then(function (data) { MENU_ITEMS = data || []; }),
+    fetch(SERVER_BASE + '/api/options.php')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data) {
+          NOODLE_OPTIONS = data.noodle || [];
+          MEAT_OPTIONS = data.meat || [];
+          VEGGIE_OPTIONS = data.veggie || [];
+          EXTRA_OPTIONS = data.extra || [];
+        }
+      }),
+    fetch(SERVER_BASE + '/api/ingredients.php')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (Array.isArray(data)) {
+          ALL_INGREDIENTS = data.map(function (ing) { return ing.ingredient_name; });
+        }
+      })
   ]).then(function () {
     renderMenu();
   });

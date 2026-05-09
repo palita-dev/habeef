@@ -2,32 +2,9 @@
 
 var currentUser = null;
 
-var ALL_INGREDIENTS = [
-    'เส้นเล็ก', 'เส้นใหญ่', 'เส้นหมี่ขาว', 'เส้นหมี่หยก', 'เส้นหมี่เหลือง',
-    'ผักบุ้ง', 'ถั่วงอก', 'ลูกชิ้น', 'เนื้อวัว', 'น่องไก่', 'ไข่', 'กุ้ง', 'หมึก'
-];
-
-var ING_EMOJIS = {
-    'เส้นเล็ก': '<img src="images/เส้นเล็กตรานำโชค.jpg.png" class="ing-icon">',
-    'เส้นใหญ่': '<img src="images/เส้นใหญ่ตราเสือ.jpg" class="ing-icon">',
-    'เส้นหมี่ขาว': '<img src="images/เส้นหมี่ขาวตราเสือ.jpg" class="ing-icon">',
-    'เส้นหมี่หยก': '<img src="images/หมี่หยก.jpg" class="ing-icon">',
-    'เส้นหมี่เหลือง': '<img src="images/หมี่เหลือง.jpg" class="ing-icon">',
-    'ผักบุ้ง': '<img src="images/ผักบุ้ง.jpg" class="ing-icon">',
-    'ถั่วงอก': '<img src="images/ถั่วงอกแต่งสี.jpg" class="ing-icon">',
-    'ลูกชิ้น': '<img src="images/ลูกชิ้น.jpg" class="ing-icon">',
-    'เนื้อวัว': '<img src="images/เนื้อวัว.png" class="ing-icon">',
-    'น่องไก่': '<img src="images/น่องไก่.png" class="ing-icon">',
-    'ไข่': '<img src="images/ไข่แผง.jpg" class="ing-icon">',
-    'กุ้ง': '<img src="images/กุ้ง.jpg" class="ing-icon">',
-    'หมึก': '<img src="images/หมึก.jpg" class="ing-icon">'
-};
-
-var ING_UNITS = {
-    'เส้นเล็ก': 'ถุง', 'เส้นใหญ่': 'ถุง', 'เส้นหมี่ขาว': 'ถุง', 'เส้นหมี่หยก': 'ถุง', 'เส้นหมี่เหลือง': 'ถุง',
-    'ผักบุ้ง': 'กิโลกรัม', 'ถั่วงอก': 'กิโลกรัม', 'ลูกชิ้น': 'ถุง', 'เนื้อวัว': 'กิโลกรัม', 'น่องไก่': 'กิโลกรัม',
-    'ไข่': 'แผง', 'กุ้ง': 'กิโลกรัม', 'หมึก': 'กิโลกรัม'
-};
+var ALL_INGREDIENTS = [];
+var ING_EMOJIS = {};
+var ING_UNITS = {};
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -35,22 +12,24 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!currentUser) return;
     document.getElementById('acc-name').textContent = currentUser.name || currentUser.username;
 
-    var today = new Date();
-    var dayStr = today.getDate() + '/' + (today.getMonth() + 1) + '/' + (today.getFullYear() + 543);
-    document.getElementById('report-date').textContent = 'วันที่ ' + dayStr;
-
-    populateIngList();
-    populateSoIngList();
-
-    // Render empty state initially
-    renderStockInToday();
-    renderRemaining();
-    renderReport();
-
-
-
     // Fetch latest data and re-render
-    syncFromServer().then(function () {
+    Promise.all([
+        syncFromServer(),
+        fetch(SERVER_BASE + '/api/ingredients.php')
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (Array.isArray(data)) {
+                    ALL_INGREDIENTS = data.map(function (ing) { return ing.ingredient_name; });
+                    data.forEach(function (ing) {
+                        ING_EMOJIS[ing.ingredient_name] = ing.icon_html || '📦';
+                        ING_UNITS[ing.ingredient_name] = ing.unit;
+                    });
+                }
+            }),
+        fetch(SERVER_BASE + '/api/ingredients.php?action=get_formula')
+            .then(function (res) { return res.json(); })
+            .then(function (data) { window.FORMULA = data || {}; })
+    ]).then(function () {
         var data = getStockIn();
         for (var dateKey in data) {
             if (!data[dateKey] || typeof data[dateKey] !== 'object') continue;
@@ -65,6 +44,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         }
+        populateIngList();
+        populateSoIngList();
         renderStockInToday();
         renderRemaining();
         renderReport();
