@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/backoffice.css">
+    <link rel="stylesheet" href="css/backoffice.css?v=20260425_2005">
     <style>
         .formula-list {
             display: flex;
@@ -45,10 +45,13 @@
             <span class="top-bar-title">จัดการปริมาณวัตถุดิบ</span>
             <div style="width:40px;"></div>
         </div>
-        <div class="red-hero" style="position: relative;">
-            <button onclick="window.location.href='owner.html'" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.25); border:2px solid #fff; color:#fff; width:40px; height:40px; border-radius:50%; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.15);">←</button>
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <p>ตั้งค่าปริมาณวัตถุดิบที่ใช้ต่อ 1 ชาม</p>
+        <div class="red-hero">
+            <div style="position:relative; display:inline-block;">
+                <button onclick="window.location.href='owner.html'" 
+                    style="position:absolute; left:-55px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.25); border:2px solid #fff; color:#fff; width:38px; height:38px; border-radius:50%; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.15); transition:transform 0.2s; z-index:10;">←</button>
+                <h1 style="margin:0;">ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            </div>
+            <p style="margin-top:5px;">ตั้งค่าปริมาณวัตถุดิบที่ใช้ต่อ 1 ชาม</p>
         </div>
         
         <div class="page-body" style="padding-bottom: 80px;">
@@ -66,7 +69,7 @@
 
     <div id="toast" class="toast"></div>
 
-    <script src="js/auth.js"></script>
+    <script src="js/auth.js?v=20260425_2005"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             requireAuth(['owner', 'admin']);
@@ -116,7 +119,33 @@
             if (Object.keys(currentFormula).length === 0) {
                 container.innerHTML = '<div style="text-align:center;color:#888;">ไม่พบข้อมูลสูตรวัตถุดิบ</div>';
             } else {
-                for (const [name, data] of Object.entries(currentFormula)) {
+                const formulaEntries = Object.entries(currentFormula);
+                formulaEntries.sort((a, b) => {
+                    const nameA = a[0];
+                    const nameB = b[0];
+                    const configA = UNIT_CONFIG[nameA] || { unit: 'หน่วย', divisor: 1 };
+                    const configB = UNIT_CONFIG[nameB] || { unit: 'หน่วย', divisor: 1 };
+                    
+                    const getRank = (name, config) => {
+                        if (name === 'กุ้ง') return 1;
+                        if (name === 'น่องไก่' || name === 'ไก่') return 2;
+                        if (config.unit === 'กรัม') return 3;
+                        if (config.unit === 'ก้อน') return 4;
+                        if (config.unit === 'ชิ้น') return 5;
+                        if (config.unit === 'ฟอง') return 6;
+                        return 7;
+                    };
+                    
+                    const rankA = getRank(nameA, configA);
+                    const rankB = getRank(nameB, configB);
+                    
+                    if (rankA !== rankB) {
+                        return rankA - rankB;
+                    }
+                    return nameA.localeCompare(nameB, 'th');
+                });
+                
+                for (const [name, data] of formulaEntries) {
                     const usage = data.usage || 0;
                     const pieces = data.pieces || 1;
                     const config = UNIT_CONFIG[name] || { unit: 'หน่วย', divisor: 1 };
@@ -127,12 +156,12 @@
                         const totalGrams = Math.round(usage * 1000);
                         
                         container.innerHTML += `
-                            <div class="formula-item" style="flex-direction: column; align-items: stretch;">
-                                <div class="formula-item-name" style="margin-bottom: 10px;">${name}</div>
-                                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end;">
+                            <div class="formula-item">
+                                <div class="formula-item-name">${name}</div>
+                                <div style="display:flex; align-items:center; gap:6px;">
                                     <input type="number" step="1" min="1" class="formula-input formula-dual-count" data-name="${name}" value="${pieces}" style="width:60px;">
-                                    <span style="color:#777; font-size:0.9rem; min-width:30px;">${config.pieceLabel}</span>
-                                    <span style="color:#555; font-size:1rem; font-weight:600; margin:0 4px;">=</span>
+                                    <span style="color:#777; font-size:0.9rem; min-width:20px;">${config.pieceLabel}</span>
+                                    <span style="color:#555; font-size:1rem; font-weight:600; margin:0 2px;">=</span>
                                     <input type="number" step="1" class="formula-input formula-dual-grams" data-name="${name}" value="${totalGrams}" style="width:70px;">
                                     <span style="color:#777; font-size:0.9rem; min-width:30px;">กรัม</span>
                                 </div>

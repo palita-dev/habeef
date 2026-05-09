@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/backoffice.css">
+    <link rel="stylesheet" href="css/backoffice.css?v=20260425_1227_LOGIN">
     <style>
         .top-bar {
             background: linear-gradient(135deg, #222, #111) !important;
@@ -31,6 +31,15 @@
             line-height: 1;
             padding: 0 3px;
         }
+
+        #notif-dropdown {
+            animation: popIn 0.2s ease-out;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 
@@ -38,24 +47,16 @@
     <!-- ===== หน้าจัดการสิทธิ์ผู้ใช้ ===== -->
     <div id="page-users" class="page active">
         <div class="top-bar"><span class="top-bar-title">หน้าระบบแอดมิน</span></div>
-        <div class="black-header" style="position:relative;">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <p style="display:flex; align-items:center; justify-content:center; gap:10px;">ดูแลและจัดการระบบ
-                <button onclick="toggleNotifPanel()"
-                    style="position:relative; background:none; border:none; font-size:1.2rem; cursor:pointer; padding:2px 4px; vertical-align:middle;">
-                    🔔<span id="notif-badge-main" class="notif-badge" style="display:none;"></span>
+        <div class="black-header">
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <button id="notif-bell-btn" onclick="toggleNotifPanel()"
+                    style="background:rgba(255,255,255,0.15); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10; border:none; transition:transform 0.2s;">
+                    <span style="font-size:1.3rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span id="notif-badge-main" class="notif-badge" style="display:none; top:-2px; right:-2px; border:2px solid #222;"></span>
                 </button>
-            </p>
-            <!-- Notification Dropdown Panel -->
-            <div id="notif-dropdown"
-                style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); width:90%; max-width:380px; max-height:350px; overflow-y:auto; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:100; padding:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-weight:600; font-size:0.9rem; color:#333;">🔔 การแจ้งเตือน</span>
-                    <button onclick="toggleNotifPanel()"
-                        style="background:none; border:none; font-size:1.1rem; cursor:pointer; color:#888;">✕</button>
-                </div>
-                <div id="notif-list-container"></div>
             </div>
+            <p style="margin-top:5px; opacity:0.8;">ดูแลและจัดการระบบ</p>
         </div>
         <div class="section-bar">
             <span>รายชื่อผู้ใช้</span>
@@ -68,8 +69,15 @@
     <div id="page-user-form" class="page">
         <div class="top-bar"><span class="top-bar-title" id="form-title">หน้าระบบแอดมิน</span></div>
         <div class="black-header">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <p>ดูแลและจัดการระบบ</p>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <button id="notif-bell-btn" onclick="toggleNotifPanel()"
+                    style="background:rgba(255,255,255,0.15); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10; border:none; transition:transform 0.2s;">
+                    <span style="font-size:1.3rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span id="notif-badge-main" class="notif-badge" style="display:none; top:-2px; right:-2px; border:2px solid #222;"></span>
+                </button>
+            </div>
+            <p style="margin-top:5px; opacity:0.8;">ดูแลและจัดการระบบ</p>
         </div>
         <div class="section-bar">
             <span id="form-subtitle">สร้างบัญชีผู้ใช้ใหม่</span>
@@ -106,10 +114,18 @@
     <div id="page-qr" class="page">
         <div class="top-bar"><span class="top-bar-title">หน้าระบบแอดมิน</span></div>
         <div class="black-header">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <p>ดูแลและจัดการระบบ</p>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <button id="notif-bell-btn" onclick="toggleNotifPanel()"
+                    style="background:rgba(255,255,255,0.15); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10; border:none; transition:transform 0.2s;">
+                    <span style="font-size:1.3rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span id="notif-badge-main" class="notif-badge" style="display:none; top:-2px; right:-2px; border:2px solid #222;"></span>
+                </button>
+            </div>
+            <p style="margin-top:5px; opacity:0.8;">ดูแลและจัดการระบบ</p>
         </div>
         <div class="page-body">
+            <div class="qr-row">
             <div class="qr-section">
                 <div class="qr-box" style="width:100%; box-sizing:border-box;">
                     <select id="qr-table-select" onchange="generateTableQR()"
@@ -147,6 +163,7 @@
                         Code</button>
                 </div>
             </div>
+            </div><!-- end qr-row -->
         </div>
     </div>
 
@@ -154,8 +171,15 @@
     <div id="page-account" class="page">
         <div class="top-bar"><span class="top-bar-title">หน้าระบบแอดมิน</span></div>
         <div class="black-header">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <p>ดูแลและจัดการระบบ</p>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <button id="notif-bell-btn" onclick="toggleNotifPanel()"
+                    style="background:rgba(255,255,255,0.15); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10; border:none; transition:transform 0.2s;">
+                    <span style="font-size:1.3rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span id="notif-badge-main" class="notif-badge" style="display:none; top:-2px; right:-2px; border:2px solid #222;"></span>
+                </button>
+            </div>
+            <p style="margin-top:5px; opacity:0.8;">ดูแลและจัดการระบบ</p>
         </div>
         <div class="page-body">
             <div class="account-card">
@@ -246,6 +270,17 @@
         </div>
     </div>
 
+    <!-- ===== NOTIFICATION DROPDOWN (Positioned near bell) ===== -->
+    <div id="notif-dropdown"
+        style="display:none; position:fixed; z-index:9000; background:#fff; border-radius:16px; padding:20px; width:340px; max-height:450px; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.2); border:1px solid #eee;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <span style="font-weight:700; font-size:1rem; color:#333;">🔔 การแจ้งเตือน</span>
+            <button onclick="toggleNotifPanel()"
+                style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#888; line-height:1;">✕</button>
+        </div>
+        <div id="notif-list-container"></div>
+    </div>
+
     <!-- ===== BOTTOM NAV ===== -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="showTab('page-users',this)">
@@ -260,8 +295,8 @@
         </button>
     </div>
 
-    <script src="js/auth.js?v=202603061825"></script>
-    <script src="js/admin.js?v=202603061825"></script>
+    <script src="js/auth.js?v=20260425_2002"></script>
+    <script src="js/admin.js?v=20260425_2002"></script>
 </body>
 
 </html>

@@ -955,18 +955,21 @@ input:checked + .toggle-slider:before {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 24px;
     background: #F5F0EB;
+    background-image: radial-gradient(#D7CCC8 1px, transparent 1px);
+    background-size: 20px 20px;
 }
 
 .login-card {
     background: #fff;
-    border-radius: 20px;
-    padding: 32px 24px;
+    border-radius: 28px;
+    padding: 40px 32px;
     width: 100%;
-    max-width: 340px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    max-width: 380px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
     text-align: center;
+    border: 1px solid rgba(255,255,255,0.8);
 }
 
 .login-card h1 {
@@ -981,20 +984,7 @@ input:checked + .toggle-slider:before {
     margin-bottom: 20px;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (min-width: 481px) {
-    body {
-        max-width: 420px;
-        margin: 0 auto;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
-    }
-
-    .bottom-nav {
-        max-width: 420px;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-}
+/* Legacy responsive block removed */
 
 /* ===== TABLE GRID ===== */
 .table-grid {
@@ -1555,7 +1545,31 @@ input:checked + .toggle-slider:before {
 
 /* ===== MODERN HYBRID RESPONSIVE SYSTEM (Backoffice) ===== */
 @media (min-width: 768px) {
-    /* Full width headers and bars */
+
+    /* ===== 1. BODY & GLOBAL ===== */
+    body {
+        max-width: none;
+        background-color: #F0EDE8;
+    }
+
+    /* ===== LOGIN PAGE - Center card vertically & horizontally ===== */
+    .login-container {
+        padding: 40px;
+        background-color: #F0EDE8;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(198, 40, 40, 0.05) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(255, 193, 7, 0.05) 0px, transparent 50%);
+        background-size: auto;
+    }
+
+    .login-card {
+        max-width: 420px;
+        padding: 50px 40px;
+        border-radius: 32px;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
+    }
+
+    /* ===== 2. HEADERS - Full width, centered content ===== */
     .top-bar,
     .black-header,
     .red-hero,
@@ -1564,58 +1578,131 @@ input:checked + .toggle-slider:before {
         max-width: none !important;
         left: 0 !important;
         transform: none !important;
+        position: static !important; /* Not sticky on desktop */
     }
 
-    /* Constrain content inside headers if needed */
+    /* Center inner content of top bar */
     .top-bar {
+        position: sticky !important; /* Keep top-bar sticky on desktop */
         justify-content: center;
+        padding: 14px 24px;
     }
 
-    .black-header > *,
-    .red-hero > *,
-    .section-bar > * {
-        max-width: 1000px;
-        margin-left: auto;
-        margin-right: auto;
+    .top-bar-title {
+        font-size: 1rem;
     }
 
-    /* Constrain Page Body */
+    /* Center inner elements of headers */
+    .black-header,
+    .red-hero {
+        padding: 24px 20px 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .black-header h1,
+    .red-hero h1 {
+        font-size: 1.6rem;
+    }
+
+    /* section-bar: full width with centered content */
+    .section-bar {
+        display: flex !important;
+        padding: 10px 24px !important;
+        font-size: 1rem;
+    }
+
+    /* ===== 3. PAGE BODY - Centered max-width ===== */
     .page-body {
         max-width: 1000px;
         margin: 0 auto;
         width: 100%;
-        padding-top: 20px;
+        padding: 20px 24px;
+        padding-bottom: 100px !important; /* Space for bottom nav */
     }
 
-    /* Ensure tables and main elements don't stretch too thin */
+    /* ===== 4. BOTTOM NAV - Full width (not constrained) ===== */
+    .bottom-nav,
+    .command-bar {
+        width: 100% !important;
+        max-width: none !important;
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        border-radius: 0 !important;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* Center nav items nicely on desktop */
+    .bottom-nav .nav-item,
+    .command-bar .nav-item {
+        max-width: 160px;
+        font-size: 0.85rem;
+    }
+
+    .nav-label {
+        font-size: 0.72rem;
+    }
+
+    /* ===== 5. CARDS & GRIDS ===== */
     .owner-card,
     .order-card,
-    .history-card {
+    .history-card,
+    .form-card {
         margin-left: auto;
         margin-right: auto;
     }
 
-    /* Grid for owner dashboard numbers */
+    /* Owner dashboard stats as 3-column grid */
     .dashboard-numbers {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 15px;
     }
 
-    /* Constrain bottom nav bar so it's not super long */
-    .bottom-nav {
-        max-width: 500px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-radius: 20px 20px 0 0;
+    /* User list as 2-column grid */
+    .user-card {
+        display: flex;
     }
 
-    /* Center Login Container beautifully */
-    .login-container {
-        max-width: 400px;
-        margin: 60px auto;
-        border-radius: 12px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        border: 1px solid #eee;
+    /* ===== 6. INGREDIENT TABLE (wider) ===== */
+    .ing-table th,
+    .ing-table td {
+        font-size: 0.8rem;
+        padding: 8px 6px;
     }
-}
+
+    /* ===== 7. LOGIN PAGE ===== */
+    /* Handled above */
+
+    /* ===== 8. ORDER GROUP GRID (Staff/Owner) ===== */
+    #orders-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 16px;
+    }
+
+    /* ===== 9. QR SECTION - Equal width side by side ===== */
+    .qr-row {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        align-items: stretch; /* Make both cards equal height */
+    }
+
+    .qr-section {
+        flex: 1; /* Both take exactly equal width */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .qr-section .qr-box {
+        flex: 1; /* Stretch qr-box to fill equal height */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+    }
+}

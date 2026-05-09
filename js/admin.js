@@ -97,14 +97,14 @@ function toggleGmailEdit(show) {
     var editMode = document.getElementById('gmail-edit-mode');
     var errEl = document.getElementById('gmail-error');
     var pwInput = document.getElementById('gmail-confirm-pw');
-    
+
     if (errEl) errEl.style.display = 'none';
     if (pwInput) pwInput.value = '';
 
     if (show) {
         if (displayMode) displayMode.style.display = 'none';
         if (editMode) editMode.style.display = 'block';
-        
+
         // Load latest email into input
         var users = getUsers();
         var adminUser = users.find(function (u) { return u.role === 'admin'; });
@@ -493,7 +493,7 @@ function renderNotifications() {
         var timeStr = d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543) + ' ' +
             d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
 
-        var u = users.find(function(user) { return user.username === n.username; });
+        var u = users.find(function (user) { return user.username === n.username; });
         var displayRole = u ? (roleNames[u.role] || u.role) : '';
         var accountInfo = n.username + (displayRole ? ' (' + displayRole + ')' : '');
 
@@ -633,14 +633,45 @@ updateNotifBadge();
 renderNotifications();
 setInterval(_refreshNotificationsAndBadge, 3000);
 
-// Toggle notification dropdown panel
+// Toggle notification dropdown near bell button
 function toggleNotifPanel() {
     var panel = document.getElementById('notif-dropdown');
+    if (!panel) return;
+
     if (panel.style.display === 'none' || !panel.style.display) {
         renderNotifications();
+
+        // Position the dropdown near the bell button
+        var bellBtn = document.getElementById('notif-bell-btn');
+        if (bellBtn) {
+            var rect = bellBtn.getBoundingClientRect();
+            var panelWidth = 340;
+            var viewportWidth = window.innerWidth;
+
+            // Default: appear below the bell
+            var top = rect.bottom + 8;
+
+            // Try right of bell first, else flip left
+            var left = rect.right + 10;
+            if (left + panelWidth > viewportWidth - 10) {
+                left = rect.left - panelWidth - 10;
+            }
+            // Clamp to viewport
+            left = Math.max(10, Math.min(left, viewportWidth - panelWidth - 10));
+
+            panel.style.top = top + 'px';
+            panel.style.left = left + 'px';
+        } else {
+            // Fallback: center on screen
+            panel.style.top = '120px';
+            panel.style.left = '50%';
+            panel.style.transform = 'translateX(-50%)';
+        }
+
         panel.style.display = 'block';
     } else {
         panel.style.display = 'none';
+        panel.style.transform = ''; // reset transform
     }
 }
 

@@ -8,32 +8,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/backoffice.css">
+    <link rel="stylesheet" href="css/backoffice.css?v=20260425_1227_LOGIN">
     <style>
-        /* Notification Bell - sits inside .red-hero */
-        .red-hero {
-            position: relative;
-        }
-
-        #noti-button {
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            z-index: 10;
-        }
-
+        /* Notification Panel - Balloon style */
         #noti-panel {
             position: fixed;
-            top: 112px;
-            right: 15px;
-            z-index: 1002;
+            z-index: 9000;
+            width: 320px;
+            max-width: 90vw;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid #eee;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            animation: popIn 0.2s ease-out;
         }
 
-        @media (min-width: 481px) {
-            #noti-panel {
-                right: calc(50% - 210px + 15px);
-            }
+        @keyframes popIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
@@ -45,12 +40,14 @@
             <span class="top-bar-title">หน้าระบบพนักงาน</span>
         </div>
         <div class="red-hero">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <div class="noti-btn" onclick="toggleNotiPanel()"
-                style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:15px; transform:translateY(-50%); z-index:10;">
-                <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
-                <span class="noti-badge"
-                    style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <div class="noti-btn" onclick="toggleNotiPanel()"
+                    style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10;">
+                    <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span class="noti-badge"
+                        style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+                </div>
             </div>
         </div>
 
@@ -75,12 +72,14 @@
     <div id="page-payment" class="page">
         <div class="top-bar"><span class="top-bar-title">หน้าระบบพนักงาน</span></div>
         <div class="red-hero">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <div class="noti-btn" onclick="toggleNotiPanel()"
-                style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:15px; transform:translateY(-50%); z-index:10;">
-                <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
-                <span class="noti-badge"
-                    style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <div class="noti-btn" onclick="toggleNotiPanel()"
+                    style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10;">
+                    <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span class="noti-badge"
+                        style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+                </div>
             </div>
         </div>
         <div class="section-bar"><span>ชำระเงิน</span></div>
@@ -93,12 +92,14 @@
     <div id="page-history" class="page">
         <div class="top-bar"><span class="top-bar-title">หน้าระบบพนักงาน</span></div>
         <div class="red-hero">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
-            <div class="noti-btn" onclick="toggleNotiPanel()"
-                style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:15px; transform:translateY(-50%); z-index:10;">
-                <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
-                <span class="noti-badge"
-                    style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <div class="noti-btn" onclick="toggleNotiPanel()"
+                    style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10;">
+                    <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span class="noti-badge"
+                        style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+                </div>
             </div>
         </div>
         <div class="section-bar"><span>ประวัติออเดอร์</span><span id="history-date-label"></span></div>
@@ -112,7 +113,15 @@
     <div id="page-account" class="page">
         <div class="top-bar"><span class="top-bar-title">หน้าระบบพนักงาน</span></div>
         <div class="red-hero">
-            <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <div class="noti-btn" onclick="toggleNotiPanel()"
+                    style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10;">
+                    <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span class="noti-badge"
+                        style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+                </div>
+            </div>
         </div>
         <div class="page-body">
             <div class="account-card">
@@ -200,8 +209,8 @@
         </div>
     </div>
 
-    <script src="js/auth.js?v=202603081850"></script>
-    <script src="js/staff.js?v=202603081850"></script>
+    <script src="js/auth.js?v=20260425_1951"></script>
+    <script src="js/staff.js?v=20260425_1951"></script>
 </body>
 
 </html>

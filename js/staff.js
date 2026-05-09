@@ -107,8 +107,35 @@ function updateNotificationPanel() {
 
 function toggleNotiPanel() {
     var panel = document.getElementById('noti-panel');
-    if (panel) {
-        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    if (!panel) return;
+
+    if (panel.style.display === 'none' || !panel.style.display) {
+        // Find the active noti-btn (since it's in multiple pages)
+        var activePage = document.querySelector('.page.active');
+        var bellBtn = activePage ? activePage.querySelector('.noti-btn') : document.querySelector('.noti-btn');
+
+        if (bellBtn) {
+            var rect = bellBtn.getBoundingClientRect();
+            var panelWidth = 320;
+            var viewportWidth = window.innerWidth;
+
+            // Positioning logic similar to admin.js
+            var top = rect.bottom + 12;
+            var left = rect.left + (rect.width / 2) - (panelWidth / 2);
+
+            // Keep within viewport
+            if (left + panelWidth > viewportWidth - 15) {
+                left = viewportWidth - panelWidth - 15;
+            }
+            if (left < 15) left = 15;
+
+            panel.style.top = top + 'px';
+            panel.style.left = left + 'px';
+        }
+
+        panel.style.display = 'flex';
+    } else {
+        panel.style.display = 'none';
     }
 }
 

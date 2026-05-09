@@ -18,7 +18,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260313_0055_LAYOUT">
+  <link rel="stylesheet" href="css/style.css?v=20260425_1210_FIXSCROLL">
+  <style>
+    /* FORCE Desktop Overrides to bypass CSS cache */
+    @media (min-width: 768px) {
+      #page-cart .page-body {
+        padding-top: 15px !important;
+      }
+      .cart-header-sticky,
+      .customer-header-fixed {
+        position: static !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -122,12 +134,13 @@
   <div id="page-customize" class="page">
     <div class="page-body page-body-with-bottom" style="padding: 0; padding-bottom: 90px;">
       <div class="customize-hero" style="position: relative; z-index: 1;">
+        <button class="btn-close-modal-hero" onclick="goToMenu()" style="position: absolute; top: 15px; right: 40px; width: 36px; height: 36px; border-radius: 50%; background: #FFF; color: #D32F2F; border: none; font-size: 1.6rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.2s; padding-bottom: 3px;">✕</button>
         <div id="edit-mode-title" style="display:none;">แก้ไขรายการ</div>
       </div>
 
       <div style="padding: 0 14px; position: relative; z-index: 10;">
         <!-- Floating Card Header -->
-        <div class="customize-header-card">
+        <div class="customize-header-card" style="position: relative;">
           <h2 id="customize-header-name" class="customize-title">Loading...</h2>
           <div class="customize-floating-img-box">
             <div class="customize-img-wrapper">
@@ -146,8 +159,9 @@
           <span id="customize-total-price">0 ฿</span>
         </div>
         <div style="display: flex; gap: 12px; width: 100%;">
+          <!-- Cancel on Left, Save on Right -->
           <button id="btn-cancel-cust" class="btn btn-cancel" onclick="goToMenu()">ยกเลิก</button>
-          <button id="btn-add-cust" class="btn btn-add" onclick="addToCart()">เพิ่มลงตะกร้า</button>
+          <button id="btn-add-cust" class="btn btn-add" onclick="addToCart()">บันทึกการแก้ไข</button>
         </div>
       </div>
     </div>

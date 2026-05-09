@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', function () {
     renderRemaining();
     renderReport();
 
+
+
     // Fetch latest data and re-render
     syncFromServer().then(function () {
         var data = getStockIn();
@@ -184,7 +186,7 @@ function calculateRecommended(name, remaining) {
 
     // Formula-based amounts (200 bowls)
     // Removed hardcoded FORMULA_200, using dynamic window.FORMULA
-    
+
     var targetStock = 0;
     if (FIXED_DAILY[name] !== undefined) {
         targetStock = FIXED_DAILY[name];
@@ -1081,6 +1083,112 @@ function renderRemaining() {
             toggleHtml +
             '</div>';
     }).join('');
+
+    updateOwnerNotification();
+}
+
+function updateOwnerNotification() {
+    var remainingData = getRemaining();
+    var disabledIngredients = getDisabledIngredients();
+    var lowStockItems = [];
+
+    ALL_INGREDIENTS.forEach(function (name) {
+        var d = remainingData[name];
+        var isEnabled = disabledIngredients.indexOf(name) === -1;
+        // Low stock condition: automatically empty or <= 1.5, AND enabled
+        if (isEnabled && d.remaining <= 1.5) {
+            lowStockItems.push({
+                name: name,
+                remaining: d.remaining,
+                unit: d.unit,
+                isEmpty: d.remaining <= 0
+            });
+        }
+    });
+
+    var badges = document.querySelectorAll('.noti-badge');
+    var list = document.getElementById('owner-noti-list');
+
+    badges.forEach(function (badge) {
+        if (lowStockItems.length > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = lowStockItems.length;
+            badge.style.background = '#f44336';
+            badge.style.border = '2px solid #c62828';
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+
+    if (list) {
+        if (lowStockItems.length > 0) {
+            // Sort by empty first, then ascending remaining
+            lowStockItems.sort(function(a, b) {
+                if (a.isEmpty && !b.isEmpty) return -1;
+                if (!a.isEmpty && b.isEmpty) return 1;
+                return a.remaining - b.remaining;
+            });
+
+            var html = '';
+            lowStockItems.forEach(function (item) {
+                var emoji = ING_EMOJIS[item.name] || '📦';
+                var color = item.isEmpty ? '#f44336' : '#FF9800';
+                var bgColor = item.isEmpty ? '#fff0f0' : '#fff8e1';
+                var icon = item.isEmpty ? '🔴' : '⚠️';
+                
+                var remText = formatSecondaryUnit(item.name, item.remaining, false);
+                if (!remText) remText = item.remaining + ' ' + item.unit;
+
+                // จัดบรรทัดเดียวให้กระชับ
+                if (remText.indexOf('<br>หรือ ') !== -1) {
+                    remText = remText.replace('<br>หรือ ', ' (') + ')';
+                }
+                var statusText = item.isEmpty ? 'หมดสต็อก' : 'เหลือ ' + remText;
+
+                html += '<div style="background:'+bgColor+'; border-left:4px solid '+color+'; padding:10px 12px; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="showTab(\'page-remaining\', document.querySelector(\'.bottom-nav .nav-item:nth-child(2)\')); toggleOwnerNotiPanel();">';
+                html += '<div style="font-size:1.4rem; width:32px; height:32px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(0,0,0,0.1);">' + emoji + '</div>';
+                html += '<div style="flex:1; display:flex; justify-content:space-between; align-items:center;">';
+                html += '<div style="font-weight:700; font-size:0.95rem; color:#333;">' + item.name + '</div>';
+                html += '<div style="font-size:0.85rem; color:'+color+'; font-weight:600;">' + icon + ' ' + statusText + '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = '<div style="text-align:center; color:#999; padding:20px 0; font-size:0.9rem;">วัตถุดิบเพียงพอ 🎉</div>';
+        }
+    }
+}
+
+function toggleOwnerNotiPanel() {
+    var panel = document.getElementById('owner-noti-panel');
+    if (!panel) return;
+
+    if (panel.style.display === 'none' || !panel.style.display) {
+        var activePage = document.querySelector('.page.active');
+        var bellBtn = activePage ? activePage.querySelector('.noti-btn') : document.querySelector('.noti-btn');
+
+        if (bellBtn) {
+            var rect = bellBtn.getBoundingClientRect();
+            var panelWidth = 320;
+            var viewportWidth = window.innerWidth;
+
+            var top = rect.bottom + 12;
+            var left = rect.left + (rect.width / 2) - (panelWidth / 2);
+
+            if (left + panelWidth > viewportWidth - 15) {
+                left = viewportWidth - panelWidth - 15;
+            }
+            if (left < 15) left = 15;
+
+            panel.style.top = top + 'px';
+            panel.style.left = left + 'px';
+        }
+
+        panel.style.display = 'flex';
+    } else {
+        panel.style.display = 'none';
+    }
 }
 
 
