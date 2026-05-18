@@ -1344,6 +1344,26 @@ input:checked+.toggle-slider:before {
     overflow: hidden;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.receipt-card.highlight-flash {
+    animation: highlightPulse 1.2s ease-in-out infinite alternate;
+    border: 3px solid #1E88E5 !important;
+    box-shadow: 0 0 20px rgba(30, 136, 229, 0.6) !important;
+}
+
+@keyframes highlightPulse {
+    0% {
+        border-color: #1E88E5;
+        box-shadow: 0 0 12px rgba(30, 136, 229, 0.4);
+        transform: scale(1.01);
+    }
+    100% {
+        border-color: #90CAF9;
+        box-shadow: 0 0 25px rgba(30, 136, 229, 0.8);
+        transform: scale(1.02);
+    }
 }
 
 /* Yellow section bar */

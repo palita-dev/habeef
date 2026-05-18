@@ -766,7 +766,7 @@ function openTableDetail(tableId) {
         body.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; text-align:center; gap:16px;">' +
             '<div style="font-size:3.5rem;">🔵</div>' +
             '<div style="font-size:1.15rem; color:#1565C0; font-weight:700;">โต๊ะนี้เสิร์ฟครบแล้ว รอชำระเงิน</div>' +
-            '<button onclick="closeModal(); processPayment(\'' + tableId + '\');" style="margin-top:10px; width:100%; padding:14px; font-size:1.05rem; font-weight:700; background:#1976D2; color:#fff; border:none; border-radius:12px; cursor:pointer; box-shadow:0 4px 12px rgba(25,118,210,0.3); transition:all 0.2s; font-family:\'Prompt\',sans-serif;">ไปยังหน้าชำระเงิน</button>' +
+            '<button onclick="closeModal(); highlightPaymentBlock(\'' + tableId + '\');" style="margin-top:10px; width:100%; padding:14px; font-size:1.05rem; font-weight:700; background:#1976D2; color:#fff; border:none; border-radius:12px; cursor:pointer; box-shadow:0 4px 12px rgba(25,118,210,0.3); transition:all 0.2s; font-family:\'Prompt\',sans-serif;">ไปยังหน้าชำระเงิน</button>' +
             '</div>';
         btnServeAll.style.display = 'none';
         if (btnCancelOrders) btnCancelOrders.style.display = 'none';
@@ -950,6 +950,44 @@ function serveAllOrders() {
     }
 }
 
+function highlightPaymentBlock(tableId) {
+    // 1. Find the bottom nav button for payment
+    var paymentNavBtn = document.querySelector('.bottom-nav button[onclick*="page-payment"]');
+    
+    // 2. Switch to payment tab
+    showTab('page-payment', paymentNavBtn);
+
+    // 3. Find and highlight the receipt card
+    setTimeout(function() {
+        var targetCard = document.querySelector('.receipt-card[data-table-id="' + tableId + '"]');
+        
+        if (!targetCard) {
+            var cards = document.querySelectorAll('.receipt-card');
+            for (var i = 0; i < cards.length; i++) {
+                var id = cards[i].getAttribute('data-table-id') || '';
+                if (id === tableId || id === 'GUEST_' + tableId) {
+                    targetCard = cards[i];
+                    break;
+                }
+                var badge = cards[i].querySelector('.receipt-table-badge');
+                if (badge && badge.textContent.indexOf(tableId) !== -1) {
+                    targetCard = cards[i];
+                    break;
+                }
+            }
+        }
+
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetCard.classList.add('highlight-flash');
+            
+            setTimeout(function() {
+                targetCard.classList.remove('highlight-flash');
+            }, 3000);
+        }
+    }, 150);
+}
+
 function processPayment(tableId) {
     // Create custom confirmation modal for payment
     var modal = document.createElement('div');
@@ -1064,7 +1102,7 @@ function refreshPayment() {
         var tableLabel = displayTableName.startsWith('กลับบ้าน') ? '🛍️ ' + displayTableName : 'โต๊ะ ' + displayTableName;
         var grandTotal = orders.reduce(function (s, o) { return s + o.totalPrice; }, 0);
 
-        html += '<div class="receipt-card">';
+        html += '<div class="receipt-card" data-table-id="' + groupKey + '">';
 
         // Yellow header bar with date/time and table badge
         html += '<div class="receipt-card-header">';
