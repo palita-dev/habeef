@@ -1150,6 +1150,9 @@ function toggleOwnerNotiPanel() {
 
     if (panel.style.display === 'none' || !panel.style.display) {
         var activePage = document.querySelector('.page.active');
+        if (document.getElementById('page-report-history') && document.getElementById('page-report-history').style.display === 'block') {
+            activePage = document.getElementById('page-report-history');
+        }
         var bellBtn = activePage ? activePage.querySelector('.noti-btn') : document.querySelector('.noti-btn');
 
         if (bellBtn) {
@@ -1300,9 +1303,61 @@ function openReportHistoryModal() {
         return db - da;
     });
 
+    window.allReportDates = uniqueDates;
+    
+    // Initialize custom calendar
+    var now = new Date();
+    window.reportCalendarYear = now.getFullYear();
+    window.reportCalendarMonth = now.getMonth();
+    window.selectedReportDate = null;
+    
+    var btn = document.getElementById('report-calendar-btn');
+    if (btn) {
+        btn.innerHTML = '<span>📅 เลือกวันที่</span>';
+    }
+
+    renderReportHistoryList();
+
+    // Switch pages visually (leave bottom nav alone)
+    document.getElementById('page-report').style.display = 'none';
+    document.getElementById('page-report-history').style.display = 'block';
+}
+
+function renderReportHistoryList(filterDateStr) {
+    var container = document.getElementById('report-list-container');
+    if (!container) return;
+
+    var datesToShow = window.allReportDates || [];
+    
+    if (filterDateStr) {
+        // filterDateStr can be:
+        // 1. CE format "YYYY-MM-DD" (from native calendar input if any)
+        // 2. BE format "D-M-YYYY" (from our custom calendar)
+        if (filterDateStr.indexOf('-') !== -1) {
+            var parts = filterDateStr.split('-');
+            if (parts.length === 3) {
+                if (parts[0].length === 4) {
+                    // CE format "YYYY-MM-DD"
+                    // Set hours to 12 (noon) to avoid day shifting in getShiftDateStr!
+                    var ceD = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
+                    var targetStr = getShiftDateStr(ceD);
+                    datesToShow = datesToShow.filter(function(d) { return d === targetStr; });
+                } else {
+                    // BE format "D-M-YYYY" e.g. "18-5-2569"
+                    datesToShow = datesToShow.filter(function(d) { return d === filterDateStr; });
+                }
+            }
+        }
+    }
+
+    if (datesToShow.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">ไม่พบรายงานในวันที่เลือก</div>';
+        return;
+    }
+
     // 3. Render HTML list
     var html = '';
-    uniqueDates.forEach(function (dateStr) {
+    datesToShow.forEach(function (dateStr) {
         var displayDate = dateStr.replace(/-/g, '/');
 
         html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:15px; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; background:#fafafa;">';
@@ -1317,10 +1372,147 @@ function openReportHistoryModal() {
     });
 
     container.innerHTML = html;
+}
 
-    // Switch pages visually (leave bottom nav alone)
-    document.getElementById('page-report').style.display = 'none';
-    document.getElementById('page-report-history').style.display = 'block';
+// ===== CUSTOM REPORT CALENDAR FUNCTIONS =====
+function toggleReportCalendar(e) {
+    if (e) e.stopPropagation();
+    var popover = document.getElementById('report-calendar-popover');
+    if (!popover) return;
+    
+    if (popover.style.display === 'none' || !popover.style.display) {
+        popover.style.display = 'block';
+        renderReportCalendar();
+        
+        // Close calendar when clicking outside
+        var closeCal = function(event) {
+            var btn = document.getElementById('report-calendar-btn');
+            if (popover.contains(event.target) || (btn && btn.contains(event.target))) return;
+            popover.style.display = 'none';
+            document.removeEventListener('click', closeCal);
+        };
+        document.addEventListener('click', closeCal);
+    } else {
+        popover.style.display = 'none';
+    }
+}
+
+function renderReportCalendar() {
+    var popover = document.getElementById('report-calendar-popover');
+    if (!popover) return;
+
+    var year = window.reportCalendarYear;
+    var month = window.reportCalendarMonth;
+
+    var firstDay = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    var yearBE = year + 543;
+    var monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+    var html = '';
+    // Calendar Header
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-family:\'Prompt\',sans-serif;">';
+    html += '<button onclick="changeReportCalendarMonth(-1, event)" style="background:none; border:1px solid #ccc; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">◀</button>';
+    html += '<span style="font-weight:600; font-size:0.9rem; color:#333;">' + monthNames[month] + ' ' + yearBE + '</span>';
+    html += '<button onclick="changeReportCalendarMonth(1, event)" style="background:none; border:1px solid #ccc; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">▶</button>';
+    html += '</div>';
+
+    // Weekday headers (Sun first)
+    var dayHeaders = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+    html += '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; text-align:center; margin-bottom:6px; font-family:\'Prompt\',sans-serif;">';
+    dayHeaders.forEach(function (h) {
+        html += '<div style="font-size:0.7rem; font-weight:600; color:#888;">' + h + '</div>';
+    });
+    html += '</div>';
+
+    // Days Grid
+    html += '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; text-align:center; font-family:\'Prompt\',sans-serif;">';
+    
+    // Empty slots before 1st of month
+    for (var i = 0; i < firstDay; i++) {
+        html += '<div></div>';
+    }
+
+    // Days of the month
+    for (var d = 1; d <= daysInMonth; d++) {
+        var dateBEStr = d + '-' + (month + 1) + '-' + yearBE;
+        var hasData = (window.allReportDates || []).indexOf(dateBEStr) !== -1;
+        var isSelected = window.selectedReportDate === dateBEStr;
+
+        var style = 'width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; ';
+
+        if (isSelected) {
+            style += 'background:#C62828; color:#fff; font-weight:bold; cursor:pointer;';
+        } else if (hasData) {
+            style += 'background:#4CAF50; color:#fff; font-weight:bold; cursor:pointer; box-shadow:0 1px 3px rgba(76,175,80,0.3);';
+        } else {
+            style += 'color:#777; cursor:pointer; font-weight:500;';
+        }
+
+        var onclickHtml = 'onclick="selectReportDate(\'' + dateBEStr + '\', ' + hasData + ', event)"';
+
+        html += '<div style="' + style + '" ' + onclickHtml + '>' + d + '</div>';
+    }
+
+    html += '</div>';
+    popover.innerHTML = html;
+}
+
+function changeReportCalendarMonth(delta, e) {
+    if (e) e.stopPropagation();
+    window.reportCalendarMonth += delta;
+    if (window.reportCalendarMonth < 0) {
+        window.reportCalendarMonth = 11;
+        window.reportCalendarYear--;
+    } else if (window.reportCalendarMonth > 11) {
+        window.reportCalendarMonth = 0;
+        window.reportCalendarYear++;
+    }
+    renderReportCalendar();
+}
+
+function selectReportDate(dateBEStr, hasData, e) {
+    if (e) e.stopPropagation();
+    if (!hasData) {
+        showToast('ไม่มีรายงานในวันนี้');
+        return;
+    }
+    window.selectedReportDate = dateBEStr;
+    
+    // Update button text
+    var btn = document.getElementById('report-calendar-btn');
+    if (btn) {
+        var displayDate = dateBEStr.replace(/-/g, '/');
+        btn.innerHTML = '<span>📅 ' + displayDate + '</span>';
+    }
+
+    // Close popover
+    var popover = document.getElementById('report-calendar-popover');
+    if (popover) popover.style.display = 'none';
+
+    // Render filtered list
+    renderReportHistoryList(dateBEStr);
+}
+
+function clearReportFilter() {
+    window.selectedReportDate = null;
+    
+    var now = new Date();
+    window.reportCalendarYear = now.getFullYear();
+    window.reportCalendarMonth = now.getMonth();
+
+    var btn = document.getElementById('report-calendar-btn');
+    if (btn) {
+        btn.innerHTML = '<span>📅 เลือกวันที่</span>';
+    }
+    var popover = document.getElementById('report-calendar-popover');
+    if (popover) {
+        popover.style.display = 'none';
+        renderReportCalendar();
+    }
+    
+    renderReportHistoryList();
 }
 
 function hideReportHistory() {
