@@ -255,19 +255,17 @@
       </div>
 
       <!-- Back Button Fixed Bottom -->
-      <div style="position:fixed; bottom:0; left:0; right:0; z-index:1000;">
-        <div class="receipt-footer-container">
-          <button onclick="goToMenu()" style="
-            display:block; width:100%; padding:15px;
-            background:#FFC107; color:#333;
-            font-family:'Prompt',sans-serif; font-size:1.05rem; font-weight:700;
-            border:none; border-radius:50px; cursor:pointer;
-            box-shadow:0 4px 12px rgba(255,193,7,0.35); transition:transform 0.1s;
-          " onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'"
-            ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
-            ← กลับหน้าเมนู
-          </button>
-        </div>
+      <div style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:calc(100% - 60px); max-width:400px; z-index:1000;">
+        <button onclick="goToMenu()" style="
+          display:block; width:100%; padding:15px;
+          background:#FFC107; color:#333;
+          font-family:'Prompt',sans-serif; font-size:1.05rem; font-weight:700;
+          border:none; border-radius:50px; cursor:pointer;
+          box-shadow:0 4px 12px rgba(255,193,7,0.35); transition:transform 0.1s;
+        " onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'"
+          ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
+          ← กลับหน้าเมนู
+        </button>
       </div>
     </div>
   </div>

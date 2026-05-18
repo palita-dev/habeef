@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/backoffice.css?v=20260425_2008">
+    <link rel="stylesheet" href="css/backoffice.css?v=160525692127">
 </head>
 
 <body>
@@ -25,8 +25,13 @@
                 <label>รหัสผ่าน</label>
                 <div class="password-wrapper">
                     <input type="password" id="login-password" class="form-input password-input" placeholder="รหัสผ่าน">
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('login-password', this)">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <button type="button" class="password-toggle"
+                        onclick="togglePasswordVisibility('login-password', this)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -49,9 +54,15 @@
             <div class="form-group">
                 <label>รหัสผ่านใหม่</label>
                 <div class="password-wrapper">
-                    <input type="password" id="new-reset-password" class="form-input password-input" placeholder="รหัสผ่านใหม่">
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('new-reset-password', this)">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <input type="password" id="new-reset-password" class="form-input password-input"
+                        placeholder="รหัสผ่านใหม่">
+                    <button type="button" class="password-toggle"
+                        onclick="togglePasswordVisibility('new-reset-password', this)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -60,8 +71,13 @@
                 <div class="password-wrapper">
                     <input type="password" id="confirm-reset-password" class="form-input password-input"
                         placeholder="ยืนยันรหัสผ่านอีกครั้ง">
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirm-reset-password', this)">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <button type="button" class="password-toggle"
+                        onclick="togglePasswordVisibility('confirm-reset-password', this)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -85,10 +101,12 @@
 
             <!-- Step 1: Enter username -->
             <div id="forgot-step1">
-                <p style="color:#888; font-size:0.82rem; margin:0 0 16px 0;">กรอกชื่อบัญชีของคุณเพื่อขอเปลี่ยนรหัสผ่าน</p>
+                <p style="color:#888; font-size:0.82rem; margin:0 0 16px 0;">กรอกชื่อบัญชีของคุณเพื่อขอเปลี่ยนรหัสผ่าน
+                </p>
                 <input type="text" id="forgot-username-input" class="form-input" placeholder="ชื่อบัญชี"
                     style="margin-bottom:10px;" onkeyup="if(event.key==='Enter') checkForgotUsername()">
-                <div id="forgot-step1-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <div id="forgot-step1-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;">
+                </div>
                 <button id="forgot-step1-btn" class="btn btn-yellow btn-full" onclick="checkForgotUsername()"
                     style="padding:10px; margin-bottom:8px;">ยืนยัน</button>
                 <button class="btn btn-full" onclick="closeForgotModal()"
@@ -97,28 +115,36 @@
 
             <!-- Step 2A: Admin – enter email to send OTP -->
             <div id="forgot-step-admin" style="display:none;">
-                <p style="color:#666; font-size:0.82rem; margin:0 0 4px 0;">บัญชีแอดมินพบแล้ว<br>กรอก Email ที่คุณลงทะเบียนไว้ในระบบ (ต้องตรงกันเป๊ะ)</p>
+                <p style="color:#666; font-size:0.82rem; margin:0 0 4px 0;">บัญชีแอดมินพบแล้ว<br>กรอก Email
+                    ที่คุณลงทะเบียนไว้ในระบบ (ต้องตรงกันเป๊ะ)</p>
                 <div id="forgot-admin-username-label" style="font-weight:700; color:#333; margin:8px 0;"></div>
                 <input type="email" id="forgot-admin-email" class="form-input" placeholder="email@example.com"
                     style="margin-bottom:10px;" onkeyup="if(event.key==='Enter') submitForgotAdmin()">
-                <div id="forgot-admin-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
-                <div id="forgot-admin-success" style="color:#4CAF50; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <div id="forgot-admin-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;">
+                </div>
+                <div id="forgot-admin-success"
+                    style="color:#4CAF50; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
                 <button id="forgot-admin-btn" class="btn btn-yellow btn-full" onclick="submitForgotAdmin()"
                     style="padding:10px; margin-bottom:8px;">ส่งรหัสยืนยัน 📧</button>
                 <button class="btn btn-full" onclick="backToStep1()"
-                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">← ย้อนกลับ</button>
+                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">←
+                    ย้อนกลับ</button>
             </div>
 
             <!-- Step 3: Admin – enter OTP -->
             <div id="forgot-step-otp" style="display:none;">
-                <p style="color:#666; font-size:0.82rem; margin:0 0 16px 0;">ระบบได้ส่งรหัสยืนยัน 6 หลักไปที่อีเมลของคุณแล้ว<br>กรุณานำรหัสมากรอกด้านล่าง</p>
+                <p style="color:#666; font-size:0.82rem; margin:0 0 16px 0;">ระบบได้ส่งรหัสยืนยัน 6
+                    หลักไปที่อีเมลของคุณแล้ว<br>กรุณานำรหัสมากรอกด้านล่าง</p>
                 <input type="text" id="forgot-otp-input" class="form-input" placeholder="000000" maxlength="6"
-                    style="margin-bottom:10px; text-align:center; font-size:1.5rem; letter-spacing:5px; font-weight:bold;" onkeyup="if(event.key==='Enter') submitForgotOtp()">
-                <div id="forgot-otp-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                    style="margin-bottom:10px; text-align:center; font-size:1.5rem; letter-spacing:5px; font-weight:bold;"
+                    onkeyup="if(event.key==='Enter') submitForgotOtp()">
+                <div id="forgot-otp-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;">
+                </div>
                 <button id="forgot-otp-btn" class="btn btn-yellow btn-full" onclick="submitForgotOtp()"
                     style="padding:10px; margin-bottom:8px;">ตรวจสอบรหัส</button>
                 <button class="btn btn-full" onclick="backToStepAdmin()"
-                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">← เปลี่ยนอีเมล</button>
+                    style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">←
+                    เปลี่ยนอีเมล</button>
             </div>
 
             <!-- Step 4: Admin – set new password -->
@@ -126,26 +152,41 @@
                 <p style="color:#4CAF50; font-size:0.9rem; font-weight:600; margin:0 0 16px 0;">✅ รหัสยืนยันถูกต้อง</p>
                 <p style="color:#666; font-size:0.82rem; margin:0 0 16px 0;">กรุณาตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ</p>
                 <div class="password-wrapper" style="margin-bottom:10px;">
-                    <input type="password" id="forgot-new-password" class="form-input password-input" placeholder="รหัสผ่านใหม่">
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('forgot-new-password', this)">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <input type="password" id="forgot-new-password" class="form-input password-input"
+                        placeholder="รหัสผ่านใหม่">
+                    <button type="button" class="password-toggle"
+                        onclick="togglePasswordVisibility('forgot-new-password', this)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                     </button>
                 </div>
                 <div class="password-wrapper" style="margin-bottom:10px;">
-                    <input type="password" id="forgot-confirm-password" class="form-input password-input" placeholder="ยืนยันรหัสผ่านใหม่">
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('forgot-confirm-password', this)">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <input type="password" id="forgot-confirm-password" class="form-input password-input"
+                        placeholder="ยืนยันรหัสผ่านใหม่">
+                    <button type="button" class="password-toggle"
+                        onclick="togglePasswordVisibility('forgot-confirm-password', this)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                     </button>
                 </div>
-                <div id="forgot-reset-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
-                <div id="forgot-reset-success" style="color:#4CAF50; font-size:0.9rem; font-weight:600; margin-bottom:16px; display:none;"></div>
+                <div id="forgot-reset-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;">
+                </div>
+                <div id="forgot-reset-success"
+                    style="color:#4CAF50; font-size:0.9rem; font-weight:600; margin-bottom:16px; display:none;"></div>
                 <button id="forgot-reset-btn" class="btn btn-yellow btn-full" onclick="submitForgotResetPassword()"
                     style="padding:10px; margin-bottom:8px;">บันทึกรหัสผ่านใหม่</button>
             </div>
 
             <!-- Step 2B: Non-admin – auto notify admin -->
             <div id="forgot-step-user" style="display:none;">
-                <div id="forgot-success" style="color:#4CAF50; font-size:0.85rem; margin-bottom:10px; display:none;"></div>
+                <div id="forgot-success" style="color:#4CAF50; font-size:0.85rem; margin-bottom:10px; display:none;">
+                </div>
                 <div id="forgot-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
                 <button class="btn btn-full" onclick="closeForgotModal()"
                     style="padding:10px; background:#eee; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">ปิด</button>
@@ -200,7 +241,7 @@
             var input = document.getElementById(inputId);
             if (input.type === 'password') {
                 input.type = 'text';
-                btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>'; 
+                btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
             } else {
                 input.type = 'password';
                 btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
@@ -215,7 +256,7 @@
         function openForgotModal() {
             backToStep1();
             document.getElementById('forgot-modal').style.display = 'flex';
-            setTimeout(function() { document.getElementById('forgot-username-input').focus(); }, 100);
+            setTimeout(function () { document.getElementById('forgot-username-input').focus(); }, 100);
         }
 
         function closeForgotModal() {
@@ -229,7 +270,7 @@
             document.getElementById('forgot-step-user').style.display = 'none';
             document.getElementById('forgot-step-otp').style.display = 'none';
             document.getElementById('forgot-step-reset').style.display = 'none';
-            
+
             document.getElementById('forgot-username-input').value = '';
             document.getElementById('forgot-step1-error').style.display = 'none';
             document.getElementById('forgot-admin-error').style.display = 'none';
@@ -270,41 +311,41 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'check_username', username: username })
             })
-            .then(function(res) {
-                return res.text().then(function(text) {
-                    var d;
-                    try { d = JSON.parse(text); }
-                    catch(e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
-                    return { status: res.status, data: d };
-                });
-            })
-            .then(function(r) {
-                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยัน';
-                if (r.status !== 200) {
-                    errEl.textContent = '❌ ' + (r.data.error || 'ไม่พบชื่อบัญชีนี้ในระบบ');
-                    errEl.style.display = 'block';
-                    return;
-                }
-                var role = r.data.role;
-                _forgotAdminUsername = username;
-                document.getElementById('forgot-step1').style.display = 'none';
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var d;
+                        try { d = JSON.parse(text); }
+                        catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                        return { status: res.status, data: d };
+                    });
+                })
+                .then(function (r) {
+                    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยัน';
+                    if (r.status !== 200) {
+                        errEl.textContent = '❌ ' + (r.data.error || 'ไม่พบชื่อบัญชีนี้ในระบบ');
+                        errEl.style.display = 'block';
+                        return;
+                    }
+                    var role = r.data.role;
+                    _forgotAdminUsername = username;
+                    document.getElementById('forgot-step1').style.display = 'none';
 
-                if (role === 'admin') {
-                    // Show email input for admin
-                    document.getElementById('forgot-admin-username-label').textContent = '👤 ' + username;
-                    document.getElementById('forgot-step-admin').style.display = 'block';
-                    setTimeout(function() { document.getElementById('forgot-admin-email').focus(); }, 100);
-                } else {
-                    // Notify admin automatically for staff/owner
-                    document.getElementById('forgot-step-user').style.display = 'block';
-                    _notifyAdminForUser(username);
-                }
-            })
-            .catch(function(err) {
-                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยัน';
-                errEl.textContent = '❌ ' + err.message;
-                errEl.style.display = 'block';
-            });
+                    if (role === 'admin') {
+                        // Show email input for admin
+                        document.getElementById('forgot-admin-username-label').textContent = '👤 ' + username;
+                        document.getElementById('forgot-step-admin').style.display = 'block';
+                        setTimeout(function () { document.getElementById('forgot-admin-email').focus(); }, 100);
+                    } else {
+                        // Notify admin automatically for staff/owner
+                        document.getElementById('forgot-step-user').style.display = 'block';
+                        _notifyAdminForUser(username);
+                    }
+                })
+                .catch(function (err) {
+                    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ยืนยัน';
+                    errEl.textContent = '❌ ' + err.message;
+                    errEl.style.display = 'block';
+                });
         }
 
         // Step 2A: Admin sends email
@@ -329,26 +370,26 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'send_reset_by_email', username: _forgotAdminUsername, email: email })
             })
-            .then(function(res) {
-                return res.text().then(function(text) {
-                    var d;
-                    try { d = JSON.parse(text); }
-                    catch(e) { throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (ข้อมูลจากเซิร์ฟเวอร์: ' + (text ? text.substring(0, 50) : 'ว่างเปล่า') + '...)'); }
-                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
-                    return d;
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var d;
+                        try { d = JSON.parse(text); }
+                        catch (e) { throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (ข้อมูลจากเซิร์ฟเวอร์: ' + (text ? text.substring(0, 50) : 'ว่างเปล่า') + '...)'); }
+                        if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                        return d;
+                    });
+                })
+                .then(function () {
+                    // Success: move to OTP step
+                    document.getElementById('forgot-step-admin').style.display = 'none';
+                    document.getElementById('forgot-step-otp').style.display = 'block';
+                    setTimeout(function () { document.getElementById('forgot-otp-input').focus(); }, 100);
+                })
+                .catch(function (err) {
+                    errEl.innerHTML = '❌ ' + err.message;
+                    errEl.style.display = 'block';
+                    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ส่งรหัสยืนยัน 📧';
                 });
-            })
-            .then(function() {
-                // Success: move to OTP step
-                document.getElementById('forgot-step-admin').style.display = 'none';
-                document.getElementById('forgot-step-otp').style.display = 'block';
-                setTimeout(function() { document.getElementById('forgot-otp-input').focus(); }, 100);
-            })
-            .catch(function(err) {
-                errEl.innerHTML = '❌ ' + err.message;
-                errEl.style.display = 'block';
-                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ส่งรหัสยืนยัน 📧';
-            });
         }
 
         // Step 3: Admin verifies OTP
@@ -371,27 +412,27 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'verify_otp', username: _forgotAdminUsername, otp: otp })
             })
-            .then(function (res) {
-                return res.text().then(function (text) {
-                    var d;
-                    try { d = JSON.parse(text); }
-                    catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
-                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
-                    return d;
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var d;
+                        try { d = JSON.parse(text); }
+                        catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                        if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                        return d;
+                    });
+                })
+                .then(function () {
+                    // OTP Valid
+                    _forgotValidToken = otp; // Store valid OTP as token for next step
+                    document.getElementById('forgot-step-otp').style.display = 'none';
+                    document.getElementById('forgot-step-reset').style.display = 'block';
+                    setTimeout(function () { document.getElementById('forgot-new-password').focus(); }, 100);
+                })
+                .catch(function (err) {
+                    errEl.textContent = '❌ ' + err.message;
+                    errEl.style.display = 'block';
+                    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ตรวจสอบรหัส';
                 });
-            })
-            .then(function () {
-                // OTP Valid
-                _forgotValidToken = otp; // Store valid OTP as token for next step
-                document.getElementById('forgot-step-otp').style.display = 'none';
-                document.getElementById('forgot-step-reset').style.display = 'block';
-                setTimeout(function() { document.getElementById('forgot-new-password').focus(); }, 100);
-            })
-            .catch(function (err) {
-                errEl.textContent = '❌ ' + err.message;
-                errEl.style.display = 'block';
-                btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'ตรวจสอบรหัส';
-            });
         }
 
         // Step 4: Admin sets new password inside modal
@@ -432,30 +473,30 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'reset_password', username: _forgotAdminUsername, token: _forgotValidToken, new_password: sha256(npw) })
             })
-            .then(function (res) {
-                return res.text().then(function (text) {
-                    var d;
-                    try { d = JSON.parse(text); }
-                    catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
-                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
-                    return d;
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var d;
+                        try { d = JSON.parse(text); }
+                        catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                        if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                        return d;
+                    });
+                })
+                .then(function (data) {
+                    sucEl.innerHTML = '✅ รีเซ็ตรหัสผ่านสำเร็จ!';
+                    sucEl.style.display = 'block';
+                    btn.textContent = 'ปิด';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.onclick = closeForgotModal; // change action to close
+                })
+                .catch(function (err) {
+                    errEl.textContent = '❌ ' + err.message;
+                    errEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.textContent = 'บันทึกรหัสผ่านใหม่';
                 });
-            })
-            .then(function (data) {
-                sucEl.innerHTML = '✅ รีเซ็ตรหัสผ่านสำเร็จ!';
-                sucEl.style.display = 'block';
-                btn.textContent = 'ปิด';
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.onclick = closeForgotModal; // change action to close
-            })
-            .catch(function (err) {
-                errEl.textContent = '❌ ' + err.message;
-                errEl.style.display = 'block';
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.textContent = 'บันทึกรหัสผ่านใหม่';
-            });
         }
 
         // Step 2B: Non-admin – notify admin
@@ -472,24 +513,24 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'notify_admin', username: username })
             })
-            .then(function(res) {
-                return res.text().then(function(text) {
-                    var d;
-                    try { d = JSON.parse(text); }
-                    catch(e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
-                    if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
-                    return d;
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var d;
+                        try { d = JSON.parse(text); }
+                        catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด'); }
+                        if (!res.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+                        return d;
+                    });
+                })
+                .then(function () {
+                    sucEl.innerHTML = '✅ ส่งการแจ้งเตือนไปยังแอดมินแล้ว<br>กรุณารอแอดมินติดต่อกลับ';
+                    sucEl.style.display = 'block';
+                })
+                .catch(function (err) {
+                    sucEl.style.display = 'none';
+                    errEl.textContent = '❌ ' + err.message;
+                    errEl.style.display = 'block';
                 });
-            })
-            .then(function() {
-                sucEl.innerHTML = '✅ ส่งการแจ้งเตือนไปยังแอดมินแล้ว<br>กรุณารอแอดมินติดต่อกลับ';
-                sucEl.style.display = 'block';
-            })
-            .catch(function(err) {
-                sucEl.style.display = 'none';
-                errEl.textContent = '❌ ' + err.message;
-                errEl.style.display = 'block';
-            });
         }
 
         // ===== RESET PASSWORD LOGIC (Legacy URL parameter support) =====

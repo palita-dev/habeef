@@ -292,15 +292,17 @@ function groupNearbyOrders(orders) {
 
         if (matched) {
             var orderItemsTagged = (Array.isArray(order.items) ? order.items : []).map(function (it, i) {
-                return Object.assign({}, it, { _orderId: order.orderId, _itemIdx: i });
+                return Object.assign({}, it, { _orderId: order.orderId, _itemIdx: i, _status: order.status });
             });
             matched.items = matched.items.concat(orderItemsTagged);
             matched.totalPrice += (order.totalPrice || 0);
-            matched.orderIds.push(order.orderId);
+            if (matched.orderIds.indexOf(order.orderId) === -1) {
+                matched.orderIds.push(order.orderId);
+            }
             matched.lastCreatedAt = order.createdAt;
         } else {
             var firstItems = (Array.isArray(order.items) ? order.items : []).map(function (it, i) {
-                return Object.assign({}, it, { _orderId: order.orderId, _itemIdx: i });
+                return Object.assign({}, it, { _orderId: order.orderId, _itemIdx: i, _status: order.status });
             });
             groups.push({
                 groupId: order.orderId,
@@ -324,8 +326,9 @@ function groupNearbyOrders(orders) {
 function renderOrderList() {
     var container = document.getElementById('order-list-view');
     if (!container) return;
-    var pendingOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
-    var groups = groupNearbyOrders(pendingOrders);
+    
+    var activeOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
+    var groups = groupNearbyOrders(activeOrders);
 
     if (groups.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">ไม่มีออเดอร์ที่รอดำเนินการ 🎉</div>';
@@ -339,14 +342,16 @@ function renderOrderList() {
         var timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
         var tableLabel = group.isTakeaway ? '🛍️ ' + group.table : 'โต๊ะ ' + group.table;
         var groupId = group.groupId;
+        var allItems = group.items;
 
-        html += '<div class="ol-group">';
-        html += '<div class="ol-header" style="background:#fff; border-bottom:1px solid #eee;">';
+        var groupClass = 'ol-group';
+        var headerStyle = 'background:#fff; border-bottom:1px solid #eee;';
+
+        html += '<div class="' + groupClass + '">';
+        html += '<div class="ol-header" style="' + headerStyle + '">';
         html += '<span class="ol-table-badge">' + tableLabel + '</span>';
         html += '<div class="ol-meta" style="color:#666;">วันที่ ' + dateStr + '<br>เวลา ' + timeStr + '</div>';
         html += '</div>';
-
-        var allItems = group.items;
 
         // Select-all divider row (same style as modal's "ออเดอร์ 1 | เลือกทั้งหมด" bar)
         if (allItems.length > 1) {
@@ -357,6 +362,7 @@ function renderOrderList() {
             html += '</label>';
             html += '</div>';
         }
+
         if (allItems.length === 0) {
             html += '<div style="padding:10px 14px;color:#bbb;font-size:0.85rem;">ไม่มีรายการอาหาร</div>';
         } else {
@@ -382,6 +388,7 @@ function renderOrderList() {
                 html += '<div class="ol-name" style="font-weight:700; font-size:1.05rem; display:flex; align-items:center;">' + itemName + '</div>';
                 html += '<div class="ol-detail">' + itemDetails.join('<br>') + '</div>';
                 html += '</div>';
+                
                 html += '<label class="ol-check">';
                 html += '<input type="checkbox" class="list-check-' + groupId + '" data-orderid="' + (item._orderId || groupId) + '" data-itemidx="' + (item._itemIdx !== undefined ? item._itemIdx : idx) + '" data-qty="' + (item.qty || 1) + '" onchange="validateListServeBtn(\'' + groupId + '\', this)">';
                 html += '</label>';
@@ -391,7 +398,6 @@ function renderOrderList() {
 
         html += '<div class="ol-actions" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">';
         html += '<button class="btn-cancel-list" id="btn-cancel-' + groupId + '" onclick="cancelOrderItems(\'' + groupId + '\')" style="flex:0.6; padding:8px 0; font-size:0.85rem; white-space:nowrap; background:#f44336; color:#fff; border:none; border-radius:12px; opacity:0.5; filter:grayscale(1);" disabled>ยกเลิกออเดอร์</button>';
-        // Store all orderIds on the button for group-serve
         html += '<button class="btn-serve" id="btn-serve-' + groupId + '" onclick="serveOrderGroup(\'' + group.orderIds.join(',') + '\')" style="flex:1; opacity:0.5; filter:grayscale(1);" disabled>เสิร์ฟ ✓</button>';
         html += '</div>';
         html += '</div>';
@@ -630,8 +636,10 @@ function serveOrder(orderId) {
 }
 
 function renderTableGrid() {
-    // Only pending orders keep the table "busy" on the dashboard
-    var orders = getOrders().filter(function (o) { return o.status === 'pending'; });
+    // Get both pending and served orders for 3-state table status
+    var pendingOrders = getOrders().filter(function (o) { return o.status === 'pending'; });
+    var servedOrders = getOrders().filter(function (o) { return o.status === 'served'; });
+    var activeOrders = pendingOrders.concat(servedOrders);
     var container = document.getElementById('table-grid');
     if (!container) return;
 
@@ -639,7 +647,7 @@ function renderTableGrid() {
     for (var i = 1; i <= 10; i++) tables.push(String(i));
 
     var takeawayTables = new Set();
-    orders.forEach(function (o) {
+    activeOrders.forEach(function (o) {
         if (o.table && o.table.startsWith('กลับบ้าน')) {
             takeawayTables.add(o.table);
         }
@@ -657,10 +665,10 @@ function renderTableGrid() {
     }
 
     var tablesWithSortTime = tables.map(function (t) {
-        var tableOrders = orders.filter(function (o) { return o.table === t; });
+        var tableActiveOrders = activeOrders.filter(function (o) { return o.table === t; });
         var minTime = Infinity;
-        if (tableOrders.length > 0) {
-            minTime = Math.min.apply(null, tableOrders.map(function (o) { return new Date(o.createdAt).getTime(); }));
+        if (tableActiveOrders.length > 0) {
+            minTime = Math.min.apply(null, tableActiveOrders.map(function (o) { return new Date(o.createdAt).getTime(); }));
         }
         var numeric = parseInt(t.replace('กลับบ้าน', '')) || parseInt(t) || 999;
         return { table: t, minTime: minTime, numeric: numeric };
@@ -677,11 +685,9 @@ function renderTableGrid() {
     var html = '';
     tablesWithSortTime.forEach(function (obj) {
         var t = obj.table;
-        var tableOrders = orders.filter(function (o) { return o.table === t; });
-        var total = tableOrders.reduce(function (sum, o) { return sum + o.totalPrice; }, 0);
-        var isBusy = tableOrders.length > 0;
+        var tablePending = pendingOrders.filter(function (o) { return o.table === t; });
+        var tableServed = servedOrders.filter(function (o) { return o.table === t; });
         var isSpecial = t.startsWith('กลับบ้าน');
-        var statusClass = isBusy ? 'busy' : 'free';
         var icon = isSpecial ? '🛍️' : '🪑';
         var queueMatch = isSpecial ? t.match(/คิว\s*(\d+)/) : null;
         var queueNum = queueMatch ? queueMatch[1] : '';
@@ -690,15 +696,24 @@ function renderTableGrid() {
             ? (queueNum ? '<div class="tc-num" style="font-size:1.1rem;">คิว ' + queueNum + '</div>' : '')
             : '<div class="tc-num">' + t + '</div>';
 
-        html += '<div class="table-card ' + statusClass + '" onclick="openTableDetail(\'' + t + '\')">'
+        // 3-state: busy (pending orders) > served (served but unpaid) > free (truly empty)
+        var statusClass, statusBadge;
+        if (tablePending.length > 0) {
+            statusClass = 'busy';
+            statusBadge = '<div class="tc-status busy-badge">🔴 มีออเดอร์ค้าง (' + tablePending.length + ')</div>';
+        } else if (tableServed.length > 0) {
+            statusClass = 'served';
+            statusBadge = '<div class="tc-status served-badge">🔵 เสิร์ฟแล้ว รอชำระเงิน</div>';
+        } else {
+            statusClass = 'free';
+            statusBadge = '<div class="tc-status free-badge">🟢 ว่าง</div>';
+        }
+
+        html += '<div class="table-card ' + statusClass + '" onclick="openTableDetail(\'' + t + '\')">';
         html += '<div class="tc-icon">' + icon + '</div>';
         html += tableNum;
         html += '<div class="tc-label">' + label + '</div>';
-        if (isBusy) {
-            html += '<div class="tc-status busy-badge">🔴 ' + tableOrders.length + ' ออเดอร์</div>';
-        } else {
-            html += '<div class="tc-status free-badge">🟢 ว่าง</div>';
-        }
+        html += statusBadge;
         html += '</div>';
     });
     container.innerHTML = html;
@@ -720,7 +735,7 @@ function openTableDetail(tableId) {
     modal.classList.add('show');
 
     var orders = getOrders().filter(function (o) {
-        return o.table === tableId && o.status === 'pending';
+        return o.table === tableId && (o.status === 'pending' || o.status === 'served');
     });
 
     if (timeEl) {
@@ -745,9 +760,34 @@ function openTableDetail(tableId) {
     }
 
     var hasPending = orders.some(function (o) { return o.status === 'pending'; });
-    btnServeAll.style.display = hasPending ? 'block' : 'none';
-    if (btnCancelOrders) btnCancelOrders.style.display = hasPending ? 'block' : 'none';
-    btnServeAll.onclick = function () { serveAllOrders(); };
+    var hasServedOnly = !hasPending && orders.some(function (o) { return o.status === 'served'; });
+
+    if (hasServedOnly) {
+        body.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; text-align:center; gap:16px;">' +
+            '<div style="font-size:3.5rem;">🔵</div>' +
+            '<div style="font-size:1.15rem; color:#1565C0; font-weight:700;">โต๊ะนี้เสิร์ฟครบแล้ว รอชำระเงิน</div>' +
+            '<button onclick="closeModal(); processPayment(\'' + tableId + '\');" style="margin-top:10px; width:100%; padding:14px; font-size:1.05rem; font-weight:700; background:#1976D2; color:#fff; border:none; border-radius:12px; cursor:pointer; box-shadow:0 4px 12px rgba(25,118,210,0.3); transition:all 0.2s; font-family:\'Prompt\',sans-serif;">ไปยังหน้าชำระเงิน</button>' +
+            '</div>';
+        btnServeAll.style.display = 'none';
+        if (btnCancelOrders) btnCancelOrders.style.display = 'none';
+        return;
+    }
+
+    if (hasPending) {
+        btnServeAll.style.display = 'block';
+        btnServeAll.style.background = '#4CAF50';
+        btnServeAll.textContent = 'เสิร์ฟ ✓';
+        btnServeAll.onclick = function () { serveAllOrders(); };
+        if (btnCancelOrders) btnCancelOrders.style.display = 'block';
+    } else {
+        btnServeAll.style.display = 'none';
+        if (btnCancelOrders) btnCancelOrders.style.display = 'none';
+    }
+
+    // Only render pending items in the modal if it is busy (since it's not hasServedOnly)
+    // Actually, if we filter here, we should only render pending orders,
+    // so let\'s re-filter orders to only contain pending.
+    orders = orders.filter(function (o) { return o.status === 'pending'; });
 
     var html = '';
     var itemCounter = 1;
@@ -755,14 +795,12 @@ function openTableDetail(tableId) {
         var d = new Date(order.createdAt);
         var dateStr = d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
         var timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
-        var isServed = order.status === 'served';
-
         if (orders.length > 1) {
             var allCbClass = 'modal-select-all-' + order.orderId;
             html += '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:#aaa; padding:8px 4px 4px;">';
-            html += '<span>ออเดอร์ ' + (orderIdx + 1) + (isServed ? ' ✅' : '') + '</span>';
+            html += '<span>ออเดอร์ ' + (orderIdx + 1) + '</span>';
             html += '<label style="display:flex; align-items:center; gap:4px; cursor:pointer; color:#888; font-size:0.75rem;">';
-            html += '<input type="checkbox" class="' + allCbClass + '" onchange="selectAllOrderItems(\'' + order.orderId + '\', this.checked)"' + (isServed ? ' checked disabled' : '') + '> เลือกทั้งหมด';
+            html += '<input type="checkbox" class="' + allCbClass + '" onchange="selectAllOrderItems(\'' + order.orderId + '\', this.checked)"> เลือกทั้งหมด';
             html += '</label>';
             html += '</div>';
         }
@@ -793,7 +831,7 @@ function openTableDetail(tableId) {
             html += '<div class="ol-detail">' + itemDetails.join('<br>') + '</div>';
             html += '</div>';
             html += '<label class="ol-check">';
-            html += '<input type="checkbox" class="modal-item-checkbox" data-orderid="' + order.orderId + '" data-itemidx="' + itemIdx + '" data-qty="' + itemQty + '"' + (isServed ? ' checked disabled' : '') + ' onchange="validateServeBtn()">';
+            html += '<input type="checkbox" class="modal-item-checkbox" data-orderid="' + order.orderId + '" data-itemidx="' + itemIdx + '" data-qty="' + itemQty + '" onchange="validateServeBtn()">';
             html += '</label>';
             html += '</div>';
             itemCounter++;
@@ -929,9 +967,11 @@ function processPayment(tableId) {
         </div>
     `;
     document.body.appendChild(modal);
+    modal.classList.add('show');
 
     document.getElementById('btn-cancel-pay').onclick = function () {
         document.body.removeChild(modal);
+
     };
 
     document.getElementById('btn-confirm-pay').onclick = function () {

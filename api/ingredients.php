@@ -7,7 +7,7 @@ $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `usage_per_orde
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `pieces_per_order` int(11) NOT NULL DEFAULT 1");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $action = isset($_GET['action']) ? $_GET['action'] : 'disabled_list';
+    $action = isset($_GET['action']) ? $_GET['action'] : 'all';
 
     if ($action === 'disabled_list') {
         // Return list of disabled ingredient names

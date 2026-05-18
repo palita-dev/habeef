@@ -579,11 +579,11 @@ input[type="number"] {
     border-radius: 50%;
 }
 
-input:checked + .toggle-slider {
+input:checked+.toggle-slider {
     background-color: #4CAF50;
 }
 
-input:checked + .toggle-slider:before {
+input:checked+.toggle-slider:before {
     transform: translateX(20px);
 }
 
@@ -969,7 +969,7 @@ input:checked + .toggle-slider:before {
     max-width: 380px;
     box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
     text-align: center;
-    border: 1px solid rgba(255,255,255,0.8);
+    border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .login-card h1 {
@@ -1114,6 +1114,11 @@ input:checked + .toggle-slider:before {
     background: #FFF5F5;
 }
 
+.table-card.served {
+    border-color: #BBDEFB;
+    background: #E3F2FD;
+}
+
 .tc-icon {
     font-size: 2rem;
     margin-bottom: 2px;
@@ -1148,6 +1153,11 @@ input:checked + .toggle-slider:before {
 .busy-badge {
     background: #FFEBEE;
     color: #C62828;
+}
+
+.served-badge {
+    background: #E3F2FD;
+    color: #1565C0;
 }
 
 .tc-total {
@@ -1195,6 +1205,12 @@ input:checked + .toggle-slider:before {
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     margin-bottom: 14px;
+}
+
+.ol-group.served {
+    border: 2px solid #FFE0B2;
+    background: #FFFDE7;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.08);
 }
 
 .ol-header {
@@ -1556,7 +1572,7 @@ input:checked + .toggle-slider:before {
     .login-container {
         padding: 40px;
         background-color: #F0EDE8;
-        background-image: 
+        background-image:
             radial-gradient(at 0% 0%, rgba(198, 40, 40, 0.05) 0px, transparent 50%),
             radial-gradient(at 100% 100%, rgba(255, 193, 7, 0.05) 0px, transparent 50%);
         background-size: auto;
@@ -1578,12 +1594,14 @@ input:checked + .toggle-slider:before {
         max-width: none !important;
         left: 0 !important;
         transform: none !important;
-        position: static !important; /* Not sticky on desktop */
+        position: static !important;
+        /* Not sticky on desktop */
     }
 
     /* Center inner content of top bar */
     .top-bar {
-        position: sticky !important; /* Keep top-bar sticky on desktop */
+        position: sticky !important;
+        /* Keep top-bar sticky on desktop */
         justify-content: center;
         padding: 14px 24px;
     }
@@ -1619,7 +1637,8 @@ input:checked + .toggle-slider:before {
         margin: 0 auto;
         width: 100%;
         padding: 20px 24px;
-        padding-bottom: 100px !important; /* Space for bottom nav */
+        padding-bottom: 100px !important;
+        /* Space for bottom nav */
     }
 
     /* ===== 4. BOTTOM NAV - Full width (not constrained) ===== */
@@ -1689,20 +1708,23 @@ input:checked + .toggle-slider:before {
         display: flex;
         flex-direction: row;
         gap: 20px;
-        align-items: stretch; /* Make both cards equal height */
+        align-items: stretch;
+        /* Make both cards equal height */
     }
 
     .qr-section {
-        flex: 1; /* Both take exactly equal width */
+        flex: 1;
+        /* Both take exactly equal width */
         display: flex;
         flex-direction: column;
     }
 
     .qr-section .qr-box {
-        flex: 1; /* Stretch qr-box to fill equal height */
+        flex: 1;
+        /* Stretch qr-box to fill equal height */
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
     }
-}
+}

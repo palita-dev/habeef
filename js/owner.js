@@ -143,8 +143,11 @@ function selectIngredient(name) {
     // Update unit label
     var unit = ING_UNITS[name] || '\u0e2b\u0e19\u0e48\u0e27\u0e22';
     document.getElementById('si-unit').value = unit;
-    document.getElementById('si-unit-label').textContent = '\u0e08\u0e33\u0e19\u0e27\u0e19 (' + unit + ')';
-    var recommended = calculateRecommended(name, remainingData[name].remaining);
+    
+    var remainingData = getRemaining();
+    var currentRemaining = (remainingData && remainingData[name]) ? remainingData[name].remaining : 0;
+    var recommended = calculateRecommended(name, currentRemaining);
+    
     if (recommended.value > 0) {
         document.getElementById('si-unit-label').innerHTML = 'จำนวน (' + unit + ') <span style="color:#D32F2F; font-size:0.8rem; font-weight:bold;">(ควรซื้ออีก ' + recommended.text + ')</span>';
     } else {

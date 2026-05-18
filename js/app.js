@@ -36,7 +36,12 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(function (data) { window.FORMULA = data || {}; }),
     fetch(SERVER_BASE + '/api/menus.php')
       .then(function (res) { return res.json(); })
-      .then(function (data) { MENU_ITEMS = data || []; }),
+      .then(function (data) {
+        MENU_ITEMS = (data || []).map(function (item) {
+          item.image = (typeof MENU_IMAGES !== 'undefined') ? MENU_IMAGES[item.id] : '';
+          return item;
+        });
+      }),
     fetch(SERVER_BASE + '/api/options.php')
       .then(function (res) { return res.json(); })
       .then(function (data) {
