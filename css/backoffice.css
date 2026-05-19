@@ -1735,3 +1735,142 @@ input:checked+.toggle-slider:before {
         justify-content: space-between;
     }
 }
+
+/* ===== SALES SUMMARY REPORT STYLES ===== */
+.sales-filter-btn {
+    border: none;
+    background: transparent;
+    color: #555;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.sales-filter-btn.active {
+    background: #C62828;
+    color: #fff;
+}
+
+.sales-item-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: 'Prompt', sans-serif;
+}
+
+.sales-item-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sales-item-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sales-item-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sales-item-qty {
+    font-weight: 700;
+    color: #C62828;
+    font-size: 0.85rem;
+}
+
+.sales-item-price {
+    font-weight: 800;
+    color: #2E7D32;
+    font-size: 0.95rem;
+}
+
+.sales-progress-bar-bg {
+    background: #f5f5f5;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.sales-progress-bar {
+    background: linear-gradient(90deg, #FFC107, #FF9800);
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.cal-day.sales-week-hover {
+    background: #FFE082 !important;
+    color: #333 !important;
+    border-radius: 0 !important;
+}
+
+.cal-day.sales-week-active {
+    background: #FFC107 !important;
+    color: #333 !important;
+    font-weight: 700 !important;
+    border-radius: 0 !important;
+}
+
+/* Rounded caps for week highlight ends */
+.cal-day.sales-week-start {
+    border-top-left-radius: 50% !important;
+    border-bottom-left-radius: 50% !important;
+}
+
+.cal-day.sales-week-end {
+    border-top-right-radius: 50% !important;
+    border-bottom-right-radius: 50% !important;
+}
+
+.sales-month-grid, .sales-year-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    text-align: center;
+    font-family: 'Prompt', sans-serif;
+    margin-top: 10px;
+}
+
+.sales-month-btn, .sales-year-btn {
+    padding: 8px 4px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sales-month-btn:hover, .sales-year-btn:hover {
+    background: #FFE082;
+    border-color: #FFC107;
+}
+
+.sales-month-btn.active, .sales-year-btn.active {
+    background: #C62828;
+    color: #fff;
+    border-color: #C62828;
+}

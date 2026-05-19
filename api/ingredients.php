@@ -5,6 +5,7 @@ require_once 'db.php';
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `is_disabled` tinyint(1) DEFAULT 0");
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `usage_per_order` decimal(10,4) NOT NULL DEFAULT 0.0000");
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `pieces_per_order` int(11) NOT NULL DEFAULT 1");
+$conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `daily_recommended` decimal(10,2) NOT NULL DEFAULT 0.00");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = isset($_GET['action']) ? $_GET['action'] : 'all';
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($formula);
     } else {
         // Return all ingredients
-        $result = $conn->query("SELECT ingredient_name, unit, is_disabled, usage_per_order, icon_html FROM ingredients ORDER BY ingredient_name");
+        $result = $conn->query("SELECT ingredient_name, unit, is_disabled, usage_per_order, icon_html, daily_recommended FROM ingredients ORDER BY ingredient_name");
         $list = [];
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {

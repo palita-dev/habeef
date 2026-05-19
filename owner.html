@@ -236,29 +236,94 @@
             </div>
             <p>รายงานสรุปผล</p>
         </div>
-        <div class="section-bar">
-            <span>รายงานสรุปข้อมูลวัตถุดิบ</span>
-            <button class="btn btn-sm"
-                style="background:#2196F3; color:white; border:none; box-shadow:0 2px 4px rgba(33,150,243,0.3)"
-                onclick="openReportHistoryModal()">รายงานสรุป</button>
+
+        <!-- Sub-tabs for switching report type -->
+        <div class="view-toggle-bar" style="margin-top: 0; background: #fff; border-bottom: 1px solid #eee; padding: 10px 16px;">
+            <button id="btn-report-ing" class="view-toggle-btn active" onclick="switchReportTab('ing')" style="flex:1;">📊 รายงานวัตถุดิบ</button>
+            <button id="btn-report-sales" class="view-toggle-btn" onclick="switchReportTab('sales')" style="flex:1;">💰 สรุปยอดขาย</button>
         </div>
 
-        <div class="page-body">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span class="report-header-title" style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
-                <span id="report-date" style="font-size:0.78rem;"></span>
+        <!-- Section 1: Ingredients Report -->
+        <div id="report-ing-section">
+            <div class="section-bar">
+                <span>รายงานสรุปข้อมูลวัตถุดิบ</span>
+                <button class="btn btn-sm"
+                    style="background:#2196F3; color:white; border:none; box-shadow:0 2px 4px rgba(33,150,243,0.3)"
+                    onclick="openReportHistoryModal()">รายงานสรุป</button>
             </div>
 
-            <div style="display:flex; gap:12px; margin-bottom:12px; font-size:0.75rem;">
-                <div style="display:flex; align-items:center; gap:4px;"><span
-                        style="display:inline-block; width:10px; height:10px; background:#FF9800; border-radius:50%;"></span>
-                    ใกล้หมด</div>
-                <div style="display:flex; align-items:center; gap:4px;"><span
-                        style="display:inline-block; width:10px; height:10px; background:#C62828; border-radius:50%;"></span>
-                    หมด</div>
+            <div class="page-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span class="report-header-title" style="font-size:0.85rem;font-weight:600;">ข้อมูลวัตถุดิบ</span>
+                    <span id="report-date" style="font-size:0.78rem;"></span>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-bottom:12px; font-size:0.75rem;">
+                    <div style="display:flex; align-items:center; gap:4px;"><span
+                            style="display:inline-block; width:10px; height:10px; background:#FF9800; border-radius:50%;"></span>
+                        ใกล้หมด</div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span
+                            style="display:inline-block; width:10px; height:10px; background:#C62828; border-radius:50%;"></span>
+                        หมด</div>
+                </div>
+
+                <div id="report-table-main-container"></div>
+            </div>
+        </div>
+
+        <!-- Section 2: Sales Summary Report (Initially Hidden) -->
+        <div id="report-sales-section" style="display:none;">
+            <div class="section-bar" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>สรุปยอดขายตามเมนู</span>
+                <button class="btn btn-green btn-sm"
+                    style="background:#2E7D32; color:white; border:none; box-shadow:0 2px 4px rgba(46,125,50,0.3); font-family:'Prompt', sans-serif; font-size:0.78rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px;"
+                    onclick="exportSalesExcel()">
+                    📊 ดาวน์โหลดรายงาน Excel
+                </button>
             </div>
 
-            <div id="report-table-main-container"></div>
+            <div class="page-body" style="padding-bottom:100px;">
+                <!-- Filter Panel (Image 2 style with premium integration) -->
+                <div style="background:#fff; border-radius:12px; border:1px solid #eee; padding:12px; margin-bottom:14px; box-shadow:0 2px 8px rgba(0,0,0,0.04); display:flex; flex-direction:column; gap:10px; font-family:'Prompt',sans-serif;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.85rem; font-weight:600; color:#555;">กรองตาม:</span>
+                            <div style="display:flex; background:#f0f0f0; border-radius:8px; padding:2px; gap:2px;">
+                                <button id="btn-sales-filter-day" class="sales-filter-btn active" onclick="setSalesFilterType('day')">วัน</button>
+                                <button id="btn-sales-filter-week" class="sales-filter-btn" onclick="setSalesFilterType('week')">สัปดาห์</button>
+                                <button id="btn-sales-filter-month" class="sales-filter-btn" onclick="setSalesFilterType('month')">เดือน</button>
+                                <button id="btn-sales-filter-year" class="sales-filter-btn" onclick="setSalesFilterType('year')">ปี</button>
+                            </div>
+                        </div>
+                        <div style="position:relative; display:inline-block;">
+                            <button id="sales-calendar-btn" onclick="toggleSalesCalendar(event)" style="background:#fff; border:1px solid #ccc; border-radius:8px; padding:6px 12px; font-family:'Prompt',sans-serif; font-size:0.82rem; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer; color:#333; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <span id="sales-calendar-btn-text">📅 เลือกวันที่</span>
+                            </button>
+                            <!-- Sales Calendar Popover -->
+                            <div id="sales-calendar-popover" style="display:none; position:absolute; top:100%; right:0; margin-top:8px; background:#fff; border-radius:12px; border:1px solid #eee; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:12px; z-index:1000; width:280px;">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Sales Overview Cards -->
+                <div style="display:flex; gap:10px; margin-bottom:14px;">
+                    <div style="flex:1; background:#fff; border-radius:12px; border:1px solid #eee; padding:12px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                        <div style="font-size:0.75rem; color:#888; margin-bottom:4px; font-weight:600;">ยอดขายรวม</div>
+                        <div id="sales-total-amount" style="font-size:1.25rem; font-weight:800; color:#2E7D32;">฿0.00</div>
+                    </div>
+                    <div style="flex:1; background:#fff; border-radius:12px; border:1px solid #eee; padding:12px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                        <div style="font-size:0.75rem; color:#888; margin-bottom:4px; font-weight:600;">จำนวนชามที่ขายได้</div>
+                        <div id="sales-total-qty" style="font-size:1.25rem; font-weight:800; color:#C62828;">0 ชาม</div>
+                    </div>
+                </div>
+
+                <!-- Sales Details List -->
+                <div id="sales-summary-container">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
         </div>
 
         <div id="pdf-template-wrapper"

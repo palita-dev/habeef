@@ -1,6 +1,8 @@
 <?php
 include 'db.php';
 
+$conn->query("ALTER TABLE `menus` ADD COLUMN IF NOT EXISTS `image_url` varchar(255) DEFAULT NULL");
+
 $action = isset($_GET['action']) ? $_GET['action'] : 'get_menus';
 
 if ($action == 'get_menus') {
@@ -17,6 +19,7 @@ if ($action == 'get_menus') {
                 'desc' => $row['description'],
                 'price' => (float)$row['base_price'],
                 'emoji' => $row['emoji'],
+                'image_url' => isset($row['image_url']) ? $row['image_url'] : '',
                 'hasNoodle' => (bool)$row['has_noodle'],
                 'hasMeat' => (bool)$row['has_meat'],
                 'isSeafood' => (bool)$row['is_seafood']

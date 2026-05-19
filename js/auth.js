@@ -367,18 +367,25 @@ function getDateKey(d) {
 var THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
-var MENU_EMOJIS = {
-    'nam-khon': '🍜', 'haeng': '🥢', 'tom-yam': '🌶️',
-    'tom-yam-seafood': '🦐', 'kao-lao': '🥣'
-};
+var MENU_EMOJIS = {};
+var MENU_IMAGES = {};
 
-var MENU_IMAGES = {
-    'nam-khon': 'images/ก๋วยเตี๋ยวน้ำข้น.jpg',
-    'haeng': 'images/ก๋วยเตี๋ยวแห้ง.jpg',
-    'tom-yam': 'images/ก๋วยเตี๋ยวต้มยำ.jpg',
-    'tom-yam-seafood': 'images/ก๋วยเตี๋ยวต้มยำทะเล.png',
-    'kao-lao': 'images/เกาเหลา.jpg'
-};
+// Fetch menus to populate Emojis and Images dynamically
+function fetchMenusConfig() {
+    fetch(SERVER_BASE + '/api/menus.php')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (Array.isArray(data)) {
+                data.forEach(function(m) {
+                    MENU_EMOJIS[m.id] = m.emoji;
+                    if (m.image_url) {
+                        MENU_IMAGES[m.id] = m.image_url;
+                    }
+                });
+            }
+        }).catch(function(){});
+}
+fetchMenusConfig();
 
 // ===== ORDERS — purely from MySQL =====
 function getOrders() {

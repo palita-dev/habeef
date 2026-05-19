@@ -5,6 +5,7 @@ var currentUser = null;
 var ALL_INGREDIENTS = [];
 var ING_EMOJIS = {};
 var ING_UNITS = {};
+var ING_DAILY_REC = {};
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     data.forEach(function (ing) {
                         ING_EMOJIS[ing.ingredient_name] = ing.icon_html || '📦';
                         ING_UNITS[ing.ingredient_name] = ing.unit;
+                        ING_DAILY_REC[ing.ingredient_name] = parseFloat(ing.daily_recommended) || 0;
                     });
                 }
             }),
@@ -157,23 +159,12 @@ function selectIngredient(name) {
 }
 
 function calculateRecommended(name, remaining) {
-    // Fixed daily purchase amounts (user-specified)
-    var FIXED_DAILY = {
-        'เนื้อวัว': 18,    // 18 กก.
-        'น่องไก่': 15,    // 15 กก.
-        'ผักบุ้ง': 10,    // 10 กก.
-        'ถั่วงอก': 10,    // 10 กก.
-        'กุ้ง': 3,        // 3 กก.
-        'หมึก': 1,        // 1 กก.
-        'ไข่': 3          // 3 แผง
-    };
-
     // Formula-based amounts (200 bowls)
     // Removed hardcoded FORMULA_200, using dynamic window.FORMULA
 
     var targetStock = 0;
-    if (FIXED_DAILY[name] !== undefined) {
-        targetStock = FIXED_DAILY[name];
+    if (ING_DAILY_REC[name] !== undefined && ING_DAILY_REC[name] > 0) {
+        targetStock = ING_DAILY_REC[name];
     } else if (window.FORMULA && window.FORMULA[name] !== undefined) {
         targetStock = window.FORMULA[name] * 200;
     }
@@ -1712,4 +1703,642 @@ function downloadReportForDate(dateStr) {
         printArea.style.color = '';
         showToast('เกิดข้อผิดพลาดในการสร้าง PDF');
     });
+}
+
+// ===== SALES SUMMARY REPORT EXTENSIONS =====
+
+// --- State Variables ---
+window.salesFilterType = 'day'; // 'day' | 'week' | 'month' | 'year'
+window.salesSelectedDate = null; // Will initialize to today's shift date on first run
+window.salesCalendarYear = null;
+window.salesCalendarMonth = null;
+
+// Initialize sales calendar dates
+function initSalesDateState() {
+    if (!window.salesSelectedDate) {
+        var now = new Date();
+        // Calculate the logical shift date for today
+        var dStr = getShiftDateStr(now); // e.g. "18-5-2569"
+        var p = dStr.split('-');
+        // Convert Thai BE year to CE year
+        var ceYear = parseInt(p[2]) - 543;
+        var ceMonth = parseInt(p[1]) - 1;
+        var ceDay = parseInt(p[0]);
+        window.salesSelectedDate = new Date(ceYear, ceMonth, ceDay, 12, 0, 0);
+    }
+    if (window.salesCalendarYear === null) {
+        window.salesCalendarYear = window.salesSelectedDate.getFullYear();
+        window.salesCalendarMonth = window.salesSelectedDate.getMonth();
+    }
+}
+
+// Switch between report sub-tabs
+function switchReportTab(type) {
+    var btnIng = document.getElementById('btn-report-ing');
+    var btnSales = document.getElementById('btn-report-sales');
+    var secIng = document.getElementById('report-ing-section');
+    var secSales = document.getElementById('report-sales-section');
+
+    if (type === 'ing') {
+        btnIng.classList.add('active');
+        btnSales.classList.remove('active');
+        secIng.style.display = 'block';
+        secSales.style.display = 'none';
+    } else {
+        btnIng.classList.remove('active');
+        btnSales.classList.add('active');
+        secIng.style.display = 'none';
+        secSales.style.display = 'block';
+        
+        // Initialize state and render sales summary
+        initSalesDateState();
+        updateSalesCalendarBtnText();
+        renderSalesSummary();
+    }
+}
+
+// Change period filter type
+function setSalesFilterType(type) {
+    window.salesFilterType = type;
+    document.querySelectorAll('.sales-filter-btn').forEach(function (btn) {
+        btn.classList.remove('active');
+    });
+    
+    var activeBtn = document.getElementById('btn-sales-filter-' + type);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    // Close calendar popover
+    var popover = document.getElementById('sales-calendar-popover');
+    if (popover) popover.style.display = 'none';
+    
+    updateSalesCalendarBtnText();
+    renderSalesSummary();
+}
+
+// Format Thai Date string for UI
+function formatThaiDateDisplay(dateObj) {
+    if (!dateObj) return '';
+    var d = dateObj.getDate();
+    var m = dateObj.getMonth();
+    var yBE = dateObj.getFullYear() + 543;
+    var monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    return d + ' ' + monthNames[m] + ' ' + yBE;
+}
+
+// Format Thai Month and Year display
+function formatThaiMonthDisplay(dateObj) {
+    if (!dateObj) return '';
+    var m = dateObj.getMonth();
+    var yBE = dateObj.getFullYear() + 543;
+    var monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    return monthNames[m] + ' ' + yBE;
+}
+
+// Get the Monday of the week containing the selected date
+function getStartOfWeek(d) {
+    var date = new Date(d.getTime());
+    var day = date.getDay();
+    var diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday (0) to make Monday (1) start of week
+    return new Date(date.setDate(diff));
+}
+
+// Get the Sunday of the week containing the selected date
+function getEndOfWeek(d) {
+    var start = getStartOfWeek(d);
+    var end = new Date(start.getTime());
+    end.setDate(start.getDate() + 6);
+    return end;
+}
+
+// Update the text on the calendar selector button
+function updateSalesCalendarBtnText() {
+    initSalesDateState();
+    var btnText = document.getElementById('sales-calendar-btn-text');
+    if (!btnText) return;
+    
+    var d = window.salesSelectedDate;
+    if (window.salesFilterType === 'day') {
+        btnText.innerHTML = '📅 ' + formatThaiDateDisplay(d);
+    } else if (window.salesFilterType === 'week') {
+        var start = getStartOfWeek(d);
+        var end = getEndOfWeek(d);
+        
+        var startStr = start.getDate() + '/' + (start.getMonth() + 1).toString().padStart(2, '0') + '/' + (start.getFullYear() + 543);
+        var endStr = end.getDate() + '/' + (end.getMonth() + 1).toString().padStart(2, '0') + '/' + (end.getFullYear() + 543);
+        
+        btnText.innerHTML = '📅 ' + startStr + ' - ' + endStr;
+    } else if (window.salesFilterType === 'month') {
+        btnText.innerHTML = '📅 ' + formatThaiMonthDisplay(d);
+    } else if (window.salesFilterType === 'year') {
+        btnText.innerHTML = '📅 ปี พ.ศ. ' + (d.getFullYear() + 543);
+    }
+}
+
+// Toggle display of the sales calendar popover
+function toggleSalesCalendar(e) {
+    if (e) e.stopPropagation();
+    var popover = document.getElementById('sales-calendar-popover');
+    if (!popover) return;
+    
+    if (popover.style.display === 'none' || !popover.style.display) {
+        popover.style.display = 'block';
+        renderSalesCalendar();
+        
+        // Add one-time outside click listener to close popover
+        var closeListener = function() {
+            popover.style.display = 'none';
+            document.removeEventListener('click', closeListener);
+        };
+        setTimeout(function() {
+            document.addEventListener('click', closeListener);
+        }, 0);
+    } else {
+        popover.style.display = 'none';
+    }
+}
+
+// Render calendar popover content dynamically based on current filter type
+function renderSalesCalendar() {
+    var popover = document.getElementById('sales-calendar-popover');
+    if (!popover) return;
+    
+    initSalesDateState();
+    var type = window.salesFilterType;
+    var year = window.salesCalendarYear;
+    var month = window.salesCalendarMonth;
+    var yearBE = year + 543;
+    
+    var monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    var html = '';
+    
+    // RENDER HEADING & MONTH/YEAR SWAP CONTROLS FOR DAY/WEEK MODES
+    if (type === 'day' || type === 'week') {
+        var firstDay = new Date(year, month, 1).getDay();
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-family:\'Prompt\',sans-serif;">';
+        html += '<button onclick="changeSalesCalendarMonth(-1, event)" style="background:none; border:1px solid #ccc; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">◀</button>';
+        html += '<span style="font-weight:600; font-size:0.9rem; color:#333;">' + monthNames[month] + ' ' + yearBE + '</span>';
+        html += '<button onclick="changeSalesCalendarMonth(1, event)" style="background:none; border:1px solid #ccc; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">▶</button>';
+        html += '</div>';
+        
+        // Weekday headers
+        var dayHeaders = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+        html += '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; text-align:center; margin-bottom:6px; font-family:\'Prompt\',sans-serif;">';
+        dayHeaders.forEach(function (h) {
+            html += '<div style="font-size:0.7rem; font-weight:600; color:#888;">' + h + '</div>';
+        });
+        html += '</div>';
+        
+        // Days Grid
+        html += '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; text-align:center; font-family:\'Prompt\',sans-serif;">';
+        
+        // Empty slots before 1st day of month
+        for (var i = 0; i < firstDay; i++) {
+            html += '<div></div>';
+        }
+        
+        // Render days
+        for (var d = 1; d <= daysInMonth; d++) {
+            var currentDayDate = new Date(year, month, d);
+            var isSelected = false;
+            var isWeekHover = false;
+            var isWeekStart = false;
+            var isWeekEnd = false;
+            
+            var dayClass = 'cal-day';
+            var inlineStyles = '';
+            
+            if (type === 'day') {
+                isSelected = (window.salesSelectedDate.getFullYear() === year &&
+                              window.salesSelectedDate.getMonth() === month &&
+                              window.salesSelectedDate.getDate() === d);
+            } else if (type === 'week') {
+                var startOfWeek = getStartOfWeek(window.salesSelectedDate);
+                var endOfWeek = getEndOfWeek(window.salesSelectedDate);
+                
+                // Set start/end boundaries of week to 00:00:00 for perfect comparison
+                startOfWeek.setHours(0,0,0,0);
+                endOfWeek.setHours(23,59,59,999);
+                currentDayDate.setHours(12,0,0,0); // mid-day for safe date arithmetic
+                
+                isSelected = (currentDayDate >= startOfWeek && currentDayDate <= endOfWeek);
+                
+                // Find if this cell represents monday (start) or sunday (end) of week
+                var currentDayNum = currentDayDate.getDay();
+                if (isSelected) {
+                    dayClass += ' sales-week-active';
+                    if (currentDayNum === 1) dayClass += ' sales-week-start';
+                    if (currentDayNum === 0) dayClass += ' sales-week-end';
+                }
+            }
+            
+            var style = 'width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; ';
+            
+            if (isSelected && type === 'day') {
+                style += 'background:#C62828; color:#fff; font-weight:bold; cursor:pointer;';
+            } else if (isSelected && type === 'week') {
+                style = 'width:30px; height:30px; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; cursor:pointer;';
+            } else {
+                style += 'color:#333; cursor:pointer; font-weight:500;';
+            }
+            
+            // Mouse event parameters for week hovering highlights
+            var mouseOverHtml = '';
+            var mouseOutHtml = '';
+            if (type === 'week') {
+                mouseOverHtml = 'onmouseover="highlightSalesCalendarWeek(' + d + ', true)"';
+                mouseOutHtml = 'onmouseout="highlightSalesCalendarWeek(' + d + ', false)"';
+            }
+            
+            var onclickHtml = 'onclick="selectSalesCalendarDate(' + d + ', event)"';
+            
+            html += '<div id="sales-cal-day-' + d + '" class="' + dayClass + '" style="' + style + '" ' + onclickHtml + ' ' + mouseOverHtml + ' ' + mouseOutHtml + ' data-day="' + d + '" data-wday="' + currentDayDate.getDay() + '">' + d + '</div>';
+        }
+        
+        html += '</div>';
+    } 
+    // RENDER MONTH SELECTOR
+    else if (type === 'month') {
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-family:\'Prompt\',sans-serif;">';
+        html += '<button onclick="changeSalesCalendarYear(-1, event)" style="background:none; border:1px solid #ccc; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">◀</button>';
+        html += '<span style="font-weight:600; font-size:0.9rem; color:#333;">ปี พ.ศ. ' + yearBE + '</span>';
+        html += '<button onclick="changeSalesCalendarYear(1, event)" style="background:none; border:1px solid #ccc; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center;">▶</button>';
+        html += '</div>';
+        
+        html += '<div class="sales-month-grid">';
+        var shortMonthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        for (var mIdx = 0; mIdx < 12; mIdx++) {
+            var isSelMonth = (window.salesSelectedDate.getFullYear() === year && window.salesSelectedDate.getMonth() === mIdx);
+            var mClass = 'sales-month-btn' + (isSelMonth ? ' active' : '');
+            html += '<div class="' + mClass + '" onclick="selectSalesCalendarMonth(' + mIdx + ', event)">' + shortMonthNames[mIdx] + '</div>';
+        }
+        html += '</div>';
+    } 
+    // RENDER YEAR SELECTOR
+    else if (type === 'year') {
+        html += '<div style="text-align:center; font-weight:600; font-size:0.9rem; margin-bottom:10px; color:#333; font-family:\'Prompt\',sans-serif;">เลือกปี พ.ศ.</div>';
+        html += '<div class="sales-year-grid">';
+        
+        // Show range of 6 years (e.g. current year - 4 to current year + 1)
+        var curYear = new Date().getFullYear();
+        for (var yOffset = -4; yOffset <= 1; yOffset++) {
+            var targetY = curYear + yOffset;
+            var targetYBE = targetY + 543;
+            var isSelYear = (window.salesSelectedDate.getFullYear() === targetY);
+            var yClass = 'sales-year-btn' + (isSelYear ? ' active' : '');
+            html += '<div class="' + yClass + '" onclick="selectSalesCalendarYear(' + targetY + ', event)">' + targetYBE + '</div>';
+        }
+        html += '</div>';
+    }
+    
+    popover.innerHTML = html;
+}
+
+// Adjust year for month/year viewport
+function changeSalesCalendarYear(delta, e) {
+    if (e) e.stopPropagation();
+    window.salesCalendarYear += delta;
+    renderSalesCalendar();
+}
+
+// Adjust month for day/week calendar viewport
+function changeSalesCalendarMonth(delta, e) {
+    if (e) e.stopPropagation();
+    window.salesCalendarMonth += delta;
+    if (window.salesCalendarMonth < 0) {
+        window.salesCalendarMonth = 11;
+        window.salesCalendarYear--;
+    } else if (window.salesCalendarMonth > 11) {
+        window.salesCalendarMonth = 0;
+        window.salesCalendarYear++;
+    }
+    renderSalesCalendar();
+}
+
+// Mouse hover effects for highlighting whole weeks in the calendar
+function highlightSalesCalendarWeek(day, isEntering) {
+    var cells = document.querySelectorAll('#sales-calendar-popover .cal-day');
+    var targetCell = document.getElementById('sales-cal-day-' + day);
+    if (!targetCell) return;
+    
+    var year = window.salesCalendarYear;
+    var month = window.salesCalendarMonth;
+    var targetDate = new Date(year, month, day);
+    
+    var startOfWeek = getStartOfWeek(targetDate);
+    var endOfWeek = getEndOfWeek(targetDate);
+    
+    startOfWeek.setHours(0,0,0,0);
+    endOfWeek.setHours(23,59,59,999);
+    
+    cells.forEach(function (cell) {
+        var dNum = parseInt(cell.getAttribute('data-day'));
+        if (isNaN(dNum)) return;
+        
+        var cellDate = new Date(year, month, dNum);
+        cellDate.setHours(12,0,0,0);
+        
+        var isWithinWeek = (cellDate >= startOfWeek && cellDate <= endOfWeek);
+        if (isWithinWeek) {
+            var wday = parseInt(cell.getAttribute('data-wday'));
+            if (isEntering) {
+                cell.classList.add('sales-week-hover');
+                if (wday === 1) cell.classList.add('sales-week-start');
+                if (wday === 0) cell.classList.add('sales-week-end');
+            } else {
+                cell.classList.remove('sales-week-hover');
+                // preserve active highlights borders
+                if (!cell.classList.contains('sales-week-active')) {
+                    cell.classList.remove('sales-week-start');
+                    cell.classList.remove('sales-week-end');
+                }
+            }
+        }
+    });
+}
+
+// Select a day/week date
+function selectSalesCalendarDate(day, e) {
+    if (e) e.stopPropagation();
+    window.salesSelectedDate = new Date(window.salesCalendarYear, window.salesCalendarMonth, day, 12, 0, 0);
+    
+    // Close calendar popover
+    var popover = document.getElementById('sales-calendar-popover');
+    if (popover) popover.style.display = 'none';
+    
+    updateSalesCalendarBtnText();
+    renderSalesSummary();
+}
+
+// Select a month
+function selectSalesCalendarMonth(mIdx, e) {
+    if (e) e.stopPropagation();
+    window.salesSelectedDate = new Date(window.salesCalendarYear, mIdx, 1, 12, 0, 0);
+    
+    // Close calendar popover
+    var popover = document.getElementById('sales-calendar-popover');
+    if (popover) popover.style.display = 'none';
+    
+    updateSalesCalendarBtnText();
+    renderSalesSummary();
+}
+
+// Select a year
+function selectSalesCalendarYear(year, e) {
+    if (e) e.stopPropagation();
+    window.salesSelectedDate = new Date(year, 0, 1, 12, 0, 0);
+    
+    // Close calendar popover
+    var popover = document.getElementById('sales-calendar-popover');
+    if (popover) popover.style.display = 'none';
+    
+    updateSalesCalendarBtnText();
+    renderSalesSummary();
+}
+
+// --- Dynamic Sales Aggregation & Rendering ---
+
+window.currentSalesList = []; // Stores aggregated details for export
+
+function renderSalesSummary() {
+    var container = document.getElementById('sales-summary-container');
+    if (!container) return;
+    
+    initSalesDateState();
+    var filterType = window.salesFilterType;
+    var selectedDate = window.salesSelectedDate;
+    
+    var allOrders = getOrders();
+    var aggregated = {}; // { menuName: { qty, totalPrice, menuId } }
+    
+    var totalAmount = 0;
+    var totalQty = 0;
+    
+    // Helper to calculate exact date boundaries for matching
+    var targetDateKey = getDateKey(selectedDate); // logical YYYY-MM-DD
+    var targetYear = selectedDate.getFullYear();
+    var targetMonth = selectedDate.getMonth(); // 0-11
+    
+    var startOfWeek = getStartOfWeek(selectedDate);
+    var endOfWeek = getEndOfWeek(selectedDate);
+    var startOfWeekKey = getDateKey(startOfWeek);
+    var endOfWeekKey = getDateKey(endOfWeek);
+    
+    allOrders.forEach(function (order) {
+        // 1. Only include completed sales statuses
+        if (order.status !== 'paid' && order.status !== 'served' && order.status !== 'completed') return;
+        
+        // 2. Parse order logical business date
+        var orderDate = new Date(order.createdAt || order.completedAt || order.timestamp);
+        var orderDateKey = getDateKey(orderDate); // Shifted YYYY-MM-DD
+        
+        var isMatch = false;
+        
+        if (filterType === 'day') {
+            isMatch = (orderDateKey === targetDateKey);
+        } else if (filterType === 'week') {
+            // Compare logical date key strings directly or Date values
+            var oLogicalDate = new Date(orderDate.getTime());
+            oLogicalDate.setHours(oLogicalDate.getHours() - 4); // business shift offset
+            oLogicalDate.setHours(12,0,0,0);
+            
+            var sW = new Date(startOfWeek.getTime());
+            sW.setHours(0,0,0,0);
+            var eW = new Date(endOfWeek.getTime());
+            eW.setHours(23,59,59,999);
+            
+            isMatch = (oLogicalDate >= sW && oLogicalDate <= eW);
+        } else if (filterType === 'month') {
+            var oLogicalDate = new Date(orderDate.getTime());
+            oLogicalDate.setHours(oLogicalDate.getHours() - 4);
+            isMatch = (oLogicalDate.getFullYear() === targetYear && oLogicalDate.getMonth() === targetMonth);
+        } else if (filterType === 'year') {
+            var oLogicalDate = new Date(orderDate.getTime());
+            oLogicalDate.setHours(oLogicalDate.getHours() - 4);
+            isMatch = (oLogicalDate.getFullYear() === targetYear);
+        }
+        
+        if (!isMatch) return;
+        
+        // 3. Aggregate sales details
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(function (item) {
+                var name = item.name || 'ไม่ทราบเมนู';
+                var qty = item.qty || item.quantity || 0;
+                var price = item.totalPrice || item.price * qty || 0;
+                var menuId = item.menuId || '';
+                
+                if (!aggregated[name]) {
+                    aggregated[name] = { qty: 0, totalPrice: 0, menuId: menuId };
+                }
+                
+                aggregated[name].qty += qty;
+                aggregated[name].totalPrice += price;
+                totalQty += qty;
+                totalAmount += price;
+            });
+        }
+    });
+    
+    // Convert to sorted array descending by quantity sold
+    var salesList = [];
+    for (var name in aggregated) {
+        salesList.push({
+            name: name,
+            qty: aggregated[name].qty,
+            totalPrice: aggregated[name].totalPrice,
+            menuId: aggregated[name].menuId
+        });
+    }
+    
+    salesList.sort(function (a, b) { return b.qty - a.qty; });
+    window.currentSalesList = salesList; // Store locally for exporting CSV
+    
+    // Update Overview Grand Totals
+    var totalAmountEl = document.getElementById('sales-total-amount');
+    var totalQtyEl = document.getElementById('sales-total-qty');
+    
+    if (totalAmountEl) totalAmountEl.textContent = '฿' + totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (totalQtyEl) totalQtyEl.textContent = totalQty.toLocaleString('th-TH') + ' ชาม';
+    
+    // RENDER MENU CARDS IN CONTAINER
+    if (salesList.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa; font-size:0.9rem; font-family:\'Prompt\',sans-serif; background:#fff; border-radius:12px; border:1px solid #eee;">ไม่มีประวัติการขายในช่วงเวลานี้ 🍜</div>';
+        return;
+    }
+    
+    // Find highest sales quantity to represent 100% of progress bar
+    var maxQty = salesList.length > 0 ? salesList[0].qty : 1;
+    if (maxQty <= 0) maxQty = 1;
+    
+    var html = '';
+    salesList.forEach(function (item) {
+        var percentage = Math.round((item.qty / maxQty) * 100);
+        
+        // Find menu emoji based on standard map or custom name contains logic
+        var emoji = MENU_EMOJIS[item.menuId] || '🍜';
+        if (emoji === '🍜') {
+            var n = item.name;
+            if (n.indexOf('แห้ง') !== -1) emoji = '🥢';
+            else if (n.indexOf('ทะเล') !== -1 || n.indexOf(' seafood') !== -1) emoji = '🦐';
+            else if (n.indexOf('ต้มยำ') !== -1) emoji = '🌶️';
+            else if (n.indexOf('เกาเหลา') !== -1) emoji = '🥣';
+        }
+        
+        html += '<div class="sales-item-card">';
+        html += '<div class="sales-item-main">';
+        html += '<div class="sales-item-name"><span>' + emoji + '</span> ' + item.name + '</div>';
+        html += '<div class="sales-item-stats">';
+        html += '<div class="sales-item-qty">' + item.qty.toLocaleString('th-TH') + ' ชาม</div>';
+        html += '<div class="sales-item-price">฿' + item.totalPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '<div class="sales-progress-bar-bg">';
+        html += '<div class="sales-progress-bar" style="width:' + percentage + '%"></div>';
+        html += '</div>';
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+// --- Download Sales Report to Excel (MS Excel XLS format) ---
+function exportSalesExcel() {
+    if (!window.currentSalesList || window.currentSalesList.length === 0) {
+        showToast('ไม่มีข้อมูลการขายที่จะดาวน์โหลด');
+        return;
+    }
+    
+    initSalesDateState();
+    var filterType = window.salesFilterType;
+    var d = window.salesSelectedDate;
+    
+    var periodLabel = '';
+    var dateLabel = '';
+    
+    if (filterType === 'day') {
+        periodLabel = 'รายวัน';
+        dateLabel = d.getDate() + '-' + (d.getMonth() + 1) + '-' + (d.getFullYear() + 543);
+    } else if (filterType === 'week') {
+        periodLabel = 'รายสัปดาห์';
+        var start = getStartOfWeek(d);
+        var end = getEndOfWeek(d);
+        dateLabel = start.getDate() + '-' + (start.getMonth() + 1) + '-' + (start.getFullYear() + 543) + ' ถึง ' + end.getDate() + '-' + (end.getMonth() + 1) + '-' + (end.getFullYear() + 543);
+    } else if (filterType === 'month') {
+        periodLabel = 'รายเดือน';
+        dateLabel = String(d.getMonth() + 1) + '-' + String(d.getFullYear() + 543);
+    } else if (filterType === 'year') {
+        periodLabel = 'รายปี';
+        dateLabel = String(d.getFullYear() + 543);
+    }
+    
+    var printTime = new Date().toLocaleString('th-TH');
+    
+    // Construct beautiful HTML Spreadsheet content (MS Excel compatible)
+    var excelTemplate = 
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<head>' +
+        '<meta charset="utf-8">' +
+        '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>สรุปยอดขาย</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->' +
+        '<style>' +
+        '  body { font-family: "Cordia New", "Prompt", Tahoma, sans-serif; }' +
+        '  table { border-collapse: collapse; }' +
+        '  th, td { border: 1px solid #ccc; padding: 6px 10px; font-size: 14px; }' +
+        '  .title { font-size: 18px; font-weight: bold; text-align: left; border: none; }' +
+        '  .meta { font-size: 12px; color: #555; text-align: left; border: none; }' +
+        '  .header { font-weight: bold; background-color: #e0e0e0; text-align: center; }' +
+        '  .total { font-weight: bold; background-color: #ffeb3b; }' +
+        '  .number { text-align: right; }' +
+        '</style>' +
+        '</head>' +
+        '<body>' +
+        '<table>' +
+        '  <tr><td colspan="3" class="title">สรุปยอดขายตามเมนู (' + periodLabel + ')</td></tr>' +
+        '  <tr><td colspan="3" class="meta">ช่วงเวลา: ' + dateLabel + '</td></tr>' +
+        '  <tr><td colspan="3" class="meta">พิมพ์เมื่อ: ' + printTime + '</td></tr>' +
+        '  <tr><td colspan="3" class="meta"></td></tr>' +
+        '  <tr class="header">' +
+        '    <td>ชื่อเมนู</td>' +
+        '    <td>จำนวนที่ขายได้ (ชาม)</td>' +
+        '    <td>ยอดขายรวม (บาท)</td>' +
+        '  </tr>';
+        
+    var grandTotalQty = 0;
+    var grandTotalPrice = 0;
+    
+    window.currentSalesList.forEach(function (item) {
+        excelTemplate += '  <tr>' +
+                         '    <td>' + item.name + '</td>' +
+                         '    <td class="number">' + item.qty + '</td>' +
+                         '    <td class="number">' + item.totalPrice.toFixed(2) + '</td>' +
+                         '  </tr>';
+        grandTotalQty += item.qty;
+        grandTotalPrice += item.totalPrice;
+    });
+    
+    excelTemplate += '  <tr class="total">' +
+                     '    <td>ยอดขายรวมทั้งหมด</td>' +
+                     '    <td class="number">' + grandTotalQty + '</td>' +
+                     '    <td class="number">' + grandTotalPrice.toFixed(2) + '</td>' +
+                     '  </tr>' +
+                     '</table>' +
+                     '</body>' +
+                     '</html>';
+    
+    // Trigger download as .xls (forces opening in Microsoft Excel)
+    var blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    
+    var filename = 'สรุปยอดขาย_' + periodLabel + '_' + dateLabel + '.xls';
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('ดาวน์โหลดรายงาน Excel สำเร็จ');
 }
