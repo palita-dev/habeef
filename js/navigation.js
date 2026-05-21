@@ -77,10 +77,7 @@ function renderMenu() {
       }
     }
 
-    var imgHtml = item.image
-      ? '<img src="' + item.image + '" alt="' + item.name + '" class="menu-food-img" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
-      '<div class="menu-img" style="display:none">' + item.emoji + '</div>'
-      : '<div class="menu-img">' + item.emoji + '</div>';
+    var imgHtml = '<img src="' + (item.image || 'images/ก๋วยเตี๋ยวน้ำข้น.jpg') + '" alt="' + item.name + '" class="menu-food-img" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
 
     var cardStyle = isOutOfStock ? ' opacity: 0.5; pointer-events: none; filter: grayscale(1); ' : ' cursor: pointer; ';
 

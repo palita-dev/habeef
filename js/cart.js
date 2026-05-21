@@ -310,20 +310,10 @@ function renderCart() {
         }
 
         // Image Logic
-        var imgEmoji = '🍜';
         var imgHtml = '';
         var menuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
-        if (menuItem) {
-            imgEmoji = menuItem.emoji;
-            if (menuItem.image) {
-                imgHtml = '<img src="' + menuItem.image + '" class="item-img" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                imgHtml += '<div class="item-img" style="background:#FFF3E0; display:none; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
-            } else {
-                imgHtml = '<div class="item-img" style="background:#FFF3E0; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
-            }
-        } else {
-            imgHtml = '<div class="item-img" style="background:#FFF3E0; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">' + imgEmoji + '</div>';
-        }
+        var imgSrc = (menuItem && menuItem.image) ? menuItem.image : 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+        imgHtml = '<img src="' + imgSrc + '" class="item-img" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
         var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + item.qty + '</span>' : '';
 
         var rowClass = 'cart-table-row';
@@ -522,15 +512,8 @@ function placeOrder() {
 
     var detailsHtml = cart.map(function (item, index) {
         var menuItem = MENU_ITEMS.find(function (m) { return m.id === item.menuId; });
-        var imgHtml = '';
-        if (menuItem) {
-            if (menuItem.image) {
-                imgHtml = '<img src="' + menuItem.image + '" style="width: 64px; height: 64px; border-radius: 10px; object-fit: cover; margin-right: 12px; flex-shrink: 0;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                imgHtml += '<div style="width: 64px; height: 64px; border-radius: 10px; background: #FFF3E0; display: none; align-items: center; justify-content: center; font-size: 1.6rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
-            } else {
-                imgHtml = '<div style="width: 64px; height: 64px; border-radius: 10px; background: #FFF3E0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-right: 12px; flex-shrink: 0; border: 1px solid #FFE0B2;">' + menuItem.emoji + '</div>';
-            }
-        }
+        var imgSrc = (menuItem && menuItem.image) ? menuItem.image : 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+        var imgHtml = '<img src="' + imgSrc + '" style="width: 64px; height: 64px; border-radius: 10px; object-fit: cover; margin-right: 12px; flex-shrink: 0;" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
 
         // Title line: name x qty (no base price)
         var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + item.qty + '</span>' : '';

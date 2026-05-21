@@ -38,7 +38,16 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(function (res) { return res.json(); })
       .then(function (data) {
         MENU_ITEMS = (data || []).map(function (item) {
-          item.image = (typeof MENU_IMAGES !== 'undefined') ? MENU_IMAGES[item.id] : '';
+          var img = item.image_url || (typeof MENU_IMAGES !== 'undefined' ? MENU_IMAGES[item.id] : '');
+          if (!img) {
+            if (item.id === 'nam-khon') img = 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+            else if (item.id === 'haeng') img = 'images/ก๋วยเตี๋ยวแห้ง.jpg';
+            else if (item.id === 'tom-yam') img = 'images/ก๋วยเตี๋ยวต้มยำ.jpg';
+            else if (item.id === 'tom-yam-seafood') img = 'images/ก๋วยเตี๋ยวต้มยำทะเล.png';
+            else if (item.id === 'kao-lao') img = 'images/เกาเหลา.jpg';
+            else img = 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+          }
+          item.image = img;
           return item;
         });
       }),

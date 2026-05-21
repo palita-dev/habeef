@@ -367,15 +367,8 @@ function renderOrderList() {
             html += '<div style="padding:10px 14px;color:#bbb;font-size:0.85rem;">ไม่มีรายการอาหาร</div>';
         } else {
             allItems.forEach(function (item, idx) {
-                var emoji = MENU_EMOJIS[item.menuId] || '🍜';
-                var imgSource = MENU_IMAGES[item.menuId] || null;
-                var imgHtml = '';
-                if (imgSource) {
-                    imgHtml = '<img src="' + imgSource + '" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                    imgHtml += '<div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
-                } else {
-                    imgHtml = '<div style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
-                }
+                var imgSource = MENU_IMAGES[item.menuId] || 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+                var imgHtml = '<img src="' + imgSource + '" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
                 var itemDetails = Array.isArray(item.details) ? item.details : [];
                 var itemName = item.name || 'ไม่ทราบเมนู';
                 if (item.qty > 1) {
@@ -807,19 +800,11 @@ function openTableDetail(tableId) {
 
         var modalItems = Array.isArray(order.items) ? order.items : [];
         modalItems.forEach(function (item, itemIdx) {
-            var emoji = MENU_EMOJIS[item.menuId] || '🍜';
-            var imgSource = MENU_IMAGES[item.menuId] || null;
-            var imgHtml = '';
-
-            if (imgSource) {
-                imgHtml = '<img src="' + imgSource + '" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                imgHtml += '<div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
-            } else {
-                imgHtml = '<div style="display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:1.5rem;">' + emoji + '</div>';
-            }
+            var imgSource = MENU_IMAGES[item.menuId] || 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+            var imgHtml = '<img src="' + imgSource + '" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
 
             var itemDetails = Array.isArray(item.details) ? item.details : [];
-            var itemName = item.name || (MENU_EMOJIS[item.menuId] ? item.menuId : 'ไม่ทราบเมนู');
+            var itemName = item.name || 'ไม่ทราบเมนู';
             var itemQty = item.qty || 1;
             var itemNameWithQty = itemQty > 1 ? itemName + ' <span style="color:#D32F2F; font-weight:800; font-size:1.1rem; margin-left:8px;">x' + itemQty + '</span>' : itemName;
 
@@ -1114,15 +1099,8 @@ function refreshPayment() {
         var lineNum = 1;
         orders.forEach(function (order) {
             order.items.forEach(function (item) {
-                var emoji = MENU_EMOJIS[item.menuId] || '🍜';
-                var imgSource = MENU_IMAGES[item.menuId] || null;
-                var imgHtml = '';
-                if (imgSource) {
-                    imgHtml = '<img src="' + imgSource + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                    imgHtml += '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:1.5rem;">' + emoji + '</div>';
-                } else {
-                    imgHtml = '<div style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-size:1.5rem;">' + emoji + '</div>';
-                }
+                var imgSource = MENU_IMAGES[item.menuId] || 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+                var imgHtml = '<img src="' + imgSource + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
                 html += '<div class="rit-card">';
                 html += '<div class="rit-card-body">';
                 html += '<div class="rit-num">' + lineNum + '</div>';
@@ -1343,21 +1321,14 @@ function renderHistoryOrders() {
         html += '<div id="order-items-' + order.orderId + '" style="display: none; border-top: 1px dashed #eee; padding:0 15px 15px;">';
 
         order.items.forEach(function (item, idx) {
-            var emoji = MENU_EMOJIS[item.menuId] || '🍜';
             var qtyLabel = item.qty > 1 ? '<span style="color:#D32F2F; font-weight:800; font-size:1.15rem; margin-left:8px;">x' + item.qty + '</span>' : '';
             var totalItemPrice = item.totalPrice * (item.qty || 1);
 
             html += '<div class="order-item" style="display:flex; align-items:center; margin-top:16px; padding-bottom:16px; border-bottom:1px dashed #eee;">';
             html += '<div class="order-num" style="background:#f5f5f5; border-radius:8px; padding:6px 10px; font-size:0.9rem; font-weight:700; color:#555; margin-right:16px;">' + String(idx + 1).padStart(2, '0') + '</div>';
 
-            var imgSource = MENU_IMAGES[item.menuId] || null;
-            var imgHtml = '';
-            if (imgSource) {
-                imgHtml = '<img src="' + imgSource + '" style="width:54px; height:54px; object-fit:cover; border-radius:12px; margin-right:16px; flex-shrink:0;" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">';
-                imgHtml += '<div style="display:none; width:54px; height:54px; background:#FFF3E0; border-radius:12px; flex-shrink:0; align-items:center; justify-content:center; font-size:1.8rem; margin-right:16px;">' + emoji + '</div>';
-            } else {
-                imgHtml = '<div class="order-emoji" style="width:54px; height:54px; background:#FFF3E0; border-radius:12px; display:flex; flex-shrink:0; align-items:center; justify-content:center; font-size:1.8rem; margin-right:16px;">' + emoji + '</div>';
-            }
+            var imgSource = MENU_IMAGES[item.menuId] || 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+            var imgHtml = '<img src="' + imgSource + '" style="width:54px; height:54px; object-fit:cover; border-radius:12px; margin-right:16px; flex-shrink:0;" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\';">';
 
             html += imgHtml;
 

@@ -99,7 +99,9 @@ function syncFromServer() {
         getDisabledIngredients(resolve, true);
     });
 
-    return Promise.all([p1, p2, p3, p4, p5]);
+    var p6 = fetchMenusConfig();
+
+    return Promise.all([p1, p2, p3, p4, p5, p6]);
 }
 
 // ----- SHA-256 Hashing Function -----
@@ -372,7 +374,10 @@ var MENU_IMAGES = {};
 
 // Fetch menus to populate Emojis and Images dynamically
 function fetchMenusConfig() {
-    fetch(SERVER_BASE + '/api/menus.php')
+    if (Object.keys(MENU_IMAGES).length > 0) {
+        return Promise.resolve();
+    }
+    return fetch(SERVER_BASE + '/api/menus.php')
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (Array.isArray(data)) {
@@ -380,6 +385,14 @@ function fetchMenusConfig() {
                     MENU_EMOJIS[m.id] = m.emoji;
                     if (m.image_url) {
                         MENU_IMAGES[m.id] = m.image_url;
+                    } else {
+                        var img = '';
+                        if (m.id === 'nam-khon') img = 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+                        else if (m.id === 'haeng') img = 'images/ก๋วยเตี๋ยวแห้ง.jpg';
+                        else if (m.id === 'tom-yam') img = 'images/ก๋วยเตี๋ยวต้มยำ.jpg';
+                        else if (m.id === 'tom-yam-seafood') img = 'images/ก๋วยเตี๋ยวต้มยำทะเล.png';
+                        else if (m.id === 'kao-lao') img = 'images/เกาเหลา.jpg';
+                        if (img) MENU_IMAGES[m.id] = img;
                     }
                 });
             }

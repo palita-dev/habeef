@@ -2216,19 +2216,13 @@ function renderSalesSummary() {
     salesList.forEach(function (item) {
         var percentage = Math.round((item.qty / maxQty) * 100);
         
-        // Find menu emoji based on standard map or custom name contains logic
-        var emoji = MENU_EMOJIS[item.menuId] || '🍜';
-        if (emoji === '🍜') {
-            var n = item.name;
-            if (n.indexOf('แห้ง') !== -1) emoji = '🥢';
-            else if (n.indexOf('ทะเล') !== -1 || n.indexOf(' seafood') !== -1) emoji = '🦐';
-            else if (n.indexOf('ต้มยำ') !== -1) emoji = '🌶️';
-            else if (n.indexOf('เกาเหลา') !== -1) emoji = '🥣';
-        }
+        // Use image thumbnail from MENU_IMAGES, fall back to default image
+        var imgSource = MENU_IMAGES[item.menuId] || 'images/ก๋วยเตี๋ยวน้ำข้น.jpg';
+        var imgTag = '<img src="' + imgSource + '" alt="" onerror="this.src=\'images/ก๋วยเตี๋ยวน้ำข้น.jpg\'" style="width:28px;height:28px;object-fit:cover;border-radius:4px;margin-right:8px;vertical-align:middle;flex-shrink:0;">';
         
         html += '<div class="sales-item-card">';
         html += '<div class="sales-item-main">';
-        html += '<div class="sales-item-name"><span>' + emoji + '</span> ' + item.name + '</div>';
+        html += '<div class="sales-item-name">' + imgTag + item.name + '</div>';
         html += '<div class="sales-item-stats">';
         html += '<div class="sales-item-qty">' + item.qty.toLocaleString('th-TH') + ' ชาม</div>';
         html += '<div class="sales-item-price">฿' + item.totalPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>';
