@@ -86,7 +86,7 @@ if ($action === 'send_reset_by_email') {
     $usernameEscaped = $conn->real_escape_string($username);
     $emailEscaped = $conn->real_escape_string($email);
     
-    $checkSql = "SELECT username, email FROM users WHERE role = 'admin' ";
+    $checkSql = "SELECT username, email FROM users WHERE role = 'owner' ";
     if ($username) {
         $checkSql .= "AND username = '$usernameEscaped' ";
     }
@@ -97,7 +97,7 @@ if ($action === 'send_reset_by_email') {
     if (!$result || $result->num_rows === 0) {
         ob_clean();
         http_response_code(404);
-        echo json_encode(['error' => 'Email ไม่ตรงกับที่ลงทะเบียนไว้ในระบบ หรือไม่ใช่บัญชีแอดมิน']);
+        echo json_encode(['error' => 'Email ไม่ตรงกับที่ลงทะเบียนไว้ในระบบ หรือไม่ใช่บัญชีเจ้าของร้าน']);
         exit;
     }
     $row = $result->fetch_assoc();
@@ -109,12 +109,12 @@ if ($action === 'send_reset_by_email') {
     $targetUsernameEsc = $conn->real_escape_string($targetUsername);
     $conn->query("UPDATE users SET reset_token = '$otp', reset_expires = '$expires' WHERE username = '$targetUsernameEsc'");
 
-    $subject = "รหัสยืนยันเพื่อรีเซ็ตรหัสผ่านแอดมิน - ก๋วยเตี๋ยวฮาบีฟ";
+    $subject = "รหัสยืนยันเพื่อรีเซ็ตรหัสผ่านเจ้าของร้าน - ก๋วยเตี๋ยวฮาบีฟ";
     $htmlBody = "
         <div style='font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;'>
             <div style='background-color: #fff; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);'>
                 <h2 style='color: #333;'>รีเซ็ตรหัสผ่านบัญชี: {$targetUsername}</h2>
-                <p style='color: #555; font-size: 16px; line-height: 1.5;'>สวัสดีแอดมิน,</p>
+                <p style='color: #555; font-size: 16px; line-height: 1.5;'>สวัสดีเจ้าของร้าน,</p>
                 <p style='color: #555; font-size: 16px; line-height: 1.5;'>กรุณานำรหัสรักษาความปลอดภัยด้านล่างนี้ไปกรอกในหน้าเว็บเพื่อตั้งรหัสผ่านใหม่ รหัสนี้จะหมดอายุใน 1 ชั่วโมง</p>
                 <div style='text-align: center; margin: 30px 0;'>
                     <span style='background-color: #f0f0f0; color: #333; padding: 15px 30px; letter-spacing: 5px; border-radius: 8px; font-weight: bold; font-size: 28px; border: 2px dashed #ccc;'>{$otp}</span>

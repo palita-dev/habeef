@@ -17,156 +17,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (syncPromise && syncPromise.then) {
             syncPromise.then(function () {
                 renderUserList();
-                loadAdminEmail();
             });
         } else {
             renderUserList();
-            setTimeout(loadAdminEmail, 500);
         }
     } else {
         renderUserList();
-        setTimeout(loadAdminEmail, 500);
-    }
-
-    // Load admin email from MySQL (via users cache, synced from server)
-    function loadAdminEmail() {
-        var users = getUsers();
-        var adminUser = users.find(function (u) { return u.role === 'admin'; });
-        var savedGmail = adminUser && adminUser.email ? adminUser.email : '';
-        var gmailInput = document.getElementById('admin-gmail');
-        if (gmailInput) gmailInput.value = savedGmail;
-
-        updateAdminEmailUI();
-
-        if (!savedGmail) {
-            document.getElementById('force-email-modal').style.display = 'flex';
-            var confirmGroup = document.getElementById('gmail-confirm-group');
-            if (confirmGroup) confirmGroup.style.display = 'none';
-        } else {
-            var confirmGroup = document.getElementById('gmail-confirm-group');
-            if (confirmGroup) confirmGroup.style.display = 'block';
-        }
     }
 });
 
-function saveForceAdminGmail() {
-    var email = document.getElementById('force-admin-gmail').value.trim();
-    var errEl = document.getElementById('force-email-error');
-    errEl.style.display = 'none';
 
-    if (!email) {
-        errEl.textContent = 'กรุณากรอก Gmail เพื่อความปลอดภัย';
-        errEl.style.display = 'block';
-        return;
-    }
-
-    // Save to server database (MySQL)
-    var users = getUsers();
-    var adminUser = users.find(function (u) { return u.role === 'admin'; });
-    if (adminUser) {
-        adminUser.email = email;
-        saveUsers(users);
-    }
-
-    // Update main account page input as well
-    var gmailInput = document.getElementById('admin-gmail');
-    if (gmailInput) gmailInput.value = email;
-    updateAdminEmailUI();
-
-    // Show confirm group for future edits
-    var confirmGroup = document.getElementById('gmail-confirm-group');
-    if (confirmGroup) confirmGroup.style.display = 'block';
-
-    document.getElementById('force-email-modal').style.display = 'none';
-    showToast('บันทึก Email สำเร็จ ✓');
-}
-
-// ===== GMAIL SETTINGS =====
-function updateAdminEmailUI() {
-    var users = getUsers();
-    var adminUser = users.find(function (u) { return u.role === 'admin'; });
-    var savedGmail = adminUser && adminUser.email ? adminUser.email : '';
-    var displayEl = document.getElementById('current-admin-gmail-display');
-    if (displayEl) {
-        displayEl.textContent = savedGmail ? savedGmail : 'ยังไม่ได้ตั้งค่า';
-    }
-}
-
-function toggleGmailEdit(show) {
-    var displayMode = document.getElementById('gmail-display-mode');
-    var editMode = document.getElementById('gmail-edit-mode');
-    var errEl = document.getElementById('gmail-error');
-    var pwInput = document.getElementById('gmail-confirm-pw');
-
-    if (errEl) errEl.style.display = 'none';
-    if (pwInput) pwInput.value = '';
-
-    if (show) {
-        if (displayMode) displayMode.style.display = 'none';
-        if (editMode) editMode.style.display = 'block';
-
-        // Load latest email into input
-        var users = getUsers();
-        var adminUser = users.find(function (u) { return u.role === 'admin'; });
-        var savedGmail = adminUser && adminUser.email ? adminUser.email : '';
-        var gmailInput = document.getElementById('admin-gmail');
-        if (gmailInput) gmailInput.value = savedGmail;
-    } else {
-        if (displayMode) displayMode.style.display = 'flex';
-        if (editMode) editMode.style.display = 'none';
-        updateAdminEmailUI();
-    }
-}
-
-function saveAdminGmail() {
-    var errEl = document.getElementById('gmail-error');
-    errEl.style.display = 'none';
-
-    var email = document.getElementById('admin-gmail').value.trim();
-    var pw = document.getElementById('gmail-confirm-pw').value.trim();
-    // Retrieve current email from MySQL users cache
-    var users = getUsers();
-    var adminUser = users.find(function (u) { return u.role === 'admin'; });
-    var currentSavedEmail = adminUser && adminUser.email ? adminUser.email : '';
-
-    if (!email) {
-        errEl.textContent = 'กรุณากรอก Gmail';
-        errEl.style.display = 'block';
-        return;
-    }
-
-    if (currentSavedEmail) {
-        if (!pw) {
-            errEl.textContent = 'กรุณาป้อนรหัสผ่านแอดมินเพื่อยืนยัน';
-            errEl.style.display = 'block';
-            return;
-        }
-
-        var admin = adminUser;
-        var hashedPw = (typeof sha256 === 'function') ? sha256(pw) : pw;
-
-        if (!admin || (admin.password !== hashedPw && admin.password !== pw)) {
-            errEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
-            errEl.style.display = 'block';
-            return;
-        }
-    }
-
-    // Save to server database (MySQL)
-    if (adminUser) {
-        adminUser.email = email;
-        saveUsers(users);
-    }
-
-    document.getElementById('gmail-confirm-pw').value = '';
-
-    var confirmGroup = document.getElementById('gmail-confirm-group');
-    if (confirmGroup) confirmGroup.style.display = 'block';
-
-    updateAdminEmailUI();
-    showToast('บันทึก Gmail เรียบร้อยแล้ว ✓');
-    toggleGmailEdit(false);
-}
 
 // ===== TAB NAVIGATION =====
 function showTab(pageId, btn) {
@@ -181,7 +41,7 @@ function showTab(pageId, btn) {
 
 // ===== USER LIST =====
 function renderUserList() {
-    var users = getUsers().filter(function (u) { return u.role !== 'admin'; });
+    var users = getUsers().filter(function (u) { return u.role === 'staff'; });
     var container = document.getElementById('users-list-container');
     if (users.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">ยังไม่มีบัญชีผู้ใช้</div>';
@@ -234,14 +94,14 @@ function showEditUser(username) {
 
 // ===== SUBMIT FORM =====
 function submitUserForm() {
-    var role = document.getElementById('f-role').value;
+    var role = 'staff';
     var username = document.getElementById('f-username').value.trim();
     var password = document.getElementById('f-password').value.trim();
 
     var users = getUsers();
     var existingUser = users.find(function (u) { return u.username === editingUser; });
 
-    if (!role || !username) {
+    if (!username) {
         showToast('กรุณากรอกข้อมูลให้ครบ');
         return;
     }
@@ -468,221 +328,4 @@ function printStaffQR() {
     printWindow.document.close();
 }
 
-// ===== NOTIFICATIONS SYSTEM =====
-var _changePwUsername = '';
 
-function renderNotifications() {
-    var container = document.getElementById('notif-list-container');
-    if (!container) return;
-    var notifs = getNotifications();
-
-    if (notifs.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#aaa; padding:40px 20px;">✅ ไม่มีการแจ้งเตือน</p>';
-        return;
-    }
-
-    // Sort newest first
-    notifs.sort(function (a, b) { return b.id - a.id; });
-
-    var users = typeof getUsers === 'function' ? getUsers() : [];
-    var roleNames = { staff: 'พนักงาน', owner: 'เจ้าของร้าน', admin: 'ผู้ดูแลระบบ' };
-
-    var html = '';
-    notifs.forEach(function (n) {
-        var d = new Date(n.createdAt);
-        var timeStr = d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543) + ' ' +
-            d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ' น.';
-
-        var u = users.find(function (user) { return user.username === n.username; });
-        var displayRole = u ? (roleNames[u.role] || u.role) : '';
-        var accountInfo = n.username + (displayRole ? ' (' + displayRole + ')' : '');
-
-        html += '<div style="background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 1px 5px rgba(0,0,0,0.05);">' +
-            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">' +
-            '<div style="font-size:1.8rem;">🔑</div>' +
-            '<div style="flex:1; text-align:center;">' +
-            '<div style="font-weight:600; font-size:0.9rem; color:#333;">บัญชี: ' + accountInfo + '</div>' +
-            '<div style="font-size:0.8rem; color:#666; margin-top:2px;">' + n.message + '</div>' +
-            '<div style="font-size:0.75rem; color:#aaa; margin-top:2px;">' + timeStr + '</div>' +
-            '</div>' +
-            '</div>' +
-            '<div style="display:flex; gap:8px;">' +
-            '<button onclick="openChangePwModal(\'' + n.username + '\',' + n.id + ')" style="flex:1; padding:8px; background:#FFC107; color:#333; border:none; border-radius:8px; font-family:Prompt,sans-serif; font-weight:600; font-size:0.8rem; cursor:pointer;">เปลี่ยนรหัสผ่าน</button>' +
-            '<button onclick="deleteNotification(' + n.id + ')" style="padding:8px 14px; background:#f5f5f5; color:#888; border:none; border-radius:8px; font-family:Prompt,sans-serif; font-size:0.8rem; cursor:pointer;">ลบ</button>' +
-            '</div>' +
-            '</div>';
-    });
-
-    container.innerHTML = html;
-}
-
-function updateNotifBadge() {
-    var notifs = getNotifications();
-    var count = notifs.length;
-    var badges = document.querySelectorAll('.notif-badge');
-    badges.forEach(function (b) {
-        if (count > 0) {
-            b.style.display = 'flex';
-            b.textContent = count > 99 ? '99+' : count;
-        } else {
-            b.style.display = 'none';
-        }
-    });
-}
-
-function openChangePwModal(username, notifId) {
-    _changePwUsername = username;
-    _changePwNotifId = notifId;
-    document.getElementById('change-pw-user').textContent = 'บัญชี: ' + username;
-    document.getElementById('new-password').value = '';
-    document.getElementById('confirm-password').value = '';
-    document.getElementById('change-pw-error').style.display = 'none';
-    document.getElementById('change-pw-modal').style.display = 'flex';
-}
-
-var _changePwNotifId = 0;
-
-function closeChangePwModal() {
-    document.getElementById('change-pw-modal').style.display = 'none';
-}
-
-function confirmChangePassword() {
-    var newPw = document.getElementById('new-password').value.trim();
-    var confirmPw = document.getElementById('confirm-password').value.trim();
-    var errEl = document.getElementById('change-pw-error');
-    errEl.style.display = 'none';
-
-    if (!newPw) {
-        errEl.textContent = 'กรุณากรอกรหัสผ่านใหม่';
-        errEl.style.display = 'block';
-        return;
-    }
-    if (newPw !== confirmPw) {
-        errEl.textContent = 'รหัสผ่านไม่ตรงกัน';
-        errEl.style.display = 'block';
-        return;
-    }
-
-    showConfirmDialog({
-        title: 'ยืนยันการเปลี่ยนรหัสผ่าน',
-        message: 'ต้องการตั้งรหัสผ่านใหม่ให้บัญชี "' + _changePwUsername + '" หรือไม่?',
-        icon: '🔐',
-        confirmText: 'ตกลง',
-        confirmColor: '#FFC107',
-        confirmTextColor: '#333',
-        onConfirm: function () {
-            // Update user password
-            var success = updateUser(_changePwUsername, { password: newPw });
-            if (!success) {
-                errEl.textContent = 'ไม่พบบัญชีผู้ใช้นี้';
-                errEl.style.display = 'block';
-                return;
-            }
-
-            // Remove notification silently (no confirmation modal)
-            removeNotificationSilently(_changePwNotifId);
-            closeChangePwModal();
-            showToast('เปลี่ยนรหัสผ่านเรียบร้อย ✓');
-        }
-    });
-}
-
-function removeNotificationSilently(id) {
-    if (!id) return;
-    fetch(window.location.origin + '/api/notifications.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', id: id })
-    }).then(function () {
-        _fetchNotifications(function () {
-            renderNotifications();
-            updateNotifBadge();
-        });
-    }).catch(function (err) {
-        console.error('Failed to delete notification:', err);
-    });
-}
-
-function deleteNotification(id) {
-    if (!id) return;
-
-    showConfirmDialog({
-        title: 'ยืนยันการลบ',
-        message: 'ต้องการลบการแจ้งเตือนนี้หรือไม่?',
-        icon: '🗑️',
-        confirmText: 'ลบเลย',
-        confirmColor: '#F44336',
-        onConfirm: function () {
-            removeNotificationSilently(id);
-            showToast('ลบการแจ้งเตือนแล้ว ✓');
-        }
-    });
-}
-
-// Auto-update badge and render on page load — now polls MySQL
-function _refreshNotificationsAndBadge() {
-    _fetchNotifications(function () {
-        updateNotifBadge();
-        if (document.getElementById('notif-dropdown') &&
-            document.getElementById('notif-dropdown').style.display === 'block') {
-            renderNotifications();
-        }
-    });
-}
-updateNotifBadge();
-renderNotifications();
-setInterval(_refreshNotificationsAndBadge, 3000);
-
-// Toggle notification dropdown near bell button
-function toggleNotifPanel() {
-    var panel = document.getElementById('notif-dropdown');
-    if (!panel) return;
-
-    if (panel.style.display === 'none' || !panel.style.display) {
-        renderNotifications();
-
-        // Position the dropdown near the bell button in the ACTIVE page
-        var activePage = document.querySelector('.page.active');
-        var bellBtn = activePage ? activePage.querySelector('#notif-bell-btn, [onclick*="toggleNotifPanel"]') : document.querySelector('.page.active #notif-bell-btn');
-        if (bellBtn) {
-            var rect = bellBtn.getBoundingClientRect();
-            var panelWidth = 340;
-            var viewportWidth = window.innerWidth;
-
-            // Default: appear below the bell
-            var top = rect.bottom + 8;
-
-            // Try right of bell first, else flip left
-            var left = rect.right + 10;
-            if (left + panelWidth > viewportWidth - 10) {
-                left = rect.left - panelWidth - 10;
-            }
-            // Clamp to viewport
-            left = Math.max(10, Math.min(left, viewportWidth - panelWidth - 10));
-
-            panel.style.top = top + 'px';
-            panel.style.left = left + 'px';
-        } else {
-            // Fallback: center on screen
-            panel.style.top = '120px';
-            panel.style.left = '50%';
-            panel.style.transform = 'translateX(-50%)';
-        }
-
-        panel.style.display = 'block';
-    } else {
-        panel.style.display = 'none';
-        panel.style.transform = ''; // reset transform
-    }
-}
-
-// Close dropdown when switching tabs
-var _origShowTab = window.showTab;
-if (typeof _origShowTab === 'function') {
-    window.showTab = function (id, btn) {
-        _origShowTab(id, btn);
-        var panel = document.getElementById('notif-dropdown');
-        if (panel) panel.style.display = 'none';
-        updateNotifBadge();
-    };
-}

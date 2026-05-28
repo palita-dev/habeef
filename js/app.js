@@ -30,10 +30,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Wait for initial sync and data from server before first render
   Promise.all([
-    syncFromServer(),
+    syncFromServer().catch(function (e) { console.error("syncFromServer failed", e); }),
     fetch(SERVER_BASE + '/api/ingredients.php?action=get_formula')
       .then(function (res) { return res.json(); })
-      .then(function (data) { window.FORMULA = data || {}; }),
+      .then(function (data) { window.FORMULA = data || {}; })
+      .catch(function (e) { console.error("get_formula failed", e); }),
     fetch(SERVER_BASE + '/api/menus.php')
       .then(function (res) { return res.json(); })
       .then(function (data) {
@@ -50,7 +51,8 @@ document.addEventListener('DOMContentLoaded', function () {
           item.image = img;
           return item;
         });
-      }),
+      })
+      .catch(function (e) { console.error("menus failed", e); }),
     fetch(SERVER_BASE + '/api/options.php')
       .then(function (res) { return res.json(); })
       .then(function (data) {
@@ -60,7 +62,8 @@ document.addEventListener('DOMContentLoaded', function () {
           VEGGIE_OPTIONS = data.veggie || [];
           EXTRA_OPTIONS = data.extra || [];
         }
-      }),
+      })
+      .catch(function (e) { console.error("options failed", e); }),
     fetch(SERVER_BASE + '/api/ingredients.php')
       .then(function (res) { return res.json(); })
       .then(function (data) {
@@ -68,7 +71,11 @@ document.addEventListener('DOMContentLoaded', function () {
           ALL_INGREDIENTS = data.map(function (ing) { return ing.ingredient_name; });
         }
       })
+      .catch(function (e) { console.error("ingredients failed", e); })
   ]).then(function () {
+    renderMenu();
+  }).catch(function (e) {
+    console.error("Promise.all init chain rejected, rendering anyway", e);
     renderMenu();
   });
 
@@ -203,7 +210,7 @@ function decodeTableId(encodedStr) {
   try {
     var decoded = decodeURIComponent(atob(encodedStr));
     var parts = decoded.split('|');
-    if (parts.length === 2 && parts[1] === SECRET_SALT) {
+    if (parts.length === 2 && (parts[1] === SECRET_SALT || parts[1] === 'hybeef_secret_2024')) {
       return parts[0];
     }
   } catch (e) {

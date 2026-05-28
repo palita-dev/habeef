@@ -9,6 +9,9 @@ var SERVER_BASE = (function () {
 // ===== DISABLED INGREDIENTS — stored in MySQL via ingredients.php =====
 window._disabledIngredientsCache = null;
 
+var MENU_EMOJIS = {};
+var MENU_IMAGES = {};
+
 function getDisabledIngredients(callback, force) {
     if (window._disabledIngredientsCache !== null && !force) {
         if (callback) callback(window._disabledIngredientsCache);
@@ -369,8 +372,7 @@ function getDateKey(d) {
 var THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
-var MENU_EMOJIS = {};
-var MENU_IMAGES = {};
+
 
 // Fetch menus to populate Emojis and Images dynamically
 function fetchMenusConfig() {
@@ -434,8 +436,8 @@ function _fetchStockIn(callback) {
         .then(function (data) {
             if (data && typeof data === 'object') {
                 window._stockInCache = data;
-                if (callback) callback(data);
             }
+            if (callback) callback(window._stockInCache || {});
         }).catch(function () {
             if (callback) callback(window._stockInCache || {});
         });
@@ -511,8 +513,8 @@ function _fetchStockOut(callback) {
         .then(function (data) {
             if (Array.isArray(data)) {
                 window._stockOutCache = data;
-                if (callback) callback(data);
             }
+            if (callback) callback(window._stockOutCache || []);
         }).catch(function () {
             if (callback) callback(window._stockOutCache || []);
         });

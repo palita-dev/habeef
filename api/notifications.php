@@ -13,7 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 "username" => $row['username'],
                 "message" => $row['message'],
                 "read" => (bool)$row['is_read'],
-                "createdAt" => str_replace(' ', 'T', $row['created_at'])
+                "createdAt" => str_replace(' ', 'T', $row['created_at']),
+                "created_at" => str_replace(' ', 'T', $row['created_at'])
             ];
         }
     }
@@ -43,6 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             echo json_encode(["success" => true]);
         } else {
             echo json_encode(["success" => false, "error" => "Invalid ID"]);
+        }
+    } elseif ($action === 'delete_by_user') {
+        $username = isset($data['username']) ? $conn->real_escape_string($data['username']) : '';
+        $message = isset($data['message']) ? $conn->real_escape_string($data['message']) : '';
+        if (!empty($username) && !empty($message)) {
+            $sql = "DELETE FROM notifications WHERE username = '$username' AND message = '$message'";
+            $conn->query($sql);
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Username and message are required"]);
         }
     } else {
         echo json_encode(["success" => false, "error" => "Invalid action"]);

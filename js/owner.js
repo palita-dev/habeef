@@ -51,6 +51,8 @@ document.addEventListener('DOMContentLoaded', function () {
         renderStockInToday();
         renderRemaining();
         renderReport();
+        renderUserList();
+        initGmailSettings();
     });
 });
 
@@ -68,6 +70,7 @@ function showTab(pageId, btn) {
     if (pageId === 'page-remaining') renderRemaining();
     if (pageId === 'page-report') renderReport();
     if (pageId === 'page-stockin') renderStockInToday();
+    if (pageId === 'page-users') renderUserList();
 }
 
 // ===== STOCK IN =====
@@ -1140,6 +1143,9 @@ function toggleOwnerNotiPanel() {
     if (!panel) return;
 
     if (panel.style.display === 'none' || !panel.style.display) {
+        var pwPanel = document.getElementById('notif-dropdown');
+        if (pwPanel) pwPanel.style.display = 'none';
+
         var activePage = document.querySelector('.page.active');
         if (document.getElementById('page-report-history') && document.getElementById('page-report-history').style.display === 'block') {
             activePage = document.getElementById('page-report-history');
@@ -1871,6 +1877,20 @@ function renderSalesCalendar() {
     var monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
     var html = '';
     
+    // Gather days that have sales
+    var hasSalesKeys = {};
+    if (type === 'day' || type === 'week') {
+        var allOrders = getOrders();
+        allOrders.forEach(function (order) {
+            if (order.status !== 'paid' && order.status !== 'served' && order.status !== 'completed') return;
+            var orderDate = new Date(order.createdAt || order.completedAt || order.timestamp);
+            var dateKey = getDateKey(orderDate);
+            if (dateKey) {
+                hasSalesKeys[dateKey] = true;
+            }
+        });
+    }
+    
     // RENDER HEADING & MONTH/YEAR SWAP CONTROLS FOR DAY/WEEK MODES
     if (type === 'day' || type === 'week') {
         var firstDay = new Date(year, month, 1).getDay();
@@ -1933,14 +1953,24 @@ function renderSalesCalendar() {
                 }
             }
             
-            var style = 'width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; ';
+            var tempDate = new Date(year, month, d, 12, 0, 0);
+            var dayKey = getDateKey(tempDate);
+            var dayHasSales = hasSalesKeys[dayKey];
+            
+            var style = 'width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; box-sizing:border-box; border:1.5px solid transparent; ';
             
             if (isSelected && type === 'day') {
                 style += 'background:#C62828; color:#fff; font-weight:bold; cursor:pointer;';
             } else if (isSelected && type === 'week') {
-                style = 'width:30px; height:30px; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; cursor:pointer;';
+                style = 'width:30px; height:30px; display:flex; align-items:center; justify-content:center; margin:auto; font-size:0.8rem; font-family:\'Prompt\',sans-serif; cursor:pointer; box-sizing:border-box; border:1.5px solid transparent;';
+                if (dayHasSales) {
+                    style += ' border: 1.5px solid #C62828; font-weight:bold;';
+                }
             } else {
                 style += 'color:#333; cursor:pointer; font-weight:500;';
+                if (dayHasSales) {
+                    style += ' border: 1.5px solid #C62828; font-weight:bold;';
+                }
             }
             
             // Mouse event parameters for week hovering highlights
@@ -2251,14 +2281,15 @@ function exportSalesExcel() {
     var periodLabel = '';
     var dateLabel = '';
     
+    var startOfWeek = getStartOfWeek(d);
+    var endOfWeek = getEndOfWeek(d);
+    
     if (filterType === 'day') {
         periodLabel = 'รายวัน';
         dateLabel = d.getDate() + '-' + (d.getMonth() + 1) + '-' + (d.getFullYear() + 543);
     } else if (filterType === 'week') {
         periodLabel = 'รายสัปดาห์';
-        var start = getStartOfWeek(d);
-        var end = getEndOfWeek(d);
-        dateLabel = start.getDate() + '-' + (start.getMonth() + 1) + '-' + (start.getFullYear() + 543) + ' ถึง ' + end.getDate() + '-' + (end.getMonth() + 1) + '-' + (end.getFullYear() + 543);
+        dateLabel = startOfWeek.getDate() + '-' + (startOfWeek.getMonth() + 1) + '-' + (startOfWeek.getFullYear() + 543) + ' ถึง ' + endOfWeek.getDate() + '-' + (endOfWeek.getMonth() + 1) + '-' + (endOfWeek.getFullYear() + 543);
     } else if (filterType === 'month') {
         periodLabel = 'รายเดือน';
         dateLabel = String(d.getMonth() + 1) + '-' + String(d.getFullYear() + 543);
@@ -2267,9 +2298,98 @@ function exportSalesExcel() {
         dateLabel = String(d.getFullYear() + 543);
     }
     
+    // Define Breakdown Columns
+    var columns = []; // { key, label }
+    if (filterType === 'week') {
+        var dayNames = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+        for (var i = 0; i < 7; i++) {
+            var colDate = new Date(startOfWeek);
+            colDate.setDate(colDate.getDate() + i);
+            var colKey = 'day_' + i;
+            columns.push({ key: colKey, label: dayNames[colDate.getDay()] + ' ' + colDate.getDate() });
+        }
+    } else if (filterType === 'month') {
+        columns.push({ key: 'wk_1', label: 'สัปดาห์ 1 (1-7)' });
+        columns.push({ key: 'wk_2', label: 'สัปดาห์ 2 (8-14)' });
+        columns.push({ key: 'wk_3', label: 'สัปดาห์ 3 (15-21)' });
+        columns.push({ key: 'wk_4', label: 'สัปดาห์ 4 (22-28)' });
+        var lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        if (lastDay > 28) {
+            columns.push({ key: 'wk_5', label: 'สัปดาห์ 5 (29-' + lastDay + ')' });
+        }
+    } else if (filterType === 'year') {
+        var monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        for (var m = 0; m < 12; m++) {
+            columns.push({ key: 'mo_' + m, label: monthNames[m] });
+        }
+    }
+    
+    // Aggregate data for breakdown
+    var breakdownData = {}; // menuName -> { key -> qty }
+    if (filterType !== 'day') {
+        var allOrders = getOrders();
+        var targetYear = d.getFullYear();
+        var targetMonth = d.getMonth();
+        
+        var sW = new Date(startOfWeek.getTime());
+        sW.setHours(0,0,0,0);
+        var eW = new Date(endOfWeek.getTime());
+        eW.setHours(23,59,59,999);
+        
+        allOrders.forEach(function (order) {
+            if (order.status !== 'paid' && order.status !== 'served' && order.status !== 'completed') return;
+            
+            var orderDate = new Date(order.createdAt || order.completedAt || order.timestamp);
+            var oLogicalDate = new Date(orderDate.getTime());
+            oLogicalDate.setHours(oLogicalDate.getHours() - 4); // business shift
+            
+            var isMatch = false;
+            var breakdownKey = null;
+            
+            if (filterType === 'week') {
+                oLogicalDate.setHours(12,0,0,0);
+                if (oLogicalDate >= sW && oLogicalDate <= eW) {
+                    isMatch = true;
+                    var diffTime = Math.abs(oLogicalDate - sW);
+                    var diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                    breakdownKey = 'day_' + diffDays;
+                }
+            } else if (filterType === 'month') {
+                if (oLogicalDate.getFullYear() === targetYear && oLogicalDate.getMonth() === targetMonth) {
+                    isMatch = true;
+                    var dateNum = oLogicalDate.getDate();
+                    if (dateNum <= 7) breakdownKey = 'wk_1';
+                    else if (dateNum <= 14) breakdownKey = 'wk_2';
+                    else if (dateNum <= 21) breakdownKey = 'wk_3';
+                    else if (dateNum <= 28) breakdownKey = 'wk_4';
+                    else breakdownKey = 'wk_5';
+                }
+            } else if (filterType === 'year') {
+                if (oLogicalDate.getFullYear() === targetYear) {
+                    isMatch = true;
+                    breakdownKey = 'mo_' + oLogicalDate.getMonth();
+                }
+            }
+            
+            if (!isMatch || !breakdownKey) return;
+            
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(function (item) {
+                    var name = item.name || 'ไม่ทราบเมนู';
+                    var qty = item.qty || item.quantity || 0;
+                    
+                    if (!breakdownData[name]) breakdownData[name] = {};
+                    if (!breakdownData[name][breakdownKey]) breakdownData[name][breakdownKey] = 0;
+                    breakdownData[name][breakdownKey] += qty;
+                });
+            }
+        });
+    }
+
     var printTime = new Date().toLocaleString('th-TH');
     
-    // Construct beautiful HTML Spreadsheet content (MS Excel compatible)
+    // Construct HTML Spreadsheet content (MS Excel compatible)
+    var colspanTitle = 3 + columns.length;
     var excelTemplate = 
         '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
         '<head>' +
@@ -2288,23 +2408,37 @@ function exportSalesExcel() {
         '</head>' +
         '<body>' +
         '<table>' +
-        '  <tr><td colspan="3" class="title">สรุปยอดขายตามเมนู (' + periodLabel + ')</td></tr>' +
-        '  <tr><td colspan="3" class="meta">ช่วงเวลา: ' + dateLabel + '</td></tr>' +
-        '  <tr><td colspan="3" class="meta">พิมพ์เมื่อ: ' + printTime + '</td></tr>' +
-        '  <tr><td colspan="3" class="meta"></td></tr>' +
+        '  <tr><td colspan="' + colspanTitle + '" class="title">สรุปยอดขายตามเมนู (' + periodLabel + ')</td></tr>' +
+        '  <tr><td colspan="' + colspanTitle + '" class="meta">ช่วงเวลา: ' + dateLabel + '</td></tr>' +
+        '  <tr><td colspan="' + colspanTitle + '" class="meta">พิมพ์เมื่อ: ' + printTime + '</td></tr>' +
+        '  <tr><td colspan="' + colspanTitle + '" class="meta"></td></tr>' +
         '  <tr class="header">' +
-        '    <td>ชื่อเมนู</td>' +
-        '    <td>จำนวนที่ขายได้ (ชาม)</td>' +
-        '    <td>ยอดขายรวม (บาท)</td>' +
-        '  </tr>';
+        '    <td>ชื่อเมนู</td>';
+        
+    columns.forEach(function(col) {
+        excelTemplate += '<td>' + col.label + '</td>';
+    });
+    
+    excelTemplate += '    <td>รวมจำนวน (ชาม)</td>' +
+                     '    <td>ยอดขายรวม (บาท)</td>' +
+                     '  </tr>';
         
     var grandTotalQty = 0;
     var grandTotalPrice = 0;
+    var grandColTotals = {}; // key -> total
+    columns.forEach(function(col) { grandColTotals[col.key] = 0; });
     
     window.currentSalesList.forEach(function (item) {
         excelTemplate += '  <tr>' +
-                         '    <td>' + item.name + '</td>' +
-                         '    <td class="number">' + item.qty + '</td>' +
+                         '    <td>' + item.name + '</td>';
+                         
+        columns.forEach(function(col) {
+            var val = (breakdownData[item.name] && breakdownData[item.name][col.key]) ? breakdownData[item.name][col.key] : 0;
+            grandColTotals[col.key] += val;
+            excelTemplate += '<td class="number">' + (val || '-') + '</td>';
+        });
+                         
+        excelTemplate += '    <td class="number">' + item.qty + '</td>' +
                          '    <td class="number">' + item.totalPrice.toFixed(2) + '</td>' +
                          '  </tr>';
         grandTotalQty += item.qty;
@@ -2312,8 +2446,13 @@ function exportSalesExcel() {
     });
     
     excelTemplate += '  <tr class="total">' +
-                     '    <td>ยอดขายรวมทั้งหมด</td>' +
-                     '    <td class="number">' + grandTotalQty + '</td>' +
+                     '    <td>ยอดขายรวมทั้งหมด</td>';
+                     
+    columns.forEach(function(col) {
+        excelTemplate += '<td class="number">' + (grandColTotals[col.key] || 0) + '</td>';
+    });
+                     
+    excelTemplate += '    <td class="number">' + grandTotalQty + '</td>' +
                      '    <td class="number">' + grandTotalPrice.toFixed(2) + '</td>' +
                      '  </tr>' +
                      '</table>' +
@@ -2335,4 +2474,536 @@ function exportSalesExcel() {
     document.body.removeChild(link);
     
     showToast('ดาวน์โหลดรายงาน Excel สำเร็จ');
+}
+
+
+// ===== USER LIST (MANAGED BY OWNER) =====
+var editingUser = null;
+
+function renderUserList() {
+    var users = getUsers().filter(function (u) { return u.role === 'staff' || u.role === 'admin'; });
+    var container = document.getElementById('users-list-container');
+    if (users.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">ยังไม่มีบัญชีผู้ใช้พนักงานหรือแอดมิน</div>';
+        return;
+    }
+    var roleNames = { staff: 'พนักงาน', admin: 'ผู้ดูแลระบบ', owner: 'เจ้าของร้าน' };
+    
+    // Sort so admin comes first
+    users.sort(function(a,b) {
+        if (a.role === 'admin' && b.role !== 'admin') return -1;
+        if (a.role !== 'admin' && b.role === 'admin') return 1;
+        return 0;
+    });
+
+    container.innerHTML = users.map(function (u) {
+        var roleColor = u.role === 'admin' ? '#1976D2' : '#757575';
+        return '<div class="user-card">' +
+            '<div class="user-info">' +
+            '<div class="user-name">' + (u.name || u.username) + '</div>' +
+            '<div class="user-role" style="color:' + roleColor + ';">' + (roleNames[u.role] || u.role) + ' | @' + u.username + '</div>' +
+            '</div>' +
+            '<div class="user-actions">' +
+            '<button class="btn btn-sm btn-yellow" onclick="showEditUser(\'' + u.username + '\')">✏️</button>' +
+            '<button class="btn btn-sm btn-red" onclick="confirmDeleteUser(\'' + u.username + '\')">🗑️</button>' +
+            '</div>' +
+            '</div>';
+    }).join('');
+}
+
+// ===== CREATE USER =====
+function showCreateUser() {
+    editingUser = null;
+    document.getElementById('form-title').textContent = 'หน้าระบบเจ้าของร้าน';
+    document.getElementById('form-subtitle').textContent = 'สร้างบัญชีผู้ใช้ใหม่';
+    document.getElementById('form-submit-btn').textContent = 'สร้างบัญชี';
+    document.getElementById('f-role').value = '';
+    document.getElementById('f-username').value = '';
+    document.getElementById('f-password').value = '';
+    document.getElementById('f-username').readOnly = false;
+    showTab('page-user-form');
+}
+
+// ===== EDIT USER =====
+function showEditUser(username) {
+    var users = getUsers();
+    var user = users.find(function (u) { return u.username === username; });
+    if (!user) return;
+    editingUser = username;
+    document.getElementById('form-title').textContent = 'หน้าระบบเจ้าของร้าน';
+    document.getElementById('form-subtitle').textContent = 'แก้ไขบัญชีผู้ใช้';
+    document.getElementById('form-submit-btn').textContent = 'บันทึกการแก้ไข';
+    document.getElementById('f-role').value = user.role;
+    document.getElementById('f-username').value = user.username;
+    document.getElementById('f-password').value = ''; // Don't show hashed password
+    document.getElementById('pw-hint').style.display = 'block'; // Show hint
+    document.getElementById('f-username').readOnly = true;
+    showTab('page-user-form');
+}
+
+// ===== SUBMIT FORM =====
+function submitUserForm() {
+    var role = document.getElementById('f-role').value;
+    var username = document.getElementById('f-username').value.trim();
+    var password = document.getElementById('f-password').value.trim();
+
+    if (!role) {
+        showToast('กรุณาเลือกสิทธิ์ผู้ใช้');
+        return;
+    }
+    if (!username) {
+        showToast('กรุณากรอกชื่อผู้ใช้');
+        return;
+    }
+
+    var users = getUsers();
+    var existingUser = users.find(function (u) { return u.username === editingUser; });
+
+    if (!editingUser && !password) {
+        showToast('กรุณากรอกรหัสผ่านสำหรับบัญชีใหม่');
+        return;
+    }
+
+    var finalPassword = password;
+    if (editingUser && !password && existingUser) {
+        finalPassword = existingUser.password; // Keep old password
+    } else if (password) {
+        if (typeof sha256 === 'function') {
+            finalPassword = sha256(password);
+        } else {
+            console.error('sha256 function is not available!');
+            finalPassword = password;
+        }
+    }
+
+    // Duplicate username check (for new accounts)
+    if (!editingUser) {
+        var duplicateCheck = users.find(function (u) { return u.username === username; });
+        if (duplicateCheck) {
+            showToast('❌ ชื่อบัญชี "' + username + '" มีอยู่แล้วในระบบ กรุณาใช้ชื่ออื่น');
+            document.getElementById('f-username').style.borderColor = '#F44336';
+            return;
+        }
+    }
+    
+    document.getElementById('f-username').style.borderColor = '';
+
+    var msg = editingUser ? 'ยืนยันการบันทึกการแก้ไขบัญชี "' + username + '"?' : 'ยืนยันการสร้างบัญชีใหม่ "' + username + '"?';
+    if (password && editingUser) {
+        msg = 'ยืนยันการแก้ไขข้อมูลและเปลี่ยนรหัสผ่านใหม่สำหรับบัญชี "' + username + '"?';
+    }
+
+    showConfirmDialog({
+        title: editingUser ? 'ยืนยันการแก้ไข' : 'ยืนยันการสร้างบัญชี',
+        message: msg,
+        icon: '👤',
+        confirmText: editingUser ? 'บันทึกข้อมูล' : 'สร้างบัญชี',
+        confirmColor: '#FFC107',
+        confirmTextColor: '#333',
+        onConfirm: function () {
+            if (editingUser) {
+                updateUser(editingUser, { role: role, password: finalPassword, name: username });
+                showToast('แก้ไขบัญชีเรียบร้อย ✓');
+            } else {
+                if (!addUser(username, finalPassword, role, username)) {
+                    showToast('❌ ชื่อบัญชีนี้มีอยู่แล้ว');
+                    return;
+                }
+                showToast('สร้างบัญชีเรียบร้อย ✓');
+            }
+
+            renderUserList();
+            setTimeout(syncFromServer, 100); // trigger sync
+            showTab('page-users');
+        }
+    });
+}
+
+function showConfirmDialog(options) {
+    var modal = document.createElement('div');
+    modal.className = 'alert-modal show';
+    modal.style.zIndex = '10000';
+    modal.innerHTML = `
+        <div class="alert-modal-content" style="padding:0; text-align:center; overflow:hidden; border-radius:16px;">
+            <div style="padding:30px 20px 20px;">
+                <div style="font-size:3rem; margin-bottom:15px;">` + (options.icon || '⚠️') + `</div>
+                <h3 style="font-size:1.3rem; font-weight:700; color:#333; margin:0 0 10px 0;">` + (options.title || 'ยืนยันการทำรายการ') + `</h3>
+                <p style="font-size:0.95rem; color:#666; margin:0;">` + (options.message || 'คุณต้องการดำเนินการต่อหรือไม่?') + `</p>
+            </div>
+            <div style="display:flex; border-top:1px solid #eee;">
+                <button class="btn" id="dia-confirm" style="flex:1; padding:16px; background:` + (options.confirmColor || '#F44336') + `; color:` + (options.confirmTextColor || 'white') + `; border:none; border-right:1px solid #eee; border-radius:0 0 0 16px; font-family:'Prompt',sans-serif; font-size:1rem; font-weight:700; cursor:pointer;">` + (options.confirmText || 'ตกลง') + `</button>
+                <button class="btn" id="dia-cancel" style="flex:1; padding:16px; background:#f5f5f5; color:#555; border:none; border-radius:0 0 16px 0; font-family:'Prompt',sans-serif; font-size:1rem; font-weight:600; cursor:pointer;">` + (options.cancelText || 'ยกเลิก') + `</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('dia-cancel').onclick = function () {
+        document.body.removeChild(modal);
+        if (typeof options.onCancel === 'function') options.onCancel();
+    };
+
+    document.getElementById('dia-confirm').onclick = function () {
+        document.body.removeChild(modal);
+        if (typeof options.onConfirm === 'function') options.onConfirm();
+    };
+}
+
+// ===== DELETE USER =====
+function confirmDeleteUser(username) {
+    showConfirmDialog({
+        title: 'ยืนยันการลบ',
+        message: 'ต้องการลบบัญชี "' + username + '" หรือไม่?',
+        icon: '⚠️',
+        confirmText: 'ลบเลย',
+        confirmColor: '#F44336',
+        onConfirm: function () {
+            deleteUser(username);
+            showToast('ลบบัญชีเรียบร้อย ✓');
+            renderUserList();
+        }
+    });
+}
+
+// ===== GMAIL SETTINGS FOR OWNER =====
+function initGmailSettings() {
+    function applyEmail(email) {
+        document.getElementById('current-owner-gmail-display').textContent = email;
+    }
+
+    function showForceModal() {
+        document.getElementById('current-owner-gmail-display').textContent = 'ยังไม่ได้ตั้งค่า';
+        var forceModal = document.getElementById('force-email-modal');
+        if (forceModal) forceModal.style.display = 'flex';
+    }
+
+    function checkLocalFallback() {
+        // Check sessionStorage first (fastest)
+        var sess = sessionStorage.getItem('habeef_current_user');
+        if (sess) {
+            var sessUser = JSON.parse(sess);
+            if (sessUser.email || sessUser.gmail) {
+                applyEmail(sessUser.email || sessUser.gmail);
+                return;
+            }
+        }
+        // Check users cache
+        var users = getUsers();
+        var ownerUser = users.find(function(u) { return u.role === 'owner'; });
+        var localEmail = ownerUser ? (ownerUser.email || ownerUser.gmail || '') : '';
+        if (localEmail) {
+            applyEmail(localEmail);
+            return;
+        }
+        // Truly no email — show modal
+        showForceModal();
+    }
+
+    fetch(SERVER_BASE + '/api/users.php?action=get_owner_gmail')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success && data.gmail) {
+                applyEmail(data.gmail);
+            } else {
+                checkLocalFallback();
+            }
+        }).catch(function() {
+            checkLocalFallback();
+        });
+}
+
+function toggleGmailEdit(isEditing) {
+    document.getElementById('gmail-display-mode').style.display = isEditing ? 'none' : 'flex';
+    document.getElementById('gmail-edit-mode').style.display = isEditing ? 'block' : 'none';
+    
+    if (isEditing) {
+        document.getElementById('owner-gmail').value = '';
+        document.getElementById('gmail-confirm-pw').value = '';
+        document.getElementById('gmail-error').style.display = 'none';
+    }
+}
+
+function saveOwnerGmail() {
+    var newGmail = document.getElementById('owner-gmail').value.trim();
+    var confirmPw = document.getElementById('gmail-confirm-pw').value.trim();
+    var errorEl = document.getElementById('gmail-error');
+
+    if (!newGmail || !newGmail.includes('@') || !newGmail.includes('.')) {
+        errorEl.textContent = 'กรุณากรอก Email ให้ถูกต้อง';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    if (!confirmPw) {
+        errorEl.textContent = 'กรุณากรอกรหัสผ่านเจ้าของร้านเพื่อยืนยัน';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    var hashedInputPw = sha256(confirmPw);
+    if (currentUser.password !== hashedInputPw && currentUser.password !== confirmPw) {
+        errorEl.textContent = 'รหัสผ่านเจ้าของร้านไม่ถูกต้อง';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    errorEl.style.display = 'none';
+
+    // Method 1: dedicated action
+    fetch(SERVER_BASE + '/api/users.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_owner_gmail', gmail: newGmail })
+    }).catch(function() {});
+
+    // Method 2: update local user cache & sync full users list (always works)
+    var users = getUsers();
+    var ownerUser = users.find(function(u) { return u.role === 'owner'; });
+    if (ownerUser) {
+        ownerUser.email = newGmail;
+        saveUsers(users);
+    }
+
+    // Method 3: persist in sessionStorage so popup won't re-appear on refresh
+    var sess = sessionStorage.getItem('habeef_current_user');
+    if (sess) {
+        var sessUser = JSON.parse(sess);
+        sessUser.email = newGmail;
+        sessionStorage.setItem('habeef_current_user', JSON.stringify(sessUser));
+    }
+
+    showToast('บันทึก Email เจ้าของร้านเรียบร้อยแล้ว');
+    document.getElementById('current-owner-gmail-display').textContent = newGmail;
+    toggleGmailEdit(false);
+}
+
+function saveForceOwnerGmail() {
+    var email = document.getElementById('force-owner-gmail').value.trim();
+    var errorEl = document.getElementById('force-email-error');
+
+    if (!email || !email.includes('@') || !email.includes('.')) {
+        errorEl.textContent = 'กรุณากรอก Email ให้ถูกต้อง';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    // Method 1: dedicated API action
+    fetch(SERVER_BASE + '/api/users.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_owner_gmail', gmail: email })
+    }).catch(function() {});
+
+    // Method 2: update local user cache & sync full users list
+    var users = getUsers();
+    var ownerUser = users.find(function(u) { return u.role === 'owner'; });
+    if (ownerUser) {
+        ownerUser.email = email;
+        saveUsers(users);
+    }
+
+    // Method 3: persist in sessionStorage so popup won't re-appear on refresh
+    var sess = sessionStorage.getItem('habeef_current_user');
+    if (sess) {
+        var sessUser = JSON.parse(sess);
+        sessUser.email = email;
+        sessionStorage.setItem('habeef_current_user', JSON.stringify(sessUser));
+    }
+
+    showToast('ตั้งค่า Email เรียบร้อยแล้ว');
+    document.getElementById('current-owner-gmail-display').textContent = email;
+    document.getElementById('force-email-modal').style.display = 'none';
+}
+
+// ===== PASSWORD RESET NOTIFICATIONS FOR OWNER =====
+var currentChangePwUser = null;
+
+function toggleNotifPanel() {
+    var panel = document.getElementById('notif-dropdown');
+    if (!panel) return;
+    
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        var ingredientPanel = document.getElementById('owner-noti-panel');
+        if (ingredientPanel) ingredientPanel.style.display = 'none';
+
+        // Open
+        panel.style.display = 'block';
+        
+        var activePage = document.querySelector('.page.active');
+        if (document.getElementById('page-report-history') && document.getElementById('page-report-history').style.display === 'block') {
+            activePage = document.getElementById('page-report-history');
+        }
+        var keyBtn = activePage ? activePage.querySelector('.pw-notif-bell-btn') : document.querySelector('.pw-notif-bell-btn');
+        
+        if (keyBtn) {
+            var rect = keyBtn.getBoundingClientRect();
+            var panelWidth = 340;
+            var viewportWidth = window.innerWidth;
+
+            var top = rect.bottom + 12;
+            var left = rect.left + (rect.width / 2) - (panelWidth / 2);
+
+            if (left + panelWidth > viewportWidth - 15) {
+                left = viewportWidth - panelWidth - 15;
+            }
+            if (left < 15) left = 15;
+
+            panel.style.top = top + 'px';
+            panel.style.left = left + 'px';
+        }
+        
+        loadPasswordResetRequests();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function loadPasswordResetRequests() {
+    var notifs = getNotifications().filter(function(n) { 
+        return n.message === 'ขอเปลี่ยนรหัสผ่าน'; 
+    });
+    
+    // Sort oldest first
+    notifs.sort(function(a,b) {
+        return new Date(a.created_at) - new Date(b.created_at);
+    });
+
+    // Update badges
+    var count = notifs.length;
+    document.querySelectorAll('.pw-notif-badge').forEach(function(badge) {
+        if (count > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = count;
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+
+    // Update bottom navigation menu dot
+    var dot = document.querySelector('.pw-notif-dot');
+    if (dot) {
+        if (count > 0) {
+            dot.style.display = 'block';
+        } else {
+            dot.style.display = 'none';
+        }
+    }
+    
+    var container = document.getElementById('notif-list-container');
+    if (!container) return;
+    
+    if (notifs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#999; padding:20px; font-size:0.9rem;">ไม่มีคำขอเปลี่ยนรหัสผ่าน</div>';
+        return;
+    }
+    
+    var html = notifs.map(function(n) {
+        return '<div style="background:#f8f9fa; border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px;">' +
+            '<div style="font-weight:700; font-size:1rem; color:#333; margin-bottom:4px;">👤 บัญชี: ' + n.username + '</div>' +
+            '<div style="font-size:0.8rem; color:#888; margin-bottom:10px;">' + formatDateThai(n.created_at) + '</div>' +
+            '<div style="display:flex; gap:8px;">' +
+                '<button class="btn" style="flex:1; background:#f5f5f5; color:#555; padding:8px; border:none; border-radius:8px; font-weight:600; font-family:\'Prompt\',sans-serif; cursor:pointer;" onclick="rejectPasswordReset(\'' + n.username + '\')">ปฏิเสธ</button>' +
+                '<button class="btn btn-yellow" style="flex:1; padding:8px; border-radius:8px;" onclick="showChangePwModal(\'' + n.username + '\')">อนุมัติและเปลี่ยนรหัส</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+// Periodically check for password reset requests (every 5 seconds)
+setInterval(loadPasswordResetRequests, 5000);
+
+function showChangePwModal(username) {
+    currentChangePwUser = username;
+    document.getElementById('change-pw-user').textContent = 'สำหรับบัญชี: ' + username;
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('change-pw-error').style.display = 'none';
+    
+    document.getElementById('notif-dropdown').style.display = 'none';
+    document.getElementById('change-pw-modal').style.display = 'flex';
+}
+
+function closeChangePwModal() {
+    document.getElementById('change-pw-modal').style.display = 'none';
+    currentChangePwUser = null;
+}
+
+function confirmChangePassword() {
+    if (!currentChangePwUser) return;
+    
+    var newPw = document.getElementById('new-password').value.trim();
+    var confirmPw = document.getElementById('confirm-password').value.trim();
+    var errorEl = document.getElementById('change-pw-error');
+    
+    if (!newPw) {
+        errorEl.textContent = 'กรุณากรอกรหัสผ่านใหม่';
+        errorEl.style.display = 'block';
+        return;
+    }
+    if (newPw !== confirmPw) {
+        errorEl.textContent = 'รหัสผ่านทั้งสองช่องไม่ตรงกัน';
+        errorEl.style.display = 'block';
+        return;
+    }
+    if (newPw.length < 4) {
+        errorEl.textContent = 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร';
+        errorEl.style.display = 'block';
+        return;
+    }
+    
+    errorEl.style.display = 'none';
+    
+    // Hash password
+    var hashedPw = sha256(newPw);
+    
+    // Update user via API/existing function
+    var success = updateUser(currentChangePwUser, { password: hashedPw });
+    
+    if (success) {
+        // Clear the notification from server
+        fetch(SERVER_BASE + '/api/notifications.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_by_user', username: currentChangePwUser, message: 'ขอเปลี่ยนรหัสผ่าน' })
+        }).then(function() {
+            showToast('เปลี่ยนรหัสผ่านสำเร็จ ✓');
+            closeChangePwModal();
+            // Refresh
+            setTimeout(function() {
+                _fetchNotifications(function() {
+                    loadPasswordResetRequests();
+                    renderUserList(); // in case we are on users page
+                });
+            }, 300);
+        });
+    } else {
+        errorEl.textContent = 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน';
+        errorEl.style.display = 'block';
+    }
+}
+
+function rejectPasswordReset(username) {
+    showConfirmDialog({
+        title: 'ปฏิเสธคำขอ',
+        message: 'ต้องการปฏิเสธคำขอเปลี่ยนรหัสผ่านของ "' + username + '" หรือไม่?',
+        icon: '❌',
+        confirmText: 'ปฏิเสธ',
+        confirmColor: '#F44336',
+        onConfirm: function() {
+            fetch(SERVER_BASE + '/api/notifications.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_by_user', username: username, message: 'ขอเปลี่ยนรหัสผ่าน' })
+            }).then(function() {
+                showToast('ปฏิเสธคำขอเรียบร้อย');
+                setTimeout(function() {
+                    _fetchNotifications(function() {
+                        loadPasswordResetRequests();
+                    });
+                }, 300);
+            });
+        }
+    });
 }

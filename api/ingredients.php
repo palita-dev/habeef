@@ -6,6 +6,7 @@ $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `is_disabled` t
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `usage_per_order` decimal(10,4) NOT NULL DEFAULT 0.0000");
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `pieces_per_order` int(11) NOT NULL DEFAULT 1");
 $conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `daily_recommended` decimal(10,2) NOT NULL DEFAULT 0.00");
+$conn->query("ALTER TABLE `ingredients` ADD COLUMN IF NOT EXISTS `icon_html` varchar(255) DEFAULT NULL");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = isset($_GET['action']) ? $_GET['action'] : 'all';

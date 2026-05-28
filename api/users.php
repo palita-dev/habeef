@@ -4,32 +4,60 @@ require_once 'db.php';
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Ensure email column exists (auto-fix for production)
     $conn->query("ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `email` VARCHAR(255) NULL DEFAULT NULL");
-    
+
+    if (isset($_GET['action']) && $_GET['action'] === 'get_owner_gmail') {
+        $sql = "SELECT email FROM users WHERE role = 'owner' LIMIT 1";
+        $result = $conn->query($sql);
+        $gmail = '';
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $gmail = $row['email'] ? $row['email'] : '';
+        }
+        echo json_encode(["success" => true, "gmail" => $gmail]);
+        $conn->close();
+        exit;
+    }
+
     $sql = "SELECT username, password, role, full_name as name, email FROM users";
     $result = $conn->query($sql);
     $users = array();
 
     if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
+        while ($row = $result->fetch_assoc()) {
             $users[] = $row;
         }
     }
-    
+
     // For local fallback if table is empty
     if (empty($users)) {
         $users[] = array("username" => "admin", "password" => "1234", "role" => "admin", "name" => "Admin ผู้ดูแลระบบ");
     }
-    
+
     echo json_encode($users);
 
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // The frontend sends the entire users array whenever changes are made (Node.js legacy behavior).
     // We should safely merge (UPSERT) these into MySQL.
-    
+
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
-    
+
     if (is_array($data)) {
+        if (isset($data['action']) && $data['action'] === 'update_owner_gmail') {
+            $gmail = isset($data['gmail']) ? $data['gmail'] : '';
+            $stmt = $conn->prepare("UPDATE users SET email = ? WHERE role = 'owner'");
+            if ($stmt) {
+                $stmt->bind_param("s", $gmail);
+                $stmt->execute();
+                $stmt->close();
+                echo json_encode(["success" => true]);
+            } else {
+                echo json_encode(["success" => false, "error" => $conn->error]);
+            }
+            $conn->close();
+            exit;
+        }
+
         // Prepare an UPSERT statement (Insert, on duplicate key update)
         // Requires 'username' to be UNIQUE KEY in MySQL, which it is.
         $stmt = $conn->prepare("
@@ -46,19 +74,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // Keep track of incoming usernames so we can delete ones that were removed from the frontend list
             $incomingUsernames = [];
 
-            foreach($data as $u) {
-                if (empty($u['username'])) continue;
+            foreach ($data as $u) {
+                if (empty($u['username']))
+                    continue;
                 $incomingUsernames[] = "'" . $conn->real_escape_string($u['username']) . "'";
-                
+
                 $name = isset($u['name']) ? $u['name'] : $u['username'];
                 $email = isset($u['email']) ? $u['email'] : null;
-                
+
                 // Hash password with SHA-256 if not already hashed (64-char hex = already hashed)
                 $rawPass = $u['password'];
                 $passwordToSave = (strlen($rawPass) === 64 && ctype_xdigit($rawPass))
                     ? $rawPass
                     : hash('sha256', $rawPass);
-                
+
                 $stmt->bind_param("sssss", $u['username'], $passwordToSave, $u['role'], $name, $email);
                 $stmt->execute();
             }
@@ -72,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
     }
-    
+
     echo json_encode(["success" => true]);
 }
 

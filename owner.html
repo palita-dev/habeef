@@ -26,6 +26,7 @@
                     <span class="noti-badge"
                         style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
                 </div>
+
             </div>
             <p>บันทึกวัตถุดิบเข้า</p>
         </div>
@@ -296,11 +297,11 @@
                             </div>
                         </div>
                         <div style="position:relative; display:inline-block;">
-                            <button id="sales-calendar-btn" onclick="toggleSalesCalendar(event)" style="background:#fff; border:1px solid #ccc; border-radius:8px; padding:6px 12px; font-family:'Prompt',sans-serif; font-size:0.82rem; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer; color:#333; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                            <button id="sales-calendar-btn" onclick="toggleSalesCalendar(event)" style="background:#fff; border:1px solid #ccc; border-radius:8px; padding:6px 12px; font-family:'Prompt',sans-serif; font-size:0.82rem; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer; color:#333; box-shadow:0 1px 3px rgba(0,0,0,0.05); white-space:nowrap;">
                                 <span id="sales-calendar-btn-text">📅 เลือกวันที่</span>
                             </button>
                             <!-- Sales Calendar Popover -->
-                            <div id="sales-calendar-popover" style="display:none; position:absolute; top:100%; right:0; margin-top:8px; background:#fff; border-radius:12px; border:1px solid #eee; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:12px; z-index:1000; width:280px;">
+                            <div id="sales-calendar-popover" style="display:none; position:absolute; top:100%; left:0; margin-top:8px; background:#fff; border-radius:12px; border:1px solid #eee; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:12px; z-index:1000; width:280px; max-width: calc(100vw - 40px);">
                                 <!-- Rendered dynamically -->
                             </div>
                         </div>
@@ -391,10 +392,10 @@
                     <span style="font-size:1.05rem; font-weight:700;">รายงานวัตถุดิบรายวัน</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <div style="position:relative; display:inline-block;">
-                            <button id="report-calendar-btn" onclick="toggleReportCalendar(event)" style="background:#fff; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-family:'Prompt',sans-serif; font-size:0.85rem; display:flex; align-items:center; gap:6px; cursor:pointer; color:#333; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                            <button id="report-calendar-btn" onclick="toggleReportCalendar(event)" style="background:#fff; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-family:'Prompt',sans-serif; font-size:0.85rem; display:flex; align-items:center; gap:6px; cursor:pointer; color:#333; box-shadow:0 1px 3px rgba(0,0,0,0.05); white-space:nowrap;">
                                 <span>📅 เลือกวันที่</span>
                             </button>
-                            <div id="report-calendar-popover" style="display:none; position:absolute; top:100%; right:0; margin-top:8px; background:#fff; border-radius:12px; border:1px solid #eee; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:12px; z-index:1000; width:280px; font-family:'Prompt',sans-serif;">
+                            <div id="report-calendar-popover" style="display:none; position:absolute; top:100%; right:-50px; margin-top:8px; background:#fff; border-radius:12px; border:1px solid #eee; box-shadow:0 8px 30px rgba(0,0,0,0.15); padding:12px; z-index:1000; width:280px; max-width: calc(100vw - 40px); font-family:'Prompt',sans-serif;">
                                 <!-- Calendar Grid rendered dynamically -->
                             </div>
                         </div>
@@ -403,6 +404,73 @@
                 </div>
                 <div id="report-list-container">
                     <!-- รายการรายงานจะถูกสร้างที่นี่โดย JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== หน้าจัดการสิทธิ์ผู้ใช้ ===== -->
+    <div id="page-users" class="page">
+        <div class="top-bar"><span class="top-bar-title">หน้าระบบเจ้าของร้าน</span></div>
+        <div class="red-hero">
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <button class="pw-notif-bell-btn" onclick="toggleNotifPanel()"
+                    style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10; border:none; transition:transform 0.2s;">
+                    <span style="font-size:1.3rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔑</span>
+                    <span class="pw-notif-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:#F44336; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #C62828;"></span>
+                </button>
+            </div>
+            <p>จัดการสิทธิ์ผู้ใช้</p>
+        </div>
+        <div class="section-bar">
+            <span>รายชื่อผู้ใช้</span>
+            <button class="btn btn-sm btn-dark" onclick="showCreateUser()">+ สร้างบัญชี</button>
+        </div>
+        <div class="page-body" id="users-list-container"></div>
+    </div>
+
+    <!-- ===== หน้าสร้าง/แก้ไขบัญชี ===== -->
+    <div id="page-user-form" class="page">
+        <div class="top-bar"><span class="top-bar-title" id="form-title">หน้าระบบเจ้าของร้าน</span></div>
+        <div class="red-hero">
+            <div style="position:relative; display:inline-block;">
+                <h1>ร้านก๋วยเตี๋ยวฮาบีฟ</h1>
+                <div class="noti-btn" onclick="toggleOwnerNotiPanel()"
+                    style="background:rgba(255,255,255,0.25); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; position:absolute; top:50%; right:-55px; transform:translateY(-50%); z-index:10;">
+                    <span style="font-size:1.4rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">🔔</span>
+                    <span class="noti-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:#4CAF50; color:#fff; font-size:0.65rem; font-weight:bold; height:18px; min-width:18px; border-radius:9px; padding:0 4px; align-items:center; justify-content:center; border:2px solid #388E3C;">0</span>
+                </div>
+
+            </div>
+            <p>ดูแลและจัดการระบบ</p>
+        </div>
+        <div class="section-bar">
+            <span id="form-subtitle">สร้างบัญชีผู้ใช้ใหม่</span>
+            <button class="btn-back-circle" onclick="showTab('page-users')">←</button>
+        </div>
+        <div class="page-body">
+            <div class="form-card">
+                <div class="form-group">
+                    <select id="f-role" class="form-select">
+                        <option value="">เลือกสิทธิ์ผู้ใช้</option>
+                        <option value="staff">พนักงาน</option>
+                        <option value="admin">ผู้ดูแลระบบ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ชื่อผู้ใช้</label>
+                    <input type="text" id="f-username" class="form-input" placeholder="ชื่อผู้ใช้">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <div style="font-size:0.85rem; color:#999; margin-bottom:5px;">รหัสผ่าน</div>
+                    <input type="password" id="f-password" class="form-input" placeholder="รหัสผ่าน">
+                    <div id="pw-hint" style="font-size:0.75rem; color:#999; margin-top:5px; display:none;">
+                        (เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน)</div>
+                </div>
+                <div class="form-actions" style="display:flex; gap:10px;">
+                    <button class="btn" style="flex:1; padding:10px; background:#f5f5f5; border:none; border-radius:10px; font-family:'Prompt',sans-serif; cursor:pointer; font-weight:500;" onclick="showTab('page-users')">ยกเลิก</button>
+                    <button class="btn btn-yellow" style="flex:1; padding:10px;" id="form-submit-btn" onclick="submitUserForm()">สร้างบัญชี</button>
                 </div>
             </div>
         </div>
@@ -429,11 +497,44 @@
                 <div id="acc-name" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;">Loading...</div>
                 <div id="acc-role" style="font-size: 0.9rem; color: #999; margin-bottom: 20px;">เจ้าของร้าน</div>
                 <button class="btn btn-full" onclick="window.location.href='manage_formula.html'"
-                    style="width:100%; margin-bottom: 12px; background: #FF9800; color: white;">จัดการปริมาณวัตถุดิบต่อชาม</button>
-                <button class="btn btn-red btn-full" onclick="logout()" style="width:100%;">ออกจากระบบ</button>
+                    style="width:100%; margin-bottom: 20px; background: #FF9800; color: white;">จัดการปริมาณวัตถุดิบต่อชาม</button>
+
+                <!-- Gmail Settings -->
+                <div style="border-top: 1px solid #eee; padding-top: 16px; text-align: left;">
+                    <!-- Display Mode -->
+                    <div id="gmail-display-mode" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.8rem; color:#666; margin-bottom:4px;">📧 Email เจ้าของร้าน</div>
+                            <div id="current-owner-gmail-display" style="font-weight:600; color:#333; font-size:1rem;">-</div>
+                        </div>
+                        <button class="btn btn-sm btn-dark" id="btn-edit-gmail" onclick="toggleGmailEdit(true)" style="padding:8px 16px; border-radius:8px;">แก้ไข</button>
+                    </div>
+
+                    <!-- Edit Mode -->
+                    <div id="gmail-edit-mode" style="display:none;">
+                        <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:#333;">📧 ตั้งค่า Email สำหรับลืมรหัสผ่าน</h3>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="font-size:0.8rem; color:#666;">Email เจ้าของร้าน</label>
+                            <input type="email" id="owner-gmail" class="form-input" placeholder="example@email.com">
+                        </div>
+                        <div class="form-group" id="gmail-confirm-group" style="margin-bottom:10px;">
+                            <label style="font-size:0.8rem; color:#666;">ยืนยันรหัสผ่านเจ้าของร้าน เพื่อบันทึกการเปลี่ยนแปลง</label>
+                            <input type="password" id="gmail-confirm-pw" class="form-input" placeholder="ป้อนรหัสผ่านเจ้าของร้าน">
+                        </div>
+                        <div id="gmail-error" style="color:#C62828; font-size:0.8rem; margin-bottom:8px; display:none;"></div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn" style="flex:1; padding:10px; background:#f5f5f5; border:none; border-radius:10px; font-family:'Prompt',sans-serif; cursor:pointer; font-weight:500;" onclick="toggleGmailEdit(false)">ยกเลิก</button>
+                            <button class="btn btn-yellow" style="flex:1; padding:10px;" onclick="saveOwnerGmail()">บันทึก</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- /Reset Data Card removed -->
+
+            <!-- Logout Button -->
+            <button class="btn btn-red btn-full" onclick="logout()"
+                style="width:100%; margin-top:12px; padding:14px;">ออกจากระบบ</button>
         </div>
     </div>
 
@@ -448,8 +549,12 @@
         <button class="nav-item" onclick="showTab('page-report',this)">
             <span class="nav-icon">📊</span><span class="nav-label">รายงาน</span>
         </button>
+        <button class="nav-item" onclick="showTab('page-users',this)" style="position: relative;">
+            <span class="nav-icon">👥</span><span class="nav-label">ผู้ใช้</span>
+            <span class="pw-notif-dot" style="display:none; position:absolute; top:6px; right:22px; background:#F44336; width:8px; height:8px; border-radius:50%; border:1.5px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,0.2);"></span>
+        </button>
         <button class="nav-item" onclick="showTab('page-account',this)">
-            <span class="nav-icon">👤</span><span class="nav-label">บัญชีผู้ใช้</span>
+            <span class="nav-icon">👤</span><span class="nav-label">บัญชี</span>
         </button>
     </div>
 
@@ -521,6 +626,59 @@
             style="padding:12px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px;">
             <div style="text-align:center; color:#999; padding:20px 0; font-size:0.9rem;">วัตถุดิบเพียงพอ</div>
         </div>
+    </div>
+    <!-- /Notification Panel -->
+
+    <!-- ===== เปลี่ยนรหัสผ่าน Modal ===== -->
+    <div id="change-pw-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; font-family:'Prompt',sans-serif;">
+        <div style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+            <div style="font-size:2.5rem; margin-bottom:8px;">🔐</div>
+            <h3 style="margin:0 0 4px 0; color:#333;">เปลี่ยนรหัสผ่าน</h3>
+            <p id="change-pw-user" style="color:#888; font-size:0.85rem; margin:0 0 16px 0;"></p>
+            <input type="text" id="new-password" class="form-input" placeholder="รหัสผ่านใหม่"
+                style="margin-bottom:10px;">
+            <input type="text" id="confirm-password" class="form-input" placeholder="ยืนยันรหัสผ่านใหม่"
+                style="margin-bottom:10px;">
+            <div id="change-pw-error" style="color:#C62828; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn" onclick="closeChangePwModal()"
+                    style="flex:1; padding:10px; background:#f5f5f5; color:#333; border:none; border-radius:10px; font-family:'Prompt',sans-serif; font-weight:500; cursor:pointer;">ยกเลิก</button>
+                <button class="btn btn-yellow" onclick="confirmChangePassword()"
+                    style="flex:1; padding:10px; border-radius:10px;">บันทึกรหัสผ่านใหม่</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== บังคับตั้งค่า Email (Force Email Setup) Modal ===== -->
+    <div id="force-email-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; font-family:'Prompt',sans-serif;">
+        <div style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.4);">
+            <div style="font-size:3rem; margin-bottom:8px;">📧</div>
+            <h3 style="margin:0 0 8px 0; color:#333;">ตั้งค่า Email ยืนยันตัวตน</h3>
+            <p style="color:#666; font-size:0.85rem; margin:0 0 16px 0; line-height:1.4;">
+                เพื่อความปลอดภัยของระบบเจ้าของร้าน กรุณากำหนด Email สำหรับใช้กู้คืนรหัสผ่านในกรณีที่คุณลืมรหัสผ่าน
+            </p>
+            <div style="text-align:left; margin-bottom:16px;">
+                <label style="font-size:0.8rem; color:#666; font-weight:600; margin-bottom:4px; display:block;">Email เจ้าของร้าน</label>
+                <input type="email" id="force-owner-gmail" class="form-input" placeholder="example@email.com">
+            </div>
+            <div id="force-email-error"
+                style="color:#C62828; font-size:0.8rem; margin-bottom:12px; display:none; text-align:left;"></div>
+            <button class="btn btn-yellow btn-full" onclick="saveForceOwnerGmail()"
+                style="padding:12px; font-size:1rem;">บันทึก Email ของฉัน</button>
+        </div>
+    </div>
+
+    <!-- ===== PASSWORD NOTIFICATION DROPDOWN ===== -->
+    <div id="notif-dropdown"
+        style="display:none; position:fixed; z-index:9000; background:#fff; border-radius:16px; padding:20px; width:340px; max-height:450px; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.2); border:1px solid #eee;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <span style="font-weight:700; font-size:1rem; color:#333;">🔔 คำขอเปลี่ยนรหัสผ่าน</span>
+            <button onclick="toggleNotifPanel()"
+                style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#888; line-height:1;">✕</button>
+        </div>
+        <div id="notif-list-container"></div>
     </div>
     <style>
         @keyframes popIn {
