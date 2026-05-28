@@ -6,6 +6,9 @@ var ALL_INGREDIENTS = [];
 var ING_EMOJIS = {};
 var ING_UNITS = {};
 var ING_DAILY_REC = {};
+var ING_SECONDARY_UNIT = {};
+var ING_CONVERSION_FACTOR = {};
+var ING_DISPLAY_LABEL = {};
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -25,6 +28,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         ING_EMOJIS[ing.ingredient_name] = ing.icon_html || '📦';
                         ING_UNITS[ing.ingredient_name] = ing.unit;
                         ING_DAILY_REC[ing.ingredient_name] = parseFloat(ing.daily_recommended) || 0;
+                        ING_SECONDARY_UNIT[ing.ingredient_name] = ing.secondary_unit || null;
+                        ING_CONVERSION_FACTOR[ing.ingredient_name] = ing.conversion_factor ? parseFloat(ing.conversion_factor) : null;
+                        ING_DISPLAY_LABEL[ing.ingredient_name] = ing.display_label || null;
                     });
                 }
             }),
@@ -782,111 +788,75 @@ function toggleRemainingSort() {
     renderRemaining();
 }
 
-// Placeholder for now, I need to check ING_UNITS first before writing the exact math
+// Dynamic formatSecondaryUnit from DB conversion settings
 function formatSecondaryUnit(name, qty, returnRawText) {
+    var unit = ING_UNITS[name] || 'หน่วย';
+    var secUnit = ING_SECONDARY_UNIT[name] || null;
+    var factor = ING_CONVERSION_FACTOR[name] || null;
+    var displayLabel = ING_DISPLAY_LABEL[name] || null;
+
+    var separator = returnRawText ? ' หรือ ' : '<br>หรือ ';
+
+    // 1. Invalid or zero quantity
     if (typeof qty !== 'number' || isNaN(qty) || qty <= 0) {
-        if (name === 'ไข่') return '0 แผง 0 ฟอง';
-        if (name === 'เส้นหมี่หยก' || name === 'เส้นหมี่เหลือง') return '0 ถุง 0 ก้อน';
-        if (name === 'ลูกชิ้น') return '0 ถุง 0 ชิ้น';
-        if (name === 'เส้นเล็ก' || name === 'เส้นใหญ่' || name === 'เส้นหมี่ขาว') return '0 ถุง 0 กรัม';
-        var splitTextZero = '<br>หรือ ';
-        if (name === 'น่องไก่') return '0 กก.' + splitTextZero + '~0 ชิ้น';
-        if (name === 'กุ้ง') return '0 กก.' + splitTextZero + '~0 ตัว';
-        if (name === 'เนื้อวัว' || name === 'ผักบุ้ง' || name === 'ถั่วงอก' || name === 'หมึก') return '0 กก.';
-        return '0 ' + (ING_UNITS[name] || 'หน่วย');
-    }
-
-    var parts = [];
-
-    switch (name) {
-        case 'ไข่':
-            // 1 แผง = 30 ฟอง
-            var trays = Math.floor(qty);
-            var eggs = Math.round((qty - trays) * 30);
-            if (eggs >= 30) { trays += 1; eggs = 0; }
-            if (trays > 0) parts.push(trays + ' แผง');
-            if (eggs > 0) parts.push(eggs + ' ฟอง');
-            break;
-
-        case 'เส้นเล็ก':
-        case 'เส้นใหญ่':
-        case 'เส้นหมี่ขาว':
-            // 1 ถุง เส้นเล็ก = 1 กก (1000 กรัม)
-            // 1 ถุง เส้นใหญ่ = 500 กรัม
-            // 1 ถุง เส้นหมี่ขาว = 500 กรัม
-            var gramPerBag = (name === 'เส้นเล็ก') ? 1000 : 500;
-            var bags = Math.floor(qty);
-            var grams = Math.round((qty - bags) * gramPerBag);
-            if (grams >= gramPerBag) { bags += Math.floor(grams / gramPerBag); grams = grams % gramPerBag; }
-            if (bags > 0) parts.push(bags + ' ถุง');
-            if (grams > 0) parts.push(grams + ' กรัม');
-            break;
-
-        case 'เส้นหมี่หยก':
-        case 'เส้นหมี่เหลือง':
-            // 1 ถุง = 4 ก้อน
-            var bagsN = Math.floor(qty);
-            var blocks = Math.round((qty - bagsN) * 4);
-            if (blocks >= 4) { bagsN += Math.floor(blocks / 4); blocks = blocks % 4; }
-            if (bagsN > 0) parts.push(bagsN + ' ถุง');
-            if (blocks > 0) parts.push(blocks + ' ก้อน');
-            break;
-
-        case 'ลูกชิ้น':
-            // 1 ถุง (1 กก.) = 90 ชิ้น (ตามตารางที่ได้มาจากภาพเก่า)
-            var bagsM = Math.floor(qty);
-            var pieces = Math.round((qty - bagsM) * 90);
-            if (pieces >= 90) { bagsM += Math.floor(pieces / 90); pieces = pieces % 90; }
-            if (bagsM > 0) parts.push(bagsM + ' ถุง');
-            if (pieces > 0) parts.push('~' + pieces + ' ชิ้น');
-            break;
-
-        case 'น่องไก่':
-        case 'เนื้อวัว':
-        case 'กุ้ง':
-        case 'หมึก':
-        case 'ผักบุ้ง':
-        case 'ถั่วงอก':
-            // กิโลกรัม -> กิโลกรัม กับ กรัม หรือ ตัว/ชิ้น
-            if (name === 'กุ้ง') {
-                var pieces = Math.round(qty * 75 / 3);
-                var separator = '<br>หรือ ';
-                if (qty < 1) {
-                    var grams = Math.round(qty * 1000);
-                    return grams + ' กรัม' + separator + '~' + pieces + ' ตัว';
-                }
-                return parseFloat(Number(qty).toFixed(2)) + ' กก.' + separator + '~' + pieces + ' ตัว';
-            } else if (name === 'น่องไก่') {
-                var pieces = Math.round(qty * 162 / 13);
-                var separator = '<br>หรือ ';
-                if (qty < 1) {
-                    var grams = Math.round(qty * 1000);
-                    return grams + ' กรัม' + separator + '~' + pieces + ' ชิ้น';
-                }
-                return parseFloat(Number(qty).toFixed(2)) + ' กก.' + separator + '~' + pieces + ' ชิ้น';
-            } else {
-                if (qty < 1) {
-                    var grams = Math.round(qty * 1000);
-                    return grams + ' กรัม';
-                }
-                return parseFloat(Number(qty).toFixed(2)) + ' กก.';
+        if (unit === 'กิโลกรัม') {
+            var label = displayLabel || 'กก.';
+            if (secUnit) {
+                return '0 ' + label + separator + '~0 ' + secUnit;
             }
-            break;
+            return '0 ' + label;
+        }
+        if (secUnit && factor) {
+            var label = displayLabel || unit;
+            return '0 ' + label + ' 0 ' + secUnit;
+        }
+        return '0 ' + (displayLabel || unit);
+    }
 
-        default:
-            if (ING_UNITS[name] === 'กิโลกรัม' && qty < 1 && qty > 0) {
-                return Math.round(qty * 1000) + ' กรัม';
+    // 2. Kilogram logic (grams / pieces conversion)
+    if (unit === 'กิโลกรัม') {
+        var label = displayLabel || 'กก.';
+        if (secUnit && factor) {
+            var pieces = Math.round(qty * factor);
+            if (qty < 1) {
+                var grams = Math.round(qty * 1000);
+                return grams + ' กรัม' + separator + '~' + pieces + ' ' + secUnit;
             }
-            return parseFloat(Number(qty).toFixed(2)) + ' ' + (ING_UNITS[name] || 'หน่วย');
+            return parseFloat(Number(qty).toFixed(2)) + ' ' + label + separator + '~' + pieces + ' ' + secUnit;
+        } else {
+            if (qty < 1) {
+                var grams = Math.round(qty * 1000);
+                return grams + ' กรัม';
+            }
+            return parseFloat(Number(qty).toFixed(2)) + ' ' + label;
+        }
     }
 
-    if (parts.length === 0) {
-        if (name === 'ไข่') return '0 แผง';
-        if (name.includes('เส้น') || name === 'ลูกชิ้น') return '0 ถุง';
-        return '0 กก.';
+    // 3. Other units with secondary units and conversion factors
+    if (secUnit && factor) {
+        var mainUnit = displayLabel || unit;
+        var mainQty = Math.floor(qty);
+        var secQty = Math.round((qty - mainQty) * factor);
+        if (secQty >= factor) {
+            mainQty += Math.floor(secQty / factor);
+            secQty = secQty % factor;
+        }
+        var parts = [];
+        if (mainQty > 0) {
+            parts.push(mainQty + ' ' + mainUnit);
+        }
+        if (secQty > 0) {
+            var prefix = (secUnit === 'ชิ้น' || secUnit === 'ตัว') ? '~' : '';
+            parts.push(prefix + secQty + ' ' + secUnit);
+        }
+        if (parts.length === 0) {
+            return '0 ' + mainUnit;
+        }
+        return parts.join(' ');
     }
 
-    return parts.join(' ');
+    // 4. Default fallback
+    return parseFloat(Number(qty).toFixed(2)) + ' ' + (displayLabel || unit);
 }
 
 // ===== AUTO-SYNC INGREDIENT TOGGLES =====

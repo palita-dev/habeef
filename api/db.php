@@ -27,16 +27,31 @@ elseif (preg_match('/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/', $host_o
     $is_local = true;
 }
 
+// Load environment variables from .env if it exists
+$env = [];
+$env_path = dirname(__DIR__) . '/.env';
+if (file_exists($env_path)) {
+    $lines = file($env_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '#') === 0) continue;
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            $env[trim($parts[0])] = trim($parts[1]);
+        }
+    }
+}
+
 if ($is_local) {
     $host = '127.0.0.1';
     $db_user = 'root';
     $db_pass = '';
     $db_name = 'appvizac_habeefnoodle';
 } else {
-    $host = 'localhost';
-    $db_user = 'appvizac_habeefnoodle';
-    $db_pass = 'kh89mNtD';
-    $db_name = 'appvizac_habeefnoodle';
+    $host = isset($env['DB_HOST']) ? $env['DB_HOST'] : 'localhost';
+    $db_user = isset($env['DB_USER']) ? $env['DB_USER'] : 'appvizac_habeefnoodle';
+    $db_pass = isset($env['DB_PASSWORD']) ? $env['DB_PASSWORD'] : 'kh89mNtD';
+    $db_name = isset($env['DB_NAME']) ? $env['DB_NAME'] : 'appvizac_habeefnoodle';
 }
 
 // Create connection

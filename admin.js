@@ -221,8 +221,8 @@ function confirmDeleteUser(username) {
 function generateStaffQR() {
     var baseUrl = window.location.href.split('admin.html')[0];
     if (!baseUrl.endsWith('/')) baseUrl += '/';
-    var SECRET_SALT = 'habeef_secret_2024';
-    var encodedStaff = btoa(encodeURIComponent('staff_login|' + SECRET_SALT));
+    var salt = window.SECRET_SALT || 'habeef_secret_2024';
+    var encodedStaff = btoa(encodeURIComponent('staff_login|' + salt));
     var staffUrl = baseUrl + 'login.html?s=' + encodeURIComponent(encodedStaff);
     var qrApiBase = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=';
 
@@ -243,8 +243,8 @@ function generateTableQR() {
     var baseUrl = window.location.href.split('admin.html')[0];
     if (!baseUrl.endsWith('/')) baseUrl += '/';
     // Encode tableId for security
-    var SECRET_SALT = 'habeef_secret_2024';
-    var encodedTable = btoa(encodeURIComponent(tableId + '|' + SECRET_SALT));
+    var salt = window.SECRET_SALT || 'habeef_secret_2024';
+    var encodedTable = btoa(encodeURIComponent(tableId + '|' + salt));
     var customerUrl = baseUrl + '?q=' + encodeURIComponent(encodedTable);
 
     // Use Chart API or QR API

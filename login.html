@@ -211,7 +211,7 @@
     <script>
         // ===== VALIDATE QR ACCESS =====
         (function () {
-            var SECRET_SALT = 'habeef_secret_2024';
+            var SECRET_SALT = window.SECRET_SALT || 'habeef_secret_2024';
             var params = new URLSearchParams(window.location.search);
             var sParam = params.get('s');
             var valid = false;

@@ -196,11 +196,12 @@ function selectLandingTable(tableId, lockTable = false) {
 }
 
 // ===== UTILITY FOR ENCODING/DECODING TABLE ID =====
-const SECRET_SALT = 'habeef_secret_2024';
+var SECRET_SALT = window.SECRET_SALT || 'habeef_secret_2024';
 
 function encodeTableId(tableId) {
   try {
-    return btoa(encodeURIComponent(tableId + '|' + SECRET_SALT));
+    var salt = window.SECRET_SALT || 'habeef_secret_2024';
+    return btoa(encodeURIComponent(tableId + '|' + salt));
   } catch (e) {
     return null;
   }
@@ -208,9 +209,10 @@ function encodeTableId(tableId) {
 
 function decodeTableId(encodedStr) {
   try {
+    var salt = window.SECRET_SALT || 'habeef_secret_2024';
     var decoded = decodeURIComponent(atob(encodedStr));
     var parts = decoded.split('|');
-    if (parts.length === 2 && (parts[1] === SECRET_SALT || parts[1] === 'hybeef_secret_2024')) {
+    if (parts.length === 2 && (parts[1] === salt || parts[1] === 'hybeef_secret_2024')) {
       return parts[0];
     }
   } catch (e) {

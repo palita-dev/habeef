@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($formula);
     } else {
         // Return all ingredients
-        $result = $conn->query("SELECT ingredient_name, unit, is_disabled, usage_per_order, icon_html, daily_recommended FROM ingredients ORDER BY ingredient_name");
+        $result = $conn->query("SELECT ingredient_name, unit, is_disabled, usage_per_order, icon_html, daily_recommended, secondary_unit, conversion_factor, display_label FROM ingredients ORDER BY ingredient_name");
         $list = [];
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {

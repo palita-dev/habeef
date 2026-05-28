@@ -6,6 +6,24 @@ var SERVER_BASE = (function () {
     return window.location.origin + parts.join('/');
 })();
 
+// Fetch settings (like SECRET_SALT) synchronously so they are ready for all scripts
+window.SECRET_SALT = 'habeef_secret_2024'; // fallback
+(function () {
+    try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', SERVER_BASE + '/api/settings.php?action=public_settings', false);
+        xhr.send();
+        if (xhr.status === 200) {
+            var settings = JSON.parse(xhr.responseText);
+            if (settings.secret_salt) {
+                window.SECRET_SALT = settings.secret_salt;
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch public settings:', e);
+    }
+})();
+
 // ===== DISABLED INGREDIENTS — stored in MySQL via ingredients.php =====
 window._disabledIngredientsCache = null;
 
@@ -56,9 +74,6 @@ function toggleIngredientDisabled(name, isDisabled) {
 
 // Pre-load disabled ingredients on page start
 getDisabledIngredients(null);
-
-// Default admin account (fallback only)
-var DEFAULT_ADMIN = { username: 'admin', password: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', role: 'admin', name: 'ผู้ดูแลระบบ' };
 
 // ===== IN-MEMORY CACHE (synced from server, not from localStorage) =====
 var _ordersCache = [];
@@ -195,7 +210,7 @@ syncFromServer();
 
 // ===== USERS =====
 function getUsers() {
-    return _usersCache.length > 0 ? _usersCache : [DEFAULT_ADMIN];
+    return _usersCache;
 }
 
 function saveUsers(users) {
@@ -208,12 +223,7 @@ function saveUsers(users) {
 }
 
 function initUsers() {
-    var users = getUsers();
-    if (users.length === 0) {
-        users.push(DEFAULT_ADMIN);
-        saveUsers(users);
-    }
-    return users;
+    return getUsers();
 }
 
 function login(username, password) {
@@ -242,16 +252,16 @@ function getCurrentUser() {
 
 function logout() {
     sessionStorage.removeItem('habeef_current_user');
-    var SECRET_SALT = 'habeef_secret_2024';
-    var encoded = btoa(encodeURIComponent('staff_login|' + SECRET_SALT));
+    var salt = window.SECRET_SALT || 'habeef_secret_2024';
+    var encoded = btoa(encodeURIComponent('staff_login|' + salt));
     window.location.href = 'login.html?s=' + encodeURIComponent(encoded);
 }
 
 function requireAuth(allowedRoles) {
     var user = getCurrentUser();
     if (!user || (allowedRoles && allowedRoles.indexOf(user.role) === -1)) {
-        var SECRET_SALT = 'habeef_secret_2024';
-        var encoded = btoa(encodeURIComponent('staff_login|' + SECRET_SALT));
+        var salt = window.SECRET_SALT || 'habeef_secret_2024';
+        var encoded = btoa(encodeURIComponent('staff_login|' + salt));
         window.location.href = 'login.html?s=' + encodeURIComponent(encoded);
         return null;
     }

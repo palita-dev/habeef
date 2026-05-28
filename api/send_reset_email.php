@@ -125,7 +125,13 @@ if ($action === 'send_reset_by_email') {
         </div>
     ";
 
-    $resendApiKey = 're_AXo6Xymc_BsonXPxrr67xAXxWHdcwTcvF';
+    // Fetch Resend API key from database
+    $resendApiKey = 're_AXo6Xymc_BsonXPxrr67xAXxWHdcwTcvF'; // Fallback default
+    $settingResult = $conn->query("SELECT setting_value FROM app_settings WHERE setting_key = 'resend_api_key'");
+    if ($settingResult && $row = $settingResult->fetch_assoc()) {
+        $resendApiKey = $row['setting_value'];
+    }
+
     $postData = json_encode([
         'from' => 'Habeef Noodle System <onboarding@resend.dev>', 
         'to' => [$email],  
